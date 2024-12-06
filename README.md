@@ -63,7 +63,7 @@
 
 ### Clone the project
 ``` bash
-git clone https://github.com/Daniel-Ayz/SababaSales.git
+git clone https://github.com/ShvartzRoy/Jesta.git
 ```
 
 # Setup
