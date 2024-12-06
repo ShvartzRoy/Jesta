@@ -372,7 +372,7 @@ Distributed under the MIT License. See `LICENSE.txt` for more information.
 ## Contact
 
 Roy Shvartz - royshv@post.bgu.ac.il  
-Shoval Nachum - nashov@post.bgu.ac.il
+Shoval Nachum - nashov@post.bgu.ac.il  
 Lina Masarwa - linamas@post.bgu.ac.il
 
 Project Link: [https://github.com/Daniel-Ayz/SababaSales](https://github.com/Daniel-Ayz/SababaSales)
