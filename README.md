@@ -371,13 +371,9 @@ Distributed under the MIT License. See `LICENSE.txt` for more information.
 <!-- CONTACT -->
 ## Contact
 
-Daniel Ayzenshteyn - ayzendan@post.bgu.ac.il  
-Ron Shefland - ronshef@post.bgu.ac.il  
-Daniel Erbesfeld - erbesfel@post.bgu.ac.il  
-Itai Pemper - itaipem@post.bgu.ac.il  
-Roy Weiss - weissroy@post.bgu.ac.il  
 Roy Shvartz - royshv@post.bgu.ac.il  
-Talia Katrih - katrihta@post.bgu.ac.il
+Shoval Nachum - nashov@post.bgu.ac.il
+Lina Masarwa - linamas@post.bgu.ac.il
 
 Project Link: [https://github.com/Daniel-Ayz/SababaSales](https://github.com/Daniel-Ayz/SababaSales)
 
