@@ -87,11 +87,11 @@ we use the postgres docker image https://hub.docker.com/_/postgres.
 ## 📊 2. Apply Database Migrations
 After the containers are up and running, you need to apply the database migrations. Open a new terminal and run(same working dir):
 ```bash
-docker-compose exec web python manage.py makemigrations
+docker-compose exec api python manage.py makemigrations
 ```
 
 ```bash
-docker-compose exec web python manage.py migrate
+docker-compose exec api python manage.py migrate
 ```
 ## 👩‍💼 3. Create a Superuser
 To create a superuser for the Django admin, run the following command:
