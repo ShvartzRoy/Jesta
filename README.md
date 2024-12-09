@@ -96,7 +96,7 @@ docker-compose exec api python manage.py migrate
 ## 👩‍💼 3. Create a Superuser
 To create a superuser for the Django admin, run the following command:
 ```bash
-docker-compose exec web python manage.py createsuperuser
+docker-compose exec api python manage.py createsuperuser
 ```
 ## 🚀 4. Access the Application
 run the containers with
@@ -114,14 +114,14 @@ docker-compose down
 
 💡 if does not work - try running:
 ```bash
-docker-compose exec web python manage.py flush
+docker-compose exec api python manage.py flush
 ```
 
 ## 🔍 6. Monitoring Redis
 
 To monitor the Redis cache and check the requests being made, follow these steps:
 
-### 1. Access the Redis Container
+###  (Not relevant yet)1. Access the Redis Container
 Open a terminal and access the Redis container by running:
 ```bash
 docker exec -it marketapi-redis-1 sh
@@ -152,7 +152,7 @@ docker stop <container_id>
 Start a Django shell:
 
 ```bash
-docker-compose exec web python manage.py shell
+docker-compose exec api python manage.py shell
 ```
 
 ## 💻 7. Setup local hosts file (www.sababasales.com)
