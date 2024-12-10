@@ -1,0 +1,38 @@
+#version: "3.8"
+
+services:
+  db:
+    image: postgres:15
+    container_name: postgres-container
+    restart: always
+    environment:
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: user123
+      POSTGRES_DB: jesta_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - db_data:/var/lib/postgresql/data
+
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: django-container
+    restart: always
+    depends_on:
+      - db
+    ports:
+      - "8000:8000"
+    environment:
+      - DATABASE_HOST=db
+      - DATABASE_PORT=5432
+      - DATABASE_NAME= jesta_db
+      - DATABASE_USER=user
+      - DATABASE_PASSWORD=user123
+    volumes:
+      - .:/app
+    command: python /app/manage.py runserver 0.0.0.0:8000
+
+volumes:
+  db_data:
