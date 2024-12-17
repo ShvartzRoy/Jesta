@@ -35,10 +35,10 @@
     <img src="images/SababaSales-logoB.png" alt="Logo" width="700" height="400">
   </a>
 
-<h3 align="center">SababaSales</h3>
+<h3 align="center">Jesta</h3>
 
   <p align="center">
-    Same as superly but better. Soon will be available online! Watch out Jeff, the sales are comming!
+    Our project aims to solve the problem of finding and offering services easily and securely. 
     <br />
     <a href="https://github.com/Daniel-Ayz/SababaSales/tree/main/docs"><strong>Explore the docs »</strong></a>
     <br />
