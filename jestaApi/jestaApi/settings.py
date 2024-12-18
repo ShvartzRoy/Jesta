@@ -27,6 +27,12 @@ DEBUG = True
 
 ALLOWED_HOSTS = ["*"]
 
+# Add these settings anywhere in the file.
+CORS_ALLOW_CREDENTIALS = True
+CORS_ALLOWED_ORIGINS = ["http://localhost:5173"]  # React app URL
+CSRF_TRUSTED_ORIGINS = ['http://localhost:5173']
+
+AUTH_USER_MODEL = 'users.CustomUser'
 
 # Application definition
 
@@ -40,9 +46,12 @@ INSTALLED_APPS = [
     'chat',
     'services',
     'users',
+    'ninja',
+    'corsheaders',
 ]
 
 MIDDLEWARE = [
+    "corsheaders.middleware.CorsMiddleware",
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
