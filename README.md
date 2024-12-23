@@ -264,6 +264,37 @@ The rest is the same, define functions and test them, nocie you should only chan
 because the tests run slower this way.
 
 
+### See database data from terminal
+Access the Database Container:
+
+```bash
+docker exec -it <db_container_name> psql -U <db_user> -d <db_name>
+```
+Replace:
+
+<db_container_name>: Your PostgreSQL container name.
+
+<db_user>: Your PostgreSQL username.
+
+<db_name>: Your database name.
+
+List All Tables: Inside the PostgreSQL shell, run:
+
+```bash
+\dt
+```
+Query a Table: To view data from a specific table (e.g., users_customuser), run:
+
+```bash
+SELECT * FROM users_customuser;
+```
+Exit the Shell:
+
+```bash
+\q
+```
+
+
 ### Start Up server
 Initialize the database (if we don't have one already):
 ```bash
