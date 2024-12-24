@@ -293,8 +293,32 @@ Exit the Shell:
 ```bash
 \q
 ```
+#### Delete database:
+Access the PostgreSQL shell:
 
+```bash
+docker exec -it postgres-container psql -U user -d postgres
+```
+Terminate active connections:
 
+```bash
+SELECT pg_terminate_backend(pg_stat_activity.pid)
+FROM pg_stat_activity
+WHERE pg_stat_activity.datname = 'jesta_db'
+AND pid <> pg_backend_pid();
+```
+Drop the database:
+```bash
+DROP DATABASE jesta_db;
+```
+Verify:
+```bash
+\l
+```
+Exit:
+```bash
+\q
+```
 ### Start Up server
 Initialize the database (if we don't have one already):
 ```bash
