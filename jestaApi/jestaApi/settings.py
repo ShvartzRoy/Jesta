@@ -29,8 +29,10 @@ ALLOWED_HOSTS = ["*"]
 
 # Add these settings anywhere in the file.
 CORS_ALLOW_CREDENTIALS = True
-CORS_ALLOWED_ORIGINS = ["http://localhost:5173"]  # React app URL
-CSRF_TRUSTED_ORIGINS = ['http://localhost:5173']
+CORS_ALLOW_ALL_ORIGINS = True
+#CSRF_COOKIE_HTTPONLY = False  # Allows frontend to access CSRF cookies
+# CORS_ALLOWED_ORIGINS = ["http://localhost:8000"]  # React app URL
+# CSRF_TRUSTED_ORIGINS = ['http://localhost:8000']
 
 AUTH_USER_MODEL = 'users.CustomUser'
 

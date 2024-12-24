@@ -1,9 +1,6 @@
-from ninja import NinjaAPI, Router
-from ninja.security import django_auth
 from django.contrib.auth import authenticate, login, logout
-from django.middleware.csrf import get_token
 from django.contrib.auth.hashers import make_password
-from .models import CustomUser as User
+from .models import CustomUser
 from .schemas import *
 from ninja.errors import *
 
@@ -23,7 +20,7 @@ class userController:
 
     def logout(self, request) -> any:
         logout(request)
-        return {"message": "Logged out"}
+        return {"msg": "Logged out"}
 
 
 
@@ -44,9 +41,3 @@ class userController:
         )
         user.save()
         return user
-        # try:
-            
-        #     user = User.objects.create_user(username=payload.email, email=payload.email, password=payload.password)
-        #     return user
-        # except Exception as e:
-        #     raise AuthenticationError(str(e))
