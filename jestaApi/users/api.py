@@ -29,3 +29,9 @@ def user(request):
 def register(request, payload: RegisterSchema):
     user = uc.register(request, payload)
     return user
+
+@router.post("/editProfile", response={200: ProfileSchema, 401: Error})
+def editProfile(request, payload: ProfileSchema):
+    user = uc.editProfile(request, payload)
+    return user
+

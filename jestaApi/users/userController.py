@@ -45,3 +45,17 @@ class userController:
         )
         user.save()
         return user
+    
+    def editProfile(self, request, payload: ProfileSchema) -> ProfileSchema:
+        user = request.user
+        if user.id is None:
+            raise HttpError(401, "Unauthorized")
+        # Get or create the profile for the user
+        profile, _ = Profile.objects.get_or_create(user=user)
+        # Update the profile fields
+        profile.name = payload.name
+        profile.bio = payload.bio
+        profile.age = payload.age
+        profile.save()
+        return profile
+    
