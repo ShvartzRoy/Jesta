@@ -1,6 +1,7 @@
 from pydantic import BaseModel
 from ninja import Schema, ModelSchema
-from .models import CustomUser
+
+from .models import *
 
 class LogInSchema(BaseModel):
     email: str
@@ -20,3 +21,9 @@ class Error(Schema):
 
 class Msg(Schema):
     msg:str
+
+
+class ProfileSchema(ModelSchema):
+    class Meta:
+        model = Profile
+        fields = ["name", "bio", "age", "image", "resume"]

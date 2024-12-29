@@ -2,7 +2,8 @@ from ninja import NinjaAPI, Router
 from ninja.security import django_auth
 from .schemas import *
 from .userController import userController
-
+from ninja import File
+from ninja.files import UploadedFile
 
 
 router = Router(tags=["user"])
@@ -28,4 +29,14 @@ def user(request):
 @router.post("/register", response={200: UserSchema, 401: Error})
 def register(request, payload: RegisterSchema):
     user = uc.register(request, payload)
+    return user
+
+@router.post("/editProfile", response={200: ProfileSchema, 401: Error})
+def editProfile(request, payload: ProfileSchema, image: UploadedFile = File(None), resume: UploadedFile = File(None)):
+    user = uc.editProfile(request, payload , image, resume)
+    return user
+
+@router.get("/getProfile/{int:user_id}", response={200: ProfileSchema, 401: Error})
+def getProfile(request, user_id: int):
+    user = uc.getProfile(request, user_id)
     return user
