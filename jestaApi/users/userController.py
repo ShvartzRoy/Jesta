@@ -64,7 +64,7 @@ class userController:
         profile.age = payload.age
         # Handle image upload
         if image:
-            if image.name.lower().endswith(('.png', '.jpg', '.jpeg')):
+            if check_image(image):
                 if profile.image:
                     profile.image.delete()
                 profile.image.save(f'{user.id}.jpg', image)

@@ -1,4 +1,6 @@
 import re
+from ninja import File
+from ninja.files import UploadedFile
 def password_check(passwd):
     SpecialSym =['$', '@', '#', '%']
     if len(passwd) < 6:
@@ -47,5 +49,10 @@ def check_age(age: int) -> bool:
     if age < 15:
         return False
     if age > 150:
+        return False
+    return True
+
+def check_image(image: UploadedFile = File(None)) -> bool:
+    if not image.name.lower().endswith(('.png', '.jpg', '.jpeg')):
         return False
     return True
