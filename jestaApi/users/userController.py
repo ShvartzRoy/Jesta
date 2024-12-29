@@ -49,7 +49,7 @@ class userController:
         return user
     
 
-    def editProfile(self, request, payload: ProfileSchema, image: UploadedFile = File(None)) -> ProfileSchema:
+    def editProfile(self, request, payload: ProfileSchema, image: UploadedFile = File(None), resume: UploadedFile = File(None)) -> ProfileSchema:
         user = request.user
         if user.id is None:
             raise HttpError(401, "Unauthorized")
@@ -64,13 +64,20 @@ class userController:
             raise HttpError(401, "Invalid age")
         profile.age = payload.age
         # Handle image upload
-        if image:
+        if image is not None:
             if check_image(image):
                 if profile.image:
                     profile.image.delete()
                 profile.image.save(f'{user.id}.jpg', image)
             else:
-                raise HttpError(401, "Invalid image format")
+                raise HttpError(401, "Invalid image")
+        if resume is not None:
+            if check_resume(resume):
+                if profile.resume:
+                    profile.resume.delete()
+                profile.resume.save(f'{user.id}.pdf', resume)
+            else:
+                raise HttpError(401, "Invalid file")
         profile.save()
         return profile
     

@@ -32,11 +32,11 @@ def register(request, payload: RegisterSchema):
     return user
 
 @router.post("/editProfile", response={200: ProfileSchema, 401: Error})
-def editProfile(request, payload: ProfileSchema, image: UploadedFile = File(None)):
-    user = uc.editProfile(request, payload , image)
+def editProfile(request, payload: ProfileSchema, image: UploadedFile = File(None), resume: UploadedFile = File(None)):
+    user = uc.editProfile(request, payload , image, resume)
     return user
 
-@router.post("/getProfile/{int:user_id}", response={200: ProfileSchema, 401: Error})
+@router.get("/getProfile/{int:user_id}", response={200: ProfileSchema, 401: Error})
 def getProfile(request, user_id: int):
     user = uc.getProfile(request, user_id)
     return user

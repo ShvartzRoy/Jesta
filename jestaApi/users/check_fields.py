@@ -56,3 +56,8 @@ def check_image(image: UploadedFile = File(None)) -> bool:
     if not image.name.lower().endswith(('.png', '.jpg', '.jpeg')):
         return False
     return True
+
+def check_resume(resume: UploadedFile = File(None)) -> bool:
+    if not resume.name.lower().endswith('.pdf'):
+        return False
+    return True
