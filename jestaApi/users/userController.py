@@ -48,6 +48,7 @@ class userController:
         user.save()
         return user
     
+
     def editProfile(self, request, payload: ProfileSchema, image: UploadedFile = File(None)) -> ProfileSchema:
         user = request.user
         if user.id is None:
@@ -73,3 +74,13 @@ class userController:
         profile.save()
         return profile
     
+
+    def getProfile(self, request, user_id: int) -> ProfileSchema:
+        user = CustomUser.objects.get(id=user_id)
+        if user is None:
+            raise HttpError(401, "User not found")
+        try:
+            profile = Profile.objects.get(user=user)
+            return profile
+        except Profile.DoesNotExist as e:
+            raise HttpError(401, "Profile not found")

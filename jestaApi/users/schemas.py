@@ -26,4 +26,4 @@ class Msg(Schema):
 class ProfileSchema(ModelSchema):
     class Meta:
         model = Profile
-        fields = ["name", "bio", "age"]
+        fields = ["name", "bio", "age", "image"]

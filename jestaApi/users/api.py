@@ -36,3 +36,7 @@ def editProfile(request, payload: ProfileSchema, image: UploadedFile = File(None
     user = uc.editProfile(request, payload , image)
     return user
 
+@router.post("/getProfile/{int:user_id}", response={200: ProfileSchema, 401: Error})
+def getProfile(request, user_id: int):
+    user = uc.getProfile(request, user_id)
+    return user
