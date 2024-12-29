@@ -33,13 +33,11 @@ class userController:
 
 
     def register(self, request, payload: RegisterSchema) -> UserSchema:
-        if not check_email(payload.email):
-            raise HttpError(401, "Invalid email")
-        if not password_check(payload.password):
-            raise HttpError(401, "Invalid password")
+        check_email(payload.email)
+        password_check(payload.password)
         # check if user exists
         if CustomUser.objects.filter(email=payload.email).exists():
-            raise HttpError(401, "Email already exists")
+            raise HttpError(400, "Email already exists")
         # Hash the password before saving
         payload.password = make_password(payload.password)
         user = CustomUser.objects.create(
@@ -56,28 +54,25 @@ class userController:
         # Get or create the profile for the user
         profile, _ = Profile.objects.get_or_create(user=user)
         # Update the profile fields
-        if not check_name(payload.name):
-            raise HttpError(401, "Invalid name")
-        profile.name = payload.name
-        profile.bio = payload.bio
-        if not check_age(payload.age):
-            raise HttpError(401, "Invalid age")
-        profile.age = payload.age
+        if payload.name is not None:
+            check_name(payload.name)
+            profile.name = payload.name
+        if payload.bio is not None:
+            profile.bio = payload.bio
+        if payload.age is not None:
+            check_age(payload.age)
+            profile.age = payload.age
         # Handle image upload
         if image is not None:
-            if check_image(image):
-                if profile.image:
-                    profile.image.delete()
-                profile.image.save(f'{user.id}.jpg', image)
-            else:
-                raise HttpError(401, "Invalid image")
+            check_image(image)
+            if profile.image:
+                profile.image.delete()
+            profile.image.save(f'{user.id}.jpg', image)
         if resume is not None:
-            if check_resume(resume):
-                if profile.resume:
-                    profile.resume.delete()
-                profile.resume.save(f'{user.id}.pdf', resume)
-            else:
-                raise HttpError(401, "Invalid file")
+            check_resume(resume)
+            if profile.resume:
+                profile.resume.delete()
+            profile.resume.save(f'{user.id}.pdf', resume)
         profile.save()
         return profile
     
