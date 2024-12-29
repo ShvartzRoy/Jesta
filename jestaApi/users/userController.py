@@ -1,5 +1,7 @@
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.hashers import make_password
+from ninja import File
+from ninja.files import UploadedFile
 from .models import CustomUser
 from .schemas import *
 from ninja.errors import *
@@ -46,16 +48,28 @@ class userController:
         user.save()
         return user
     
-    def editProfile(self, request, payload: ProfileSchema) -> ProfileSchema:
+    def editProfile(self, request, payload: ProfileSchema, image: UploadedFile = File(None)) -> ProfileSchema:
         user = request.user
         if user.id is None:
             raise HttpError(401, "Unauthorized")
         # Get or create the profile for the user
         profile, _ = Profile.objects.get_or_create(user=user)
         # Update the profile fields
+        if not check_name(payload.name):
+            raise HttpError(401, "Invalid name")
         profile.name = payload.name
         profile.bio = payload.bio
+        if not check_age(payload.age):
+            raise HttpError(401, "Invalid age")
         profile.age = payload.age
+        # Handle image upload
+        if image:
+            if image.name.lower().endswith(('.png', '.jpg', '.jpeg')):
+                if profile.image:
+                    profile.image.delete()
+                profile.image.save(f'{user.id}.jpg', image)
+            else:
+                raise HttpError(401, "Invalid image format")
         profile.save()
         return profile
     

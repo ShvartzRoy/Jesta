@@ -1,5 +1,6 @@
 from pydantic import BaseModel
 from ninja import Schema, ModelSchema
+
 from .models import *
 
 class LogInSchema(BaseModel):
@@ -20,6 +21,7 @@ class Error(Schema):
 
 class Msg(Schema):
     msg:str
+
 
 class ProfileSchema(ModelSchema):
     class Meta:

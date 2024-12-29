@@ -32,3 +32,20 @@ def check_email(email: str) -> bool:
         if not re.match(r"[^@]+@[^@]+\.[^@]+", email):
             return False
         return True
+
+def check_name(name: str) -> bool:
+    if len(name) < 3:
+        return False
+    if len(name) > 50:
+        return False
+    for char in name:
+        if  not (("A" <= char and char <= "Z") or ("a" <= char and char <= "z") or (char == " ")):
+            return False
+    return True
+
+def check_age(age: int) -> bool:
+    if age < 15:
+        return False
+    if age > 150:
+        return False
+    return True

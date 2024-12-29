@@ -15,7 +15,7 @@ class Profile(models.Model):
     name = models.CharField(max_length=100, blank=True)
     bio = models.TextField(blank=True)
     age = models.PositiveIntegerField(null=True, blank=True)
-
+    image = models.ImageField(upload_to='profile_images/', null=True, blank=True)
 
 
 
