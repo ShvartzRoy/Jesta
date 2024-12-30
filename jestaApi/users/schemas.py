@@ -14,7 +14,7 @@ class RegisterSchema(BaseModel):
 class UserSchema(ModelSchema):
     class Meta:
         model = CustomUser
-        fields = ["email"]
+        fields = ["id","email"]
 
 class Error(Schema):
     error:str
