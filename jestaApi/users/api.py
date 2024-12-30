@@ -31,16 +31,16 @@ def register(request, payload: RegisterSchema):
     user = uc.register(request, payload)
     return user
 
-@router.delete("/deleteUser", response={200: Msg, 401: Error})
-def deleteUser(request, user_password: str):
-    return uc.deleteUser(request, user_password)
+@router.delete("/delete_user", response={200: Msg, 401: Error})
+def delete_user(request, user_password: str):
+    return uc.delete_user(request, user_password)
 
-@router.post("/editProfile", response={200: ProfileSchema, 401: Error})
-def editpProfile(request, payload: ProfileSchema, image: UploadedFile = File(None), resume: UploadedFile = File(None)):
+@router.post("/edit_profile", response={200: ProfileSchema, 401: Error})
+def edit_profile(request, payload: ProfileSchema, image: UploadedFile = File(None), resume: UploadedFile = File(None)):
     user = uc.edit_profile(request, payload , image, resume)
     return user
 
-@router.get("/getProfile/{int:user_id}", response={200: ProfileSchema, 401: Error})
-def getProfile(request, user_id: int):
-    user = uc.getProfile(request, user_id)
+@router.get("/get_profile/{user_id}", response={200: ProfileSchema, 401: Error})
+def get_profile(request, user_id: int):
+    user = uc.get_profile(request, user_id)
     return user

@@ -47,7 +47,7 @@ class userController:
         return user
     
 
-    def editProfile(self, request, payload: ProfileSchema, image: UploadedFile = File(None), resume: UploadedFile = File(None)) -> ProfileSchema:
+    def edit_profile(self, request, payload: ProfileSchema, image: UploadedFile = File(None), resume: UploadedFile = File(None)) -> ProfileSchema:
         user = request.user
         if user.id is None:
             raise HttpError(401, "Unauthorized")
@@ -77,9 +77,10 @@ class userController:
         return profile
     
 
-    def getProfile(self, request, user_id: int) -> ProfileSchema:
-        user = CustomUser.objects.get(id=user_id)
-        if user is None:
+    def get_profile(self, request, user_id: int) -> ProfileSchema:
+        try:
+            user = CustomUser.objects.get(id=user_id)
+        except CustomUser.DoesNotExist as e:
             raise HttpError(401, "User not found")
         try:
             profile = Profile.objects.get(user=user)
@@ -87,11 +88,19 @@ class userController:
         except Profile.DoesNotExist as e:
             raise HttpError(401, "Profile not found")
     
-    def deleteUser(self, request, user_password) -> any:
+    def delete_user(self, request, user_password) -> any:
         user = request.user
         if user.id is None:
             raise HttpError(401, "Unauthorized")
         if not user.check_password(user_password):
             raise HttpError(401, "Invalid password")
+        try:
+            profile = Profile.objects.get(user=user)
+            if profile.image:
+                profile.image.delete()
+            if profile.resume:
+                profile.resume.delete()
+        except Profile.DoesNotExist as e:
+            pass
         user.delete()
         return {"msg": "User deleted"}
