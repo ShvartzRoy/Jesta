@@ -86,3 +86,12 @@ class userController:
             return profile
         except Profile.DoesNotExist as e:
             raise HttpError(401, "Profile not found")
+    
+    def deleteUser(self, request, user_password) -> any:
+        user = request.user
+        if user.id is None:
+            raise HttpError(401, "Unauthorized")
+        if not user.check_password(user_password):
+            raise HttpError(401, "Invalid password")
+        user.delete()
+        return {"msg": "User deleted"}
