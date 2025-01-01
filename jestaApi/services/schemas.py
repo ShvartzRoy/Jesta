@@ -1,5 +1,5 @@
 from pydantic import BaseModel, Field
-from typing import List, Optional
+from typing import List, Optional, Dict
 from datetime import datetime
 from ninja import Schema, ModelSchema
 from .models import Service, JobService, FreeService, VolunteeringService
@@ -41,7 +41,7 @@ class VolunteeringServiceSchema(ModelSchema):
 
 
 class ServiceCreateSchema(BaseModel):
-    type: str = Field(description="Type of the service: job, free, volunteering")
+    type: str = Field(description="Type of the service- job, free, volunteering")
     title: str
     description: Optional[str]
     tags: List[str]
@@ -49,3 +49,31 @@ class ServiceCreateSchema(BaseModel):
     date_time_range: List[str]
     estimated_duration: str
     offered_payment: Optional[float] = Field(None, description="The offered payment for job services")
+    
+    class Config:
+        orm_mode = True
+
+
+class ServiceUpdateSchema(BaseModel):
+    service_id: int
+    field: str = Field(description="Field to update- title, description, tags, location...")
+    new_data: str = Field(description="New value for the specified field")
+    
+    class Config:
+        orm_mode = True
+
+
+class SearchCriteriaSchema(BaseModel):
+    location: Optional[str] = Field(None, description="Filter by location")
+    tags: Optional[List[str]] = Field(None, description="Filter by tags")
+    duration: Optional[str] = Field(None, description="Filter by maximum duration")
+    
+    class Config:
+        orm_mode = True
+
+
+class SearchProviderSchema(SearchCriteriaSchema):
+    price_range: Optional[List[float]] = Field(None, description="Filter by price range for job services")
+    
+    class Config:
+        orm_mode = True
