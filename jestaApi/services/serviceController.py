@@ -5,6 +5,7 @@ from ninja.errors import HttpError
 
 
 class ServiceController:
+    
     def create_service(self, request, payload: ServiceCreateSchema) -> Service:
         tags = []
         for tag_name in payload.tags:
@@ -21,7 +22,6 @@ class ServiceController:
                 estimated_duration=payload.estimated_duration,
                 offered_payment=payload.offered_payment
             )
-            
             
         elif payload.type == "free":
             service = FreeService.objects.create(
@@ -50,6 +50,62 @@ class ServiceController:
         service.tags.set(tags)
         return service
 
+    def get_service(self, service_id: int) -> Service:
+        return get_object_or_404(Service, id=service_id)
+
+    def get_applied_service_by_user_id(self, user_id: int) -> list[Service]:
+        return Service.objects.filter(applicants__id=user_id)
+
+    def get_saved_service_by_user_id(self, user_id: int) -> list[Service]:
+        return Service.objects.filter(saved_users__id=user_id)
+
+    def get_published_service_by_user_id(self, user_id: int) -> list[Service]:
+        return Service.objects.filter(publisher__id=user_id)
+
+
+    def update_name(self, service: Service, new_data: str) -> bool:
+        service.title = new_data
+        service.save()
+        return True
+
+    def update_description(self, service: Service, new_data: str) -> bool:
+        service.description = new_data
+        service.save()
+        return True
+
+    def update_tags(self, service: Service, new_data: list[str]) -> bool:
+        tags = []
+        for tag_name in new_data:
+            tag, created = Tag.objects.get_or_create(name=tag_name)
+            tags.append(tag)
+        service.tags.set(tags)
+        service.save()
+        return True
+
+    def update_location(self, service: Service, new_data: str) -> bool:
+        service.location = new_data
+        service.save()
+        return True
+
+    def update_date_time_range(self, service: Service, new_data: dict) -> bool:
+        service.date_time_range = new_data
+        service.save()
+        return True
+
+    def update_estimated_duration(self, service: Service, new_data: str) -> bool:
+        service.estimated_duration = new_data
+        service.save()
+        return True
+
+    def update_offered_payment(self, service: JobService, new_data: float) -> bool:
+        if isinstance(service, JobService):
+            service.offered_payment = new_data
+            service.save()
+            return True
+        else:
+            raise HttpError(400, "This service type does not support payment updates!")
+        
+
     def apply_to_service(self, request, service_id: int) -> dict:
         service = get_object_or_404(Service, id=service_id)
         if request.user in service.applicants.all():
@@ -63,10 +119,13 @@ class ServiceController:
             raise HttpError(400, "You have not applied to this service!")
         service.applicants.remove(request.user)
         return {"message": "Removed from service successfully!"}
+    
+    
 
     def get_applicants(self, request, service_id: int) -> list:
         service = get_object_or_404(Service, id=service_id)
         return list(service.applicants.all())
+    
 
     def delete_service(self, request, service_id: int) -> dict:
         service = get_object_or_404(Service, id=service_id)
