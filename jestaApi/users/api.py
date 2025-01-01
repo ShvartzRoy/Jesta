@@ -2,6 +2,7 @@ from ninja import NinjaAPI, Router
 from ninja.security import django_auth
 from .schemas import *
 from services.schemas import ServiceSchema
+from specialists.schemas import SpecialistSchema
 from .userController import userController
 from ninja import File
 from ninja.files import UploadedFile
@@ -53,3 +54,11 @@ def get_published_services(request):
 @router.get("/applied_services", response=list[ServiceSchema])
 def get_applied_services(request):
     return uc.get_applied_services(request)
+
+@router.get("/specialist_profile", response={200: SpecialistSchema, 404: dict})
+def get_specialist_profile(request):
+    return uc.get_specialist_profile(request)
+
+@router.delete("/specialist_profile", response={200: dict, 404: dict})
+def remove_specialist_profile(request):
+    return uc.remove_specialist_profile(request)
