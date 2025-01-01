@@ -3,6 +3,7 @@ from django.contrib.auth.hashers import make_password
 from ninja import File
 from ninja.files import UploadedFile
 from .models import CustomUser
+from services.models import Service
 from .schemas import *
 from ninja.errors import *
 from .check_fields import *
@@ -104,3 +105,16 @@ class userController:
             pass
         user.delete()
         return {"msg": "User deleted"}
+    
+    
+    def get_published_services(self, request) -> list:
+        user = request.user
+        if user.id is None:
+            raise HttpError(401, "Unauthorized!")
+        return Service.objects.filter(publisher=user)
+
+    def get_applied_services(self, request) -> list:
+        user = request.user
+        if user.id is None:
+            raise HttpError(401, "Unauthorized!")
+        return Service.objects.filter(applicants=user)

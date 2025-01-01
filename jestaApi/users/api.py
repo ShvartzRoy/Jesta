@@ -1,6 +1,7 @@
 from ninja import NinjaAPI, Router
 from ninja.security import django_auth
 from .schemas import *
+from services.schemas import ServiceSchema
 from .userController import userController
 from ninja import File
 from ninja.files import UploadedFile
@@ -44,3 +45,11 @@ def edit_profile(request, payload: ProfileSchema, image: UploadedFile = File(Non
 def get_profile(request, user_id: int):
     user = uc.get_profile(request, user_id)
     return user
+
+@router.get("/published_services", response=list[ServiceSchema])
+def get_published_services(request):
+    return uc.get_published_services(request)
+
+@router.get("/applied_services", response=list[ServiceSchema])
+def get_applied_services(request):
+    return uc.get_applied_services(request)

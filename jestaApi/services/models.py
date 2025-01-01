@@ -1,7 +1,7 @@
 from django.db import models
 from django.conf import settings
 
-
+"""
 BUILT_IN_TAGS = [
     "Babysitter",
     "Photographer",
@@ -12,6 +12,7 @@ BUILT_IN_TAGS = [
     "Dogsitter",
     "Mover"
 ]
+"""
 
 class Tag(models.Model):
     name = models.CharField(max_length=50, unique=True)

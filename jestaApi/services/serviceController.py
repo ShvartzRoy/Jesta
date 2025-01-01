@@ -1,6 +1,7 @@
 from django.shortcuts import get_object_or_404
-from .models import Service, JobService, FreeService, VolunteeringService, Tag
+from .models import Service, JobService, FreeService, VolunteeringService
 from .schemas import ServiceCreateSchema
+from tags.models import Tag
 from ninja.errors import HttpError
 
 
