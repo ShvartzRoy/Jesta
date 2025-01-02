@@ -18,3 +18,7 @@ def get_reviews(request, user_id: int):
 @router.delete("/delete_review/{review_id}/", response={200: dict,403: dict})
 def delete_review(request, review_id: int):
     return rc.delete_review(request, review_id)
+
+@router.get("/get_average_rating/{user_id}/", response={200: dict})
+def get_average_rating(request, user_id: int):
+    return rc.get_average_rating(request, user_id)
