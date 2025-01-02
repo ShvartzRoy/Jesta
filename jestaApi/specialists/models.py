@@ -22,7 +22,7 @@ class Specialist(models.Model):
     description = models.TextField(blank=True, null=True)
     portfolio_link = models.URLField(blank=True, null=True)
     location_range = models.CharField(max_length=255, blank=True, null=True)
-    price_range = models.JSONField(blank=True, null=True) 
+    price_range = models.JSONField(blank=True, null=True)   # for example {"min": 60, "max": 100}
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
