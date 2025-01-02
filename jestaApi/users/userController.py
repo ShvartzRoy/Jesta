@@ -73,11 +73,17 @@ class userController:
             if profile.resume:
                 profile.resume.delete()
             profile.resume.save(f'{user.id}.pdf', resume)
+        if payload.facebook is not None:
+            profile.facebook = payload.facebook
+        if payload.linkedin is not None:
+            profile.linkedin = payload.linkedin
+        if payload.instagram is not None:
+            profile.instagram = payload.instagram
         profile.save()
         return profile
     
 
-    def get_profile(self, request, user_id: int) -> ProfileSchema:
+    def get_profile(self, request, user_id: int) -> GetProfileSchema:
         try:
             user = CustomUser.objects.get(id=user_id)
         except CustomUser.DoesNotExist as e:

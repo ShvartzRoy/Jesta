@@ -17,6 +17,9 @@ class Profile(models.Model):
     age = models.PositiveIntegerField(null=True, blank=True)
     image = models.ImageField(upload_to='profile_images/', null=True, blank=True)
     resume = models.FileField(upload_to='profile_resumes/', null=True, blank=True)
+    facebook = models.URLField(max_length=255, blank=True, null=True)
+    linkedin = models.URLField(max_length=255, blank=True, null=True)
+    instagram = models.URLField(max_length=255, blank=True, null=True)
 
 
 
