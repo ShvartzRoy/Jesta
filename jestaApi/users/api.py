@@ -40,7 +40,7 @@ def edit_profile(request, payload: ProfileSchema, image: UploadedFile = File(Non
     user = uc.edit_profile(request, payload , image, resume)
     return user
 
-@router.get("/get_profile/{user_id}", response={200: ProfileSchema, 401: Error})
+@router.get("/get_profile/{user_id}", response={200: GetProfileSchema, 401: Error})
 def get_profile(request, user_id: int):
     user = uc.get_profile(request, user_id)
     return user
