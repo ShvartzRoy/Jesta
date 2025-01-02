@@ -50,6 +50,8 @@ INSTALLED_APPS = [
     'services',
     'users',
     'reviews',
+    'specialists',
+    'tags',
     'ninja',
     'corsheaders',
 ]

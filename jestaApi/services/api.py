@@ -9,7 +9,6 @@ from .schemas import (
 )
 
 from .models import Service
-from serviceController import ServiceController
 from django.shortcuts import get_object_or_404
 
 
