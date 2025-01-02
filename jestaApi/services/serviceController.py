@@ -18,7 +18,7 @@ class ServiceController:
             try:
                 payload.estimated_duration = isoparse(payload.estimated_duration) - isoparse("PT0S")
             except ValueError:
-                raise HttpError(400, "Invalid estimated duration format. Use ISO 8601, e.g., 'PT50M' for 50 minutes.")
+                raise HttpError(400, "Invalid estimated duration format! Use ISO 8601, like 'PT50M' for 50 minutes.")
 
         tags = [Tag.objects.get_or_create(name=tag_name)[0] for tag_name in payload.tags]
 
@@ -30,9 +30,8 @@ class ServiceController:
             date_time_range=payload.date_time_range,
             estimated_duration=payload.estimated_duration,
             state="pending",
-            service_type=payload.service_type or "publisher", 
+            service_type=payload.service_type or "publisher",
         )
-        
         service.tags.set(tags)
         return service
     
@@ -49,7 +48,7 @@ class ServiceController:
             location=payload.location,
             date_time_range=payload.date_time_range,
             estimated_duration=payload.estimated_duration,
-            service_type="offered",
+            service_type="provider",
             state="pending",
         )
         service.tags.set(tags)
@@ -63,31 +62,29 @@ class ServiceController:
         service.delete()
         return {"message": "Service deleted"}
     
+    
     def get_service(self, service_id: int) -> Service:
         return get_object_or_404(Service, id=service_id)
     
-    
-  
     def get_requested_services(self):
-        return Service.objects.filter(service_type="requested")
+        return Service.objects.filter(service_type="publisher")
 
     def get_offered_services(self):
-        return Service.objects.filter(service_type="offered")
+        return Service.objects.filter(service_type="provider")
     
     
 
+    def get_published_service_by_user_id(self, user_id: int) -> list[Service]:
+        return Service.objects.filter(publisher__id=user_id)
+    
     def get_applied_service_by_user_id(self, user_id: int) -> list[Service]:
         return Service.objects.filter(applicants__id=user_id)
-    
-    
 
     # def get_saved_service_by_user_id(self, user_id: int) -> list[Service]:
     #     return Service.objects.filter(saved_users__id=user_id)
     
     
 
-    def get_published_service_by_user_id(self, user_id: int) -> list[Service]:
-        return Service.objects.filter(publisher__id=user_id)
 
 
     def update_name(self, service: Service, new_data: str) -> bool:
@@ -161,7 +158,8 @@ class ServiceController:
     def search_needed_services(self, request, search_criteria) -> list:
         services = Service.objects.filter(
             location__icontains=search_criteria.get("location", ""),
-            state="pending"  
+            state="pending",
+            service_type="publisher",
         )
         
         if "tags" in search_criteria:
@@ -173,19 +171,20 @@ class ServiceController:
         return services
 
     def search_providers(self, request, search_criteria) -> list:
-        services = JobService.objects.filter(
-            location__icontains=search_criteria.get("location", "")
+        services = Service.objects.filter(
+            location__icontains=search_criteria.get("location", ""),
+            service_type="provider",
         )
 
         if "tags" in search_criteria:
             services = services.filter(tags__name__in=search_criteria["tags"])
 
         if "price_range" in search_criteria:
-            services = services.filter(offered_payment__gte=search_criteria["price_range"][0],
-                                       offered_payment__lte=search_criteria["price_range"][1])
-
+            services = JobService.objects.filter(
+                offered_payment__gte=search_criteria["price_range"][0],
+                offered_payment__lte=search_criteria["price_range"][1],
+            )
         return services
-    
     
     
     def mark_service_completed(self, request, service_id: int) -> dict:
@@ -214,28 +213,26 @@ class ServiceController:
 
     def get_all_services(self) -> list[Service]:
         return Service.objects.all()
-    
+
     def get_services_by_tag(self, tag_name: str) -> list[Service]:
         tag = get_object_or_404(Tag, name=tag_name)
         return Service.objects.filter(tags=tag)
 
     def get_services_by_location(self, location: str) -> list[Service]:
         return Service.objects.filter(location__icontains=location)
-    
+
     def get_services_by_duration(self, duration: str) -> list[Service]:
         return Service.objects.filter(estimated_duration__lte=duration)
-    
-    
+
     def get_services_by_state(self, state: str) -> list[Service]:
         return Service.objects.filter(state=state)
-    
 
     def get_services_by_provider(self, provider_id: int) -> list[Service]:
-        return Service.objects.filter(applicants__id=provider_id)
-    
+        return Service.objects.filter(applicants__id=provider_id, service_type="provider")
+
     def get_services_by_applicant(self, applicant_id: int) -> list[Service]:
         return Service.objects.filter(applicants__id=applicant_id)
-    
+
     def get_services_by_date_time_range(self, date_time_range: list[str]) -> list[Service]:
         return Service.objects.filter(date_time_range=date_time_range)
     
