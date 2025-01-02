@@ -1,6 +1,7 @@
 from django.test import TestCase
 from django.contrib.auth import get_user_model
-from services.models import JobService, FreeService, VolunteeringService, Tag
+from services.models import JobService, FreeService, VolunteeringService
+from tags.models import Tag
 
 """
 User = get_user_model()

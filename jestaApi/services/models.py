@@ -1,12 +1,6 @@
 from django.db import models
 from django.conf import settings
-
-
-class Tag(models.Model):
-    name = models.CharField(max_length=50, unique=True)
-
-    def __str__(self):
-        return self.name
+from tags.models import Tag  
 
 
 class Service(models.Model):
@@ -18,10 +12,11 @@ class Service(models.Model):
     
     title = models.CharField(max_length=100)
     description = models.TextField(blank=True, null=True)
-    tags = models.ManyToManyField(Tag, related_name="services")
+    tags = models.ManyToManyField(Tag, related_name="services")  
     location = models.CharField(max_length=255)
-    date_time_range = models.JSONField()  
+    date_time_range = models.JSONField()
     estimated_duration = models.DurationField()
+
     
     applicants = models.ManyToManyField(
         settings.AUTH_USER_MODEL,
