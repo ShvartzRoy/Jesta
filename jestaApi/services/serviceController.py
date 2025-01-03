@@ -2,7 +2,7 @@ from typing import Optional
 from django.conf import settings
 from django.shortcuts import get_object_or_404
 from .models import Service, JobService, FreeService, VolunteeringService
-from .schemas import ServiceCreateSchema
+from .schemas import ServiceCreateSchema, ServiceSchema
 from tags.models import Tag
 from ninja.errors import HttpError
 from dateutil.parser import isoparse
@@ -33,9 +33,10 @@ class ServiceController:
             service_type=payload.service_type or "publisher",
         )
         service.tags.set(tags)
-        return service
-    
-    
+        
+        return ServiceSchema.from_model(service).dict()  
+
+        
 
     #for providers:
     def offer_as_provider(self, request, payload):
@@ -121,14 +122,19 @@ class ServiceController:
         service.save()
         return True
 
-    def update_offered_payment(self, service: JobService, new_data: float) -> bool:
-        if isinstance(service, JobService):
-            service.offered_payment = new_data
-            service.save()
-            return True
-        else:
-            raise HttpError(400, "This service type does not support payment updates!")
+    
+
+    def update_offered_payment(self, service, new_data: float) -> bool:
+        if not hasattr(service, "offered_payment"):
+            raise HttpError(400, "Service not found or not a JobService!!")
         
+        service.offered_payment = new_data
+        service.save()
+        return True
+
+
+
+
 
     def apply_to_service(self, request, service_id: int) -> dict:
         service = get_object_or_404(Service, id=service_id)
@@ -193,6 +199,8 @@ class ServiceController:
         service.save()
         return {"message": f"Service '{service.title}' marked as completed!"}
 
+
+#if it is canceled, later make sure no one can apply to it
     def cancel_service(self, request, service_id: int) -> dict:
         service = get_object_or_404(Service, id=service_id, publisher=request.user)
         if service.state != "pending":

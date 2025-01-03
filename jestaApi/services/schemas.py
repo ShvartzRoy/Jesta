@@ -31,6 +31,9 @@ class ServiceSchema(BaseModel):
             applicants=[user.id for user in instance.applicants.all()],
             service_type=instance.service_type,
         )
+        
+    class Config:
+        from_attributes = True
 
 
 class JobServiceSchema(ServiceSchema):

@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import List, Optional
 from ninja import Router
 from ninja.errors import HttpError
 from .serviceController import ServiceController
@@ -10,7 +10,7 @@ from .schemas import (
     SearchProviderSchema
 )
 
-from .models import Service
+from .models import JobService, Service
 from django.shortcuts import get_object_or_404
 from json import loads 
 
@@ -63,9 +63,11 @@ def update_estimated_duration(request, service_id: int, new_data: str):
     service = sc.get_service(service_id)
     return sc.update_estimated_duration(service, new_data)
 
-@router.post("/update_offered_payment/{service_id}", response={200: bool})
+@router.post("/update_offered_payment/{service_id}")
 def update_offered_payment(request, service_id: int, new_data: float):
-    service = sc.get_service(service_id)
+    service = JobService.objects.filter(id=service_id).first()
+    if not service:
+        raise HttpError(400, "Service not found or not a JobService!")
     return sc.update_offered_payment(service, new_data)
 
 @router.post("/apply_to_service/{service_id}", response={200: dict})
@@ -181,17 +183,22 @@ def get_services_by_applicant(request, applicant_id: int):
     services = sc.get_services_by_applicant(applicant_id)
     return [ServiceSchema.from_model(service) for service in services]
 
-@router.get("/get_services_by_date_time_range/{date_time_range}", response={200: list[ServiceSchema]})
+@router.get("/get_services_by_date_time_range/{date_time_range}")
 def get_services_by_date_time_range(request, date_time_range: str):
     try:
-        date_time_range_list = loads(date_time_range)  
-        if not isinstance(date_time_range_list, list) or not all(isinstance(item, str) for item in date_time_range_list):
-            raise ValueError("Invalid format for date_time_range. Expected a list of strings.")
-    except Exception as e:
-        raise HttpError(400, f"Invalid date_time_range: {str(e)}")
+        date_range = eval(date_time_range)  
+        if len(date_range) != 2:
+            raise ValueError("Invalid date_time_range format! Provide a start and end date.")
 
-    services = sc.get_services_by_date_time_range(date_time_range_list)
-    return [ServiceSchema.from_orm(service) for service in services]
+        start_date = date_range[0]
+        end_date = date_range[1]
+
+        services = Service.objects.filter(
+            date_time_range__contains=[start_date, end_date]
+        )
+        return [ServiceSchema.from_model(service) for service in services]
+    except Exception as e:
+        return {"error": str(e)}
 
 
 
