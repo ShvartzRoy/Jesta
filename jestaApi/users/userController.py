@@ -6,6 +6,7 @@ from .models import CustomUser
 from .schemas import *
 from ninja.errors import *
 from .check_fields import *
+from django.contrib.auth.hashers import check_password
 
 
 class userController:
@@ -46,53 +47,6 @@ class userController:
         user.save()
         return user
     
-
-    def edit_profile(self, request, payload: ProfileSchema, image: UploadedFile = File(None), resume: UploadedFile = File(None)) -> ProfileSchema:
-        user = request.user
-        if user.id is None:
-            raise HttpError(401, "Unauthorized")
-        # Get or create the profile for the user
-        profile, _ = Profile.objects.get_or_create(user=user)
-        # Update the profile fields
-        if payload.name is not None:
-            check_name(payload.name)
-            profile.name = payload.name
-        if payload.bio is not None:
-            profile.bio = payload.bio
-        if payload.age is not None:
-            check_age(payload.age)
-            profile.age = payload.age
-        # Handle image upload
-        if image is not None:
-            check_image(image)
-            if profile.image:
-                profile.image.delete()
-            profile.image.save(f'{user.id}.jpg', image)
-        if resume is not None:
-            check_resume(resume)
-            if profile.resume:
-                profile.resume.delete()
-            profile.resume.save(f'{user.id}.pdf', resume)
-        if payload.facebook is not None:
-            profile.facebook = payload.facebook
-        if payload.linkedin is not None:
-            profile.linkedin = payload.linkedin
-        if payload.instagram is not None:
-            profile.instagram = payload.instagram
-        profile.save()
-        return profile
-    
-
-    def get_profile(self, request, user_id: int) -> GetProfileSchema:
-        try:
-            user = CustomUser.objects.get(id=user_id)
-        except CustomUser.DoesNotExist as e:
-            raise HttpError(401, "User not found")
-        try:
-            profile = Profile.objects.get(user=user)
-            return profile
-        except Profile.DoesNotExist as e:
-            raise HttpError(401, "Profile not found")
     
     def delete_user(self, request, user_password) -> any:
         user = request.user
@@ -110,3 +64,31 @@ class userController:
             pass
         user.delete()
         return {"msg": "User deleted"}
+    
+    def change_email(self, request, new_email: str, password: str) -> dict:
+        user = request.user
+        # Check if the old password is correct
+        if not check_password(password, user.password):
+            raise HttpError(400, "Incorrect password")
+        # check if user exists
+        if CustomUser.objects.filter(email=new_email).exists():
+            raise HttpError(400, "Email already exists")
+        check_email(new_email)
+        user.email = new_email
+        user.save()
+        return {"success": True, "message": "Email updated successfully"}
+    
+
+    def change_password(self, request, old_password: str, new_password: str) -> dict:
+        user = request.user
+        if not user.is_authenticated:
+            raise HttpError(401, "Unauthorized")
+        
+        # Check if the old password is correct
+        if not check_password(old_password, user.password):
+            raise HttpError(400, "Incorrect password")
+        
+        # Set and save the new password
+        user.set_password(new_password)
+        user.save()
+        return {"success": True, "message": "Password updated successfully"}
