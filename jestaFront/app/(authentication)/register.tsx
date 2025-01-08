@@ -1,0 +1,87 @@
+// screens/RegisterScreen.js
+import React, { useState } from "react";
+import { View, Text, TextInput, Button, StyleSheet, Alert } from "react-native";
+import {Link} from 'expo-router';
+import axios from "axios";
+import {PUBLIC_HOST} from '@env';
+
+export default function RegisterScreen() {
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  const handleRegister = async () => {
+    if (!email || !password) {
+      Alert.alert("Error", "Please enter both email and password.");
+      return;
+    }
+
+    setLoading(true);
+    try {
+        console.log('process.env.PUBLIC_HOST', PUBLIC_HOST);
+      const response = await axios.post(`${PUBLIC_HOST}/api/users/register`, {
+        email: email.trim(),
+        password: password.trim(),
+      });
+      // Handle success
+      Alert.alert("Success", "Registration successful!");
+      console.log("User registered:", response.data);
+
+      // Optionally navigate to another screen or clear input fields
+      setEmail("");
+      setPassword("");
+    } catch (error) {
+      console.error("Registration error:", error);
+      Alert.alert("Error, Something went wrong.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <View style={styles.container}>
+      <Text style={styles.title}>Register</Text>
+      <TextInput
+        style={styles.input}
+        placeholder="Email"
+        value={email}
+        onChangeText={setEmail}
+        keyboardType="email-address"
+      />
+      <TextInput
+        style={styles.input}
+        placeholder="Password"
+        value={password}
+        onChangeText={setPassword}
+        secureTextEntry
+      />
+      <Button title="Register" onPress={handleRegister} />
+
+      <Link href= "/login">Log in</Link>
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    padding: 16,
+    backgroundColor: "#f2f2f2",
+  },
+  title: {
+    fontSize: 24,
+    fontWeight: "bold",
+    marginBottom: 24,
+  },
+  input: {
+    width: "100%",
+    padding: 12,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: "#ccc",
+    borderRadius: 8,
+    backgroundColor: "#fff",
+  },
+});

@@ -18,22 +18,39 @@ export default function TabLayout() {
             },
         }}
     >
-
-      <Tabs.Screen
-        name="index"
+        <Tabs.Screen
+        name="(explore_page)/explore_page"
         options={{
-          title: 'Home',
+          title: 'Explore',
           tabBarIcon: ({ color, focused }) => (
-            <Ionicons name={focused ? 'home-sharp' : 'home-outline'} color={color} size={24} />
+            <Ionicons name="briefcase-outline" color={color} size={24}/>
           ),
         }}
       />
       <Tabs.Screen
-        name="about"
+        name="(search)/search"
         options={{
-          title: 'About',
+          title: 'Search',
           tabBarIcon: ({ color, focused }) => (
             <Ionicons name={focused ? 'information-circle' : 'information-circle-outline'} color={color} size={24}/>
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="(chat)/chat"
+        options={{
+          title: 'Chat',
+          tabBarIcon: ({ color, focused }) => (
+            <Ionicons name="chatbox-outline" color={color} size={24} />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="(profile)/profile"
+        options={{
+          title: 'Profile',
+          tabBarIcon: ({ color, focused }) => (
+            <Ionicons name="person-outline" color={color} size={24} />
           ),
         }}
       />
