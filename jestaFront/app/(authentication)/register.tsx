@@ -3,7 +3,6 @@ import React, { useState } from "react";
 import { View, Text, TextInput, Button, StyleSheet, Alert } from "react-native";
 import {Link} from 'expo-router';
 import axios from "axios";
-import {PUBLIC_HOST} from '@env';
 
 export default function RegisterScreen() {
   const [email, setEmail] = useState("");
@@ -18,8 +17,8 @@ export default function RegisterScreen() {
 
     setLoading(true);
     try {
-        console.log('process.env.PUBLIC_HOST', PUBLIC_HOST);
-      const response = await axios.post(`${PUBLIC_HOST}/api/users/register`, {
+        console.log('process.env.PUBLIC_HOST', process.env.EXPO_PUBLIC_HOST);
+      const response = await axios.post(`${process.env.EXPO_PUBLIC_HOST}/api/users/register`, {
         email: email.trim(),
         password: password.trim(),
       });
