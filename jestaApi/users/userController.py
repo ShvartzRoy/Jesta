@@ -34,15 +34,16 @@ class userController:
 
 
     def register(self, request, payload: RegisterSchema) -> UserSchema:
-        check_email(payload.email)
+        email = payload.email.lower()
+        check_email(email)
         password_check(payload.password)
         # check if user exists
-        if CustomUser.objects.filter(email=payload.email).exists():
+        if CustomUser.objects.filter(email= email).exists():
             raise HttpError(400, "Email already exists")
         # Hash the password before saving
         payload.password = make_password(payload.password)
         user = CustomUser.objects.create(
-            username=payload.email, email=payload.email, password=payload.password
+            username= email, email = email, password=payload.password
         )
         user.save()
         return user
