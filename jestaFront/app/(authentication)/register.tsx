@@ -30,8 +30,13 @@ export default function RegisterScreen() {
       setEmail("");
       setPassword("");
     } catch (error) {
-      console.error("Registration error:", error);
-      Alert.alert("Error, Something went wrong.");
+      if (axios.isAxiosError(error)) {
+        console.error("Registration error:", error.response?.data);
+        Alert.alert("Error, ", error.response?.data);
+      } else {
+        console.error("Registration error:", error);
+        Alert.alert("Error, Something went wrong.");
+      }
     } finally {
       setLoading(false);
     }

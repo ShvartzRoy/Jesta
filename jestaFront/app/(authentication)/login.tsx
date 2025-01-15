@@ -1,13 +1,16 @@
 // screens/RegisterScreen.js
-import React, { useState } from "react";
+import React, { useState, useContext} from "react";
 import { View, Text, TextInput, Button, StyleSheet, Alert } from "react-native";
-import {Link} from 'expo-router';
+import {Link, useRouter} from 'expo-router';
+import { UserContext } from "../authContext";
 import axios from "axios";
 
-export default function RegisterScreen() {
+export default function LoginScreen() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const {user,setUser} = useContext(UserContext);
+  const router = useRouter();
 
   const handleLogin = async () => {
     if (!email || !password) {
@@ -23,15 +26,23 @@ export default function RegisterScreen() {
         password: password.trim(),
       });
       // Handle success
-      Alert.alert("Success", "Registration successful!");
+      Alert.alert("Success", "Login successful!");
       console.log("User logged in:", response.data);
+      //set current user
+      setUser({loggedIn: true, userName: response.data.username, id: response.data.id});
 
-      // Optionally navigate to another screen or clear input fields
+      //navigate to another screen or clear input fields
+      router.push("/explore_page");
       setEmail("");
       setPassword("");
     } catch (error) {
-      console.error("Registration error:", error);
-      Alert.alert("Error, Something went wrong.");
+      if (axios.isAxiosError(error)) {
+        console.error("Login error:", error.response?.data);
+        Alert.alert("Error, ", error.response?.data);
+      } else {
+        console.error("Login error:", error);
+        Alert.alert("Error, Something went wrong.");
+      }
     } finally {
       setLoading(false);
     }

@@ -1,12 +1,15 @@
 import { View, Text } from 'react-native'
-import React from 'react'
+import React, { useContext} from 'react'
+import { UserContext } from "../../authContext";
 
-const explore_page = () => {
+const Explore_Page = () => {
+  const {user,setUser} = useContext(UserContext);
+  console.log('user', user)
   return (
-    <View>
-      <Text>explore_page</Text>
-    </View>
+    <div>
+      <h1>{user.id}</h1>
+    </div>
   )
 }
 
-export default explore_page
+export default Explore_Page
