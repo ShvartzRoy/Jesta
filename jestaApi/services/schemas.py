@@ -4,7 +4,9 @@ from datetime import timedelta
 from pydantic import validator
 import re
 
-
+class ApplicantSchema(BaseModel):
+    user_id: int
+    applicant_state: str
 
 class ServiceSchema(BaseModel):
     id: int
@@ -16,7 +18,7 @@ class ServiceSchema(BaseModel):
     date_time_range: List[str]
     estimated_duration: timedelta
     state: str
-    applicants: List[int]
+    applicants: List[ApplicantSchema] 
     service_from: str
     offered_payment: float 
     is_job: bool
@@ -32,7 +34,7 @@ class ServiceSchema(BaseModel):
             location=instance.location,
             date_time_range=instance.date_time_range,
             estimated_duration=instance.estimated_duration,
-            applicants=[user.id for user in instance.applicants.all()],
+            applicants=[{"user_id": applicant.id, "applicant_state": applicant.applicant_state} for applicant in instance.applicants.all()],
             state=instance.state,
             offered_payment=float(instance.offered_payment),
             service_from=instance.service_from,
@@ -40,6 +42,7 @@ class ServiceSchema(BaseModel):
         )
         
     class Config:
+        orm_mode = True
         from_attributes = True
 
 

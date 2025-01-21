@@ -66,26 +66,6 @@ class ServiceController:
         service.delete()
         return {"message": "Service deleted"}
     
-    
-    def get_service(self, service_id: int) -> Service:
-        return get_object_or_404(Service, id=service_id)
-    
-    def get_requested_services(self):
-        return Service.objects.filter(service_from="publisher")
-
-    def get_offered_services(self):
-        return Service.objects.filter(service_from="provider")
-    
-    
-
-    def get_published_service_by_user_id(self, user_id: int) -> list[Service]:
-        return Service.objects.filter(user__id=user_id , service_from="publisher")
-    
-   
-    # def get_saved_service_by_user_id(self, user_id: int) -> list[Service]:
-    #     return Service.objects.filter(saved_users__id=user_id)
-    
-    
 
 
 
@@ -154,25 +134,31 @@ class ServiceController:
         service = get_object_or_404(Service, id=service_id)
         if request.user in service.applicants.all():
             raise HttpError(400, "You have already applied to this service!")
-        service.applicants.add(request.user)
+        service.applicants.append({"user_id": request.user.id, "applicant_state": "pending"})
+        service.save()
         return {"message": "Application successful!"}
     
-    
+   
+
 
     def remove_from_service(self, request, service_id: int) -> dict:
         service = get_object_or_404(Service, id=service_id)
-        if request.user not in service.applicants.all():
+        applicant_entry = service.applicants.through.objects.filter(
+            service_id=service.id, user_id=request.user.id
+        ).first()
+        
+        if not applicant_entry:
             raise HttpError(400, "You have not applied to this service!")
+        
         service.applicants.remove(request.user)
         return {"message": "Removed from service successfully!"}
-    
-    
+
     
     def get_applicants(self, request, service_id: int) -> list:
         service = get_object_or_404(Service, id=service_id)
         return [
-            {"id": user.id, "username": user.username, "email": user.email}
-            for user in service.applicants.all()
+            {"id": applicant.user.id, "username": applicant.user.username, "email": applicant.user.email, "applicant_state": applicant.applicant_state}
+            for applicant in service.applicants.through.objects.filter(service_id=service.id).select_related("user")
         ]
 
 
@@ -250,27 +236,39 @@ class ServiceController:
 
     
     def reject_applicant(self, request, service_id: int, user_id: int) -> dict:
-        try:
-            service = Service.objects.get(id=service_id, user=request.user)
-        except Service.DoesNotExist:
-            raise HttpError(404, "Service not found or does not belong to the logged-in user!")
-
-        User = get_user_model()
-
-        try:
-            applicant = User.objects.get(id=user_id)
-        except User.DoesNotExist:
-            raise HttpError(404, "Applicant not found!")
-
-        if applicant not in service.applicants.all():
-            raise HttpError(400, f"User '{applicant}' has not applied to this service!")
-
-        service.applicants.remove(applicant)
-        return {"message": f"Applicant '{applicant.email}' rejected from service '{service.title}'."}
+        service = get_object_or_404(Service, id=service_id, user=request.user)
+        applicant_entry = service.applicants.through.objects.filter(
+            service_id=service.id, user_id=user_id
+        ).first()
         
+        if not applicant_entry:
+            raise HttpError(400, "Applicant not found or has not applied to this service!")
+        
+        applicant_entry.applicant_state = "rejected"
+        applicant_entry.save()
+        return {"message": f"Applicant '{applicant_entry.user.email}' rejected from service '{service.title}'."}
+
 
     def get_all_services(self) -> list[Service]:
         return Service.objects.all()
+    
+    
+     
+    def get_service(self, service_id: int) -> Service:
+        return get_object_or_404(Service, id=service_id)
+    
+    def get_requested_services(self):
+        return Service.objects.filter(service_from="publisher")
+
+    def get_offered_services(self):
+        return Service.objects.filter(service_from="provider")
+    
+
+   
+    # def get_saved_service_by_user_id(self, user_id: int) -> list[Service]:
+    #     return Service.objects.filter(saved_users__id=user_id)
+    
+    
 
     def get_services_by_tag(self, tag_name: str) -> list[Service]:
         tag = get_object_or_404(Tag, name=tag_name)
@@ -285,16 +283,26 @@ class ServiceController:
     def get_services_by_state(self, state: str) -> list[Service]:
         return Service.objects.filter(state=state)
 
+
+
+    def get_published_service_by_user_id(self, user_id: int) -> list[Service]:
+        return Service.objects.filter(user__id=user_id , service_from="publisher")
+    
+    
     def get_services_by_provider(self, provider_id: int) -> list[Service]:
         return Service.objects.filter(user__id=provider_id, service_from="provider")
+    
 
     def get_services_by_applicant(self, applicant_id: int) -> list[Service]:
-        return Service.objects.filter(applicants__id=applicant_id)
+        return [
+            service
+            for service in Service.objects.prefetch_related("applicants")
+            if service.applicants.through.objects.filter(user_id=applicant_id).exists()
+        ]
 
     def get_services_by_date_time_range(self, date_time_range: list[str]) -> list[Service]:
         return Service.objects.filter(date_time_range=date_time_range)
     
-
     
     def get_completed_services_of_user(self, user_id: Optional[int] = None) -> list[Service]:
         if user_id:
@@ -303,9 +311,10 @@ class ServiceController:
 
  
     def validate_users_worked_together(self, user_id: int, participant_id: int) -> bool:
-        completed_services = Service.objects.filter(
+        return Service.objects.filter(
             state="completed",
-            user__id=user_id,
-            applicants__id=participant_id
-        )
-        return completed_services.exists()
+            user_id=user_id,
+            applicants__user_id=participant_id,
+            applicants__applicant_state="accepted"
+        ).exists()
+

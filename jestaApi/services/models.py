@@ -27,13 +27,17 @@ class Service(models.Model):
     #PT30M= 30 minutes
     #PT2H45M= 2 hours and 45 minutes
     estimated_duration = models.DurationField()  
-
     
-    applicants = models.ManyToManyField(
-        settings.AUTH_USER_MODEL,
-        related_name="applied_services",
-        blank=True
-    )
+    applicants = models.JSONField(default=list, blank=True)
+    
+    
+    # applicants = models.ManyToManyField(
+    #     settings.AUTH_USER_MODEL,
+    #     related_name="applied_services",
+    #     blank=True
+    # )
+    
+    
     
     state = models.CharField(
         max_length=20,

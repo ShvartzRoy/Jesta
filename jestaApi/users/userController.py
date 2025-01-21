@@ -107,29 +107,4 @@ class userController:
         user.delete()
         return {"msg": "User deleted"}
     
-    
-    def get_published_services(self, request) -> list:
-        user = request.user
-        if user.id is None:
-            raise HttpError(401, "Unauthorized!")
-        return Service.objects.filter(publisher=user)
-
-    def get_applied_services(self, request) -> list:
-        user = request.user
-        if user.id is None:
-            raise HttpError(401, "Unauthorized!")
-        return Service.objects.filter(applicants=user)
-    
-    
-    def get_specialist_profile(self, request) -> SpecialistSchema:
-        user = request.user
-        if not hasattr(user, "specialist_profile"):
-            raise HttpError(404, "You are not registered as a specialist!")
-        return user.specialist_profile
-
-    def remove_specialist_profile(self, request) -> dict:
-        user = request.user
-        if not hasattr(user, "specialist_profile"):
-            raise HttpError(404, "You do not have a specialist profile to delete!")
-        user.specialist_profile.delete()
-        return {"msg": "Specialist profile removed successfully"}
+   
