@@ -27,7 +27,6 @@ const AuthContext = ({ children }) => {
           id: response.data.id,
         });
       } catch (error) {
-        console.error("Error validating user:", error);
         setUser({ loggedIn: false, id: null});
       }
     };

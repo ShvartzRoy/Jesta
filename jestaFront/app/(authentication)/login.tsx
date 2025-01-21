@@ -2,13 +2,12 @@
 import React, { useState, useContext} from "react";
 import { View, Text, TextInput, Button, StyleSheet, Alert } from "react-native";
 import {Link, useRouter} from 'expo-router';
-import { UserContext } from "../authContext";
+import { UserContext } from "../contexts/authContext";
 import axios from "axios";
 
 export default function LoginScreen() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [loading, setLoading] = useState(false);
   const {user,setUser, saveToken} = useContext(UserContext);
   const router = useRouter();
 
@@ -17,8 +16,6 @@ export default function LoginScreen() {
       Alert.alert("Error", "Please enter both email and password.");
       return;
     }
-
-    setLoading(true);
     try {
       const response = await axios.post(`${process.env.EXPO_PUBLIC_HOST}/api/users/login`, {
         email: email.trim(),
@@ -35,15 +32,8 @@ export default function LoginScreen() {
       setEmail("");
       setPassword("");
     } catch (error) {
-      if (axios.isAxiosError(error)) {
-        console.error("Login error:", error.response?.data);
-        Alert.alert("Error, ", error.response?.data);
-      } else {
-        console.error("Login error:", error);
-        Alert.alert("Error, Something went wrong.");
-      }
-    } finally {
-      setLoading(false);
+      console.log("login error", error);
+      Alert.alert("Login error", "Details are incorrect. Please try again.");
     }
   };
 
