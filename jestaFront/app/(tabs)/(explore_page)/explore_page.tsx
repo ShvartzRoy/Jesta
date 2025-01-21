@@ -1,15 +1,15 @@
-import { View, Text } from 'react-native'
-import React, { useContext} from 'react'
-import { UserContext } from "../../authContext";
+import React, { useContext } from 'react';
+import { View, Text } from 'react-native';
+import { UserContext } from '../../authContext';
 
 const Explore_Page = () => {
-  const {user,setUser} = useContext(UserContext);
-  console.log('user', user)
-  return (
-    <div>
-      <h1>{user.id}</h1>
-    </div>
-  )
-}
+  const { user } = useContext(UserContext);
 
-export default Explore_Page
+  return (
+    <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+      <Text style={{ fontSize: 24, fontWeight: 'bold' }}>User ID: {user?.id}</Text>
+    </View>
+  );
+};
+
+export default Explore_Page;

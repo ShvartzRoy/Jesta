@@ -1,52 +1,42 @@
-"use client"
-import React, { useState, useEffect, createContext } from 'react';
-import axios from 'axios';
+"use client";
+import React, { useState, useEffect, createContext } from "react";
+import axios from "axios";
+import * as SecureStore from "expo-secure-store";
 
 axios.defaults.withCredentials = true;
 
-// const CategoryContext = createContext();
 const UserContext = createContext();
-// const StoreProductsContext = createContext();
-// const searchContext = createContext();
 
 const AuthContext = ({ children }) => {
   const [user, setUser] = useState({
-    loggedIn: undefined, // Set to undefined initially
-    userName: null,
+    loggedIn: undefined, // Initial state as undefined
     id: null,
-    cart_id: null,
   });
 
   useEffect(() => {
-    axios.get(`${process.env.EXPO_PUBLIC_HOST}/user`, {
-      headers: { 'Content-Type': 'application/json' },
-      withCredentials: true
-    })
-      .then(response => {
-        const userData = response.data;
+    console.log("Im right here!");
+    const initializeAuth = async () => {
+      try {
+        const response = await axios.get(`${process.env.EXPO_PUBLIC_HOST}/api/users/user`, {
+          headers: {"Content-Type": "application/json"},
+          withCredentials: true
+        });
+        console.log("User response:", response.data);
         setUser({
           loggedIn: true,
-          userName: userData.username,
-          id: userData.id,
+          id: response.data.id,
         });
-      })
-      .catch(error => {
-        setUser({
-          loggedIn: false,
-          userName: null,
-          id: null,
-        });
-        console.log('No logged in user');
-      });
+      } catch (error) {
+        console.error("Error validating user:", error);
+        setUser({ loggedIn: false, id: null});
+      }
+    };
+
+    initializeAuth();
   }, []);
 
-
-  return (
-    <UserContext.Provider value={{ user, setUser }}>
-        {children}
-    </UserContext.Provider>
-  );
+  return <UserContext.Provider value={{ user, setUser}}>{children}</UserContext.Provider>;
 };
 
 export default AuthContext;
-export { UserContext};
+export { UserContext };

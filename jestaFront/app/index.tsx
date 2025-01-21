@@ -1,22 +1,41 @@
-import { View, Text } from 'react-native'
-import React, {useContext} from 'react'
-import { Link } from 'expo-router'
-import RegisterScreen from './(authentication)/register'
-import Explore_Page from './(tabs)/(explore_page)/explore_page'
-import { UserContext } from "./authContext";
+import React, { useContext, useEffect, useState } from 'react';
+import { View, Text, ActivityIndicator } from 'react-native';
+import { useRouter } from 'expo-router';
+import { UserContext } from './authContext';
 
-const index = () => {
-  const {user,setUser} = useContext(UserContext);
-  return (
-    <div>
-      {user.loggedIn && <Explore_Page/>}
-      {!user.loggedIn && <RegisterScreen/>}
-    </div>
-    
-  )
-}
+const Index = () => {
+  const { user } = useContext(UserContext); // Access user context
+  const router = useRouter();
+  const [isReady, setIsReady] = useState(false); // Tracks when context is ready
 
-export default index
+  useEffect(() => {
+    // Navigate based on user state after context is ready
+    if (user.loggedIn != undefined) {
+      if (user?.loggedIn) {
+        router.replace('/explore_page');
+      } else {
+        router.replace('/register');
+      }
+    }
+  }, [user, router]);
+
+  // Show a loading indicator while waiting for context
+  if (!isReady) {
+    return (
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+        <ActivityIndicator size="large" color="#0000ff" />
+        <Text>Loading...</Text>
+      </View>
+    );
+  }
+
+  return null; // Component renders nothing as navigation handles the flow
+};
+
+export default Index;
+
+
+
 
 
 

@@ -9,7 +9,7 @@ export default function LoginScreen() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
-  const {user,setUser} = useContext(UserContext);
+  const {user,setUser, saveToken} = useContext(UserContext);
   const router = useRouter();
 
   const handleLogin = async () => {
@@ -20,7 +20,6 @@ export default function LoginScreen() {
 
     setLoading(true);
     try {
-        console.log('process.env.PUBLIC_HOST', process.env.EXPO_PUBLIC_HOST);
       const response = await axios.post(`${process.env.EXPO_PUBLIC_HOST}/api/users/login`, {
         email: email.trim(),
         password: password.trim(),
