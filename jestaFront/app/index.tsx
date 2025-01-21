@@ -1,7 +1,7 @@
 import React, { useContext, useEffect, useState } from 'react';
 import { View, Text, ActivityIndicator } from 'react-native';
 import { useRouter } from 'expo-router';
-import { UserContext } from './authContext';
+import { UserContext } from './contexts/authContext';
 
 const Index = () => {
   const { user } = useContext(UserContext); // Access user context

@@ -1,7 +1,7 @@
 // _layout.tsx
 import React from 'react';
 import { Slot } from 'expo-router';
-import AuthContext from './authContext';
+import AuthContext from './contexts/authContext';
 
 const Layout = () => {
   return (

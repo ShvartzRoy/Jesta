@@ -1,6 +1,6 @@
 import React, { useContext } from 'react';
 import { View, Text } from 'react-native';
-import { UserContext } from '../../authContext';
+import { UserContext } from '../../contexts/authContext';
 
 const Explore_Page = () => {
   const { user } = useContext(UserContext);
