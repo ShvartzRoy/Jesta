@@ -1,6 +1,8 @@
 from typing import Optional
 from django.conf import settings
 from django.shortcuts import get_object_or_404
+from django.core.exceptions import ValidationError
+from dateutil.parser import parse
 from .models import Service, JobService, FreeService, VolunteeringService
 from .schemas import ServiceCreateSchema, ServiceSchema
 from tags.models import Tag
@@ -12,53 +14,53 @@ from datetime import timedelta
 class ServiceController:
     
     
-    #for publishers: 
     def create_service(self, request, payload):
         if isinstance(payload.estimated_duration, str):
             try:
                 payload.estimated_duration = isoparse(payload.estimated_duration) - isoparse("PT0S")
             except ValueError:
                 raise HttpError(400, "Invalid estimated duration format! Use ISO 8601, like 'PT50M' for 50 minutes.")
-
+        
         tags = [Tag.objects.get_or_create(name=tag_name)[0] for tag_name in payload.tags]
-
-        service = Service.objects.create(
-            publisher=request.user,
-            title=payload.title,
-            description=payload.description,
-            location=payload.location,
-            date_time_range=payload.date_time_range,
-            estimated_duration=payload.estimated_duration,
-            state="pending",
-            service_type=payload.service_type or "publisher",
-        )
+        
+        #publisher or provider
+        service_from = payload.service_from or "publisher"
+        
+        if payload.offered_payment and payload.offered_payment > 0:
+            service = JobService.objects.create(
+                user=request.user,
+                title=payload.title,
+                description=payload.description,
+                location=payload.location,
+                date_time_range=payload.date_time_range,
+                estimated_duration=payload.estimated_duration,
+                state="pending",
+                service_from=service_from,
+                offered_payment=payload.offered_payment,
+            )
+            
+        else:
+            service = Service.objects.create(
+                user=request.user,
+                title=payload.title,
+                description=payload.description,
+                location=payload.location,
+                date_time_range=payload.date_time_range,
+                estimated_duration=payload.estimated_duration,
+                state="pending",
+                service_from=service_from,
+                offered_payment=0,
+            )
+        
         service.tags.set(tags)
         
-        return ServiceSchema.from_model(service).dict()  
+        return ServiceSchema.from_model(service).dict()
 
-        
-
-    #for providers:
-    def offer_as_provider(self, request, payload):
-        tags = [Tag.objects.get_or_create(name=tag_name)[0] for tag_name in payload.tags]
-
-        service = Service.objects.create(
-            publisher=request.user,
-            title=payload.title,
-            description=payload.description,
-            location=payload.location,
-            date_time_range=payload.date_time_range,
-            estimated_duration=payload.estimated_duration,
-            service_type="provider",
-            state="pending",
-        )
-        service.tags.set(tags)
-        return service
 
     
     def delete_service(self, request, service_id: int) -> dict:
         service = get_object_or_404(Service, id=service_id)
-        if service.publisher != request.user:
+        if service.user != request.user:
             raise HttpError(403, "You do not have permission to delete this service!")
         service.delete()
         return {"message": "Service deleted"}
@@ -68,15 +70,15 @@ class ServiceController:
         return get_object_or_404(Service, id=service_id)
     
     def get_requested_services(self):
-        return Service.objects.filter(service_type="publisher")
+        return Service.objects.filter(service_from="publisher")
 
     def get_offered_services(self):
-        return Service.objects.filter(service_type="provider")
+        return Service.objects.filter(service_from="provider")
     
     
 
     def get_published_service_by_user_id(self, user_id: int) -> list[Service]:
-        return Service.objects.filter(publisher__id=user_id)
+        return Service.objects.filter(user__id=user_id , service_from="publisher")
     
     def get_applied_service_by_user_id(self, user_id: int) -> list[Service]:
         return Service.objects.filter(applicants__id=user_id)
@@ -112,7 +114,17 @@ class ServiceController:
         service.save()
         return True
 
-    def update_date_time_range(self, service: Service, new_data: dict) -> bool:
+    def update_date_time_range(self, service: Service, new_data: list) -> bool:
+        if not isinstance(new_data, list) or len(new_data) != 2:
+            raise ValidationError("Invalid format: new_data must be a list of two ISO 8601 date strings!")
+        
+        try:
+            parse(new_data[0])
+            parse(new_data[1])
+            
+        except ValueError:
+            raise ValidationError("Invalid date format: Dates must be in ISO 8601 format!")
+        
         service.date_time_range = new_data
         service.save()
         return True
@@ -124,11 +136,14 @@ class ServiceController:
 
     
 
-    def update_offered_payment(self, service, new_data: float) -> bool:
-        if not hasattr(service, "offered_payment"):
+    def update_offered_payment(self, service: Service, new_data: float) -> bool:
+        if not service.is_job:
             raise HttpError(400, "Service not found or not a JobService!!")
-        
+
         service.offered_payment = new_data
+        if new_data == 0:
+            service.is_job = False
+    
         service.save()
         return True
 
@@ -165,7 +180,7 @@ class ServiceController:
         services = Service.objects.filter(
             location__icontains=search_criteria.get("location", ""),
             state="pending",
-            service_type="publisher",
+            service_from="publisher",
         )
         
         if "tags" in search_criteria:
@@ -179,7 +194,7 @@ class ServiceController:
     def search_providers(self, request, search_criteria) -> list:
         services = Service.objects.filter(
             location__icontains=search_criteria.get("location", ""),
-            service_type="provider",
+            service_from="provider",
         )
 
         if "tags" in search_criteria:
@@ -194,7 +209,7 @@ class ServiceController:
     
     
     def mark_service_completed(self, request, service_id: int) -> dict:
-        service = get_object_or_404(Service, id=service_id, publisher=request.user)
+        service = get_object_or_404(Service, id=service_id, user=request.user)
         service.state = "completed"
         service.save()
         return {"message": f"Service '{service.title}' marked as completed!"}
@@ -202,7 +217,7 @@ class ServiceController:
 
 #if it is canceled, later make sure no one can apply to it
     def cancel_service(self, request, service_id: int) -> dict:
-        service = get_object_or_404(Service, id=service_id, publisher=request.user)
+        service = get_object_or_404(Service, id=service_id, user=request.user)
         if service.state != "pending":
             raise HttpError(400, "Only pending services can be canceled!")
         service.state = "canceled"
@@ -211,7 +226,7 @@ class ServiceController:
 
 
     def reject_applicant(self, request, service_id: int, user_id: int) -> dict:
-        service = get_object_or_404(Service, id=service_id, publisher=request.user)
+        service = get_object_or_404(Service, id=service_id, user=request.user)
         applicant = get_object_or_404(settings.AUTH_USER_MODEL, id=user_id)
         if applicant not in service.applicants.all():
             raise HttpError(400, f"User '{applicant}' has not applied to this service!")
@@ -236,7 +251,7 @@ class ServiceController:
         return Service.objects.filter(state=state)
 
     def get_services_by_provider(self, provider_id: int) -> list[Service]:
-        return Service.objects.filter(applicants__id=provider_id, service_type="provider")
+        return Service.objects.filter(user__id=provider_id, service_from="provider")
 
     def get_services_by_applicant(self, applicant_id: int) -> list[Service]:
         return Service.objects.filter(applicants__id=applicant_id)
@@ -251,7 +266,7 @@ class ServiceController:
         if new_state not in allowed_states:
             raise HttpError(400, f"Invalid state '{new_state}'! Allowed states: {', '.join(allowed_states)}")
         
-        service = get_object_or_404(Service, id=service_id, publisher=request.user)
+        service = get_object_or_404(Service, id=service_id, user=request.user)
         service.state = new_state
         service.save()
         return {"message": f"Service '{service.title}' state updated to '{new_state}'"}
@@ -259,14 +274,14 @@ class ServiceController:
     
     def get_completed_services_of_user(self, user_id: Optional[int] = None) -> list[Service]:
         if user_id:
-            return Service.objects.filter(state="completed", publisher__id=user_id)
+            return Service.objects.filter(state="completed", user__id=user_id)
         return Service.objects.filter(state="completed")
 
 
-    def validate_users_worked_together(self, publisher_id: int, provider_id: int) -> bool:
+    def validate_users_worked_together(self, user_id: int, provider_id: int) -> bool:
         completed_services = Service.objects.filter(
             state="completed",
-            publisher__id=publisher_id,
+            user__id=user_id,
             applicants__id=provider_id
         )
         return completed_services.exists()

@@ -5,7 +5,7 @@ from datetime import timedelta
 
 class ServiceSchema(BaseModel):
     id: int
-    publisher_id: int
+    user_id: int
     title: str
     description: Optional[str]
     tags: List[str]
@@ -14,22 +14,26 @@ class ServiceSchema(BaseModel):
     estimated_duration: timedelta
     state: str
     applicants: List[int]
-    service_type: str
+    service_from: str
+    offered_payment: float 
+    is_job: bool
 
     @classmethod
     def from_model(cls, instance):
         return cls(
             id=instance.id,
-            publisher_id=instance.publisher.id,
+            user_id=instance.user.id,
             title=instance.title,
             description=instance.description,
             tags=[tag.name for tag in instance.tags.all()],
             location=instance.location,
             date_time_range=instance.date_time_range,
             estimated_duration=instance.estimated_duration,
-            state=instance.state,
             applicants=[user.id for user in instance.applicants.all()],
-            service_type=instance.service_type,
+            state=instance.state,
+            offered_payment=float(instance.offered_payment),
+            service_from=instance.service_from,
+            is_job=instance.is_job,
         )
         
     class Config:
@@ -37,8 +41,7 @@ class ServiceSchema(BaseModel):
 
 
 class JobServiceSchema(ServiceSchema):
-    offered_payment: float
-
+    pass
 
 class FreeServiceSchema(ServiceSchema):
     pass
@@ -49,7 +52,7 @@ class VolunteeringServiceSchema(ServiceSchema):
 
 
 class ServiceCreateSchema(BaseModel):
-    type: str = Field(description="Type of the service: job, free, or volunteering")
+    #type: str = Field(description="Type of the service: job, free, or volunteering")
     title: str
     description: Optional[str]
     tags: List[str]
@@ -57,7 +60,7 @@ class ServiceCreateSchema(BaseModel):
     date_time_range: List[str]
     estimated_duration: timedelta  #format is ISO8601, example: PT50M = 50 minutes
     offered_payment: Optional[float] = Field(None, description="The offered payment for job services")
-    service_type: Optional[str] = Field("publisher", description="Service type: publisher or provider")
+    service_from: Optional[str] = Field("publisher", description="Service type: publisher or provider")
 
 
 class ServiceUpdateSchema(BaseModel):

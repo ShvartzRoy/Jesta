@@ -27,10 +27,6 @@ def create_service(request, payload: ServiceCreateSchema):
 def delete_service(request, service_id: int):
     return sc.delete_service(request, service_id)
 
-@router.post("/offer_as_provider", response=ServiceSchema)
-def offer_as_provider(request, payload: ServiceCreateSchema):
-    return sc.offer_as_provider(request, payload)
-
 
 
 @router.post("/update_name/{service_id}", response={200: bool})
@@ -54,9 +50,10 @@ def update_location(request, service_id: int, new_data: str):
     return sc.update_location(service, new_data)
 
 @router.post("/update_date_time_range/{service_id}", response={200: bool})
-def update_date_time_range(request, service_id: int, new_data: dict):
+def update_date_time_range(request, service_id: int, new_data: list[str]):
     service = sc.get_service(service_id)
     return sc.update_date_time_range(service, new_data)
+
 
 @router.post("/update_estimated_duration/{service_id}", response={200: bool})
 def update_estimated_duration(request, service_id: int, new_data: str):
@@ -67,8 +64,9 @@ def update_estimated_duration(request, service_id: int, new_data: str):
 def update_offered_payment(request, service_id: int, new_data: float):
     service = JobService.objects.filter(id=service_id).first()
     if not service:
-        raise HttpError(400, "Service not found or not a JobService!")
+        raise HttpError(400, "Service not found or not a JobService!!")
     return sc.update_offered_payment(service, new_data)
+
 
 @router.post("/apply_to_service/{service_id}", response={200: dict})
 def apply_to_service(request, service_id: int):
@@ -106,8 +104,8 @@ def update_service_state(request, service_id: int, new_state: str):
 
 
 @router.post("/validate_users_worked_together", response={200: dict})
-def validate_users_worked_together(request, publisher_id: int, provider_id: int):
-    validated = sc.validate_users_worked_together(publisher_id, provider_id)
+def validate_users_worked_together(request, user_id: int, provider_id: int):
+    validated = sc.validate_users_worked_together(user_id, provider_id)
     return {"worked_together": validated}
 
 
@@ -206,7 +204,3 @@ def get_services_by_date_time_range(request, date_time_range: str):
 def get_completed_services(request, user_id: Optional[int] = None):
     services = sc.get_completed_services_of_user(user_id)
     return [ServiceSchema.from_model(service) for service in services]
-
-
-
-
