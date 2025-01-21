@@ -3,6 +3,7 @@ from django.conf import settings
 from django.shortcuts import get_object_or_404
 from django.core.exceptions import ValidationError
 from dateutil.parser import parse
+from django.contrib.auth import get_user_model
 from .models import Service, JobService, FreeService, VolunteeringService
 from .schemas import ServiceCreateSchema, ServiceSchema
 from tags.models import Tag
@@ -80,9 +81,7 @@ class ServiceController:
     def get_published_service_by_user_id(self, user_id: int) -> list[Service]:
         return Service.objects.filter(user__id=user_id , service_from="publisher")
     
-    def get_applied_service_by_user_id(self, user_id: int) -> list[Service]:
-        return Service.objects.filter(applicants__id=user_id)
-
+   
     # def get_saved_service_by_user_id(self, user_id: int) -> list[Service]:
     #     return Service.objects.filter(saved_users__id=user_id)
     
@@ -168,46 +167,58 @@ class ServiceController:
         return {"message": "Removed from service successfully!"}
     
     
-
+    
     def get_applicants(self, request, service_id: int) -> list:
         service = get_object_or_404(Service, id=service_id)
-        return list(service.applicants.all())
-    
+        return [
+            {"id": user.id, "username": user.username, "email": user.email}
+            for user in service.applicants.all()
+        ]
+
 
     
-    #later will make a smarter search!!
-    def search_needed_services(self, request, search_criteria) -> list:
+    #later will make a smarter search!! 
+    #it will not include completed services
+    def search_needed_services(self, request, search_criteria: dict) -> list:
         services = Service.objects.filter(
             location__icontains=search_criteria.get("location", ""),
-            state="pending",
-            service_from="publisher",
+            state="pending"
         )
+
+        if "tags" in search_criteria:
+            services = services.filter(tags__name__in=search_criteria["tags"])
+
+        if "duration" in search_criteria and search_criteria["duration"]:
+            duration = search_criteria["duration"]
+            services = services.filter(estimated_duration__lte=duration)
+
+        if "price_range" in search_criteria and search_criteria["price_range"]:
+            min_price, max_price = search_criteria["price_range"]
+            services = services.filter(offered_payment__gte=min_price, offered_payment__lte=max_price)
+
+        return [ServiceSchema.from_model(service).dict() for service in services]
+    
+    
+    def search_completed_services(self, request, search_criteria: dict) -> list:
+        services = Service.objects.filter(
+            location__icontains=search_criteria.get("location", ""),
+            state="completed"
+        )
+
+        if "tags" in search_criteria:
+            services = services.filter(tags__name__in=search_criteria["tags"])
+
+        if "duration" in search_criteria and search_criteria["duration"]:
+            duration = search_criteria["duration"]
+            services = services.filter(estimated_duration__lte=duration)
+
+        if "price_range" in search_criteria and search_criteria["price_range"]:
+            min_price, max_price = search_criteria["price_range"]
+            services = services.filter(offered_payment__gte=min_price, offered_payment__lte=max_price)
+
+        return [ServiceSchema.from_model(service).dict() for service in services]
+
         
-        if "tags" in search_criteria:
-            services = services.filter(tags__name__in=search_criteria["tags"])
-
-        if "duration" in search_criteria:
-            services = services.filter(estimated_duration__lte=search_criteria["duration"])
-
-        return services
-
-    def search_providers(self, request, search_criteria) -> list:
-        services = Service.objects.filter(
-            location__icontains=search_criteria.get("location", ""),
-            service_from="provider",
-        )
-
-        if "tags" in search_criteria:
-            services = services.filter(tags__name__in=search_criteria["tags"])
-
-        if "price_range" in search_criteria:
-            services = JobService.objects.filter(
-                offered_payment__gte=search_criteria["price_range"][0],
-                offered_payment__lte=search_criteria["price_range"][1],
-            )
-        return services
-    
-    
     def mark_service_completed(self, request, service_id: int) -> dict:
         service = get_object_or_404(Service, id=service_id, user=request.user)
         service.state = "completed"
@@ -215,6 +226,19 @@ class ServiceController:
         return {"message": f"Service '{service.title}' marked as completed!"}
 
 
+
+    def update_service_state(self, request, service_id: int, new_state: str) -> dict:
+        allowed_states = ["pending", "accepted", "inProgress", "completed"]
+        if new_state not in allowed_states:
+            raise HttpError(400, f"Invalid state '{new_state}'! Allowed states: {', '.join(allowed_states)}")
+        
+        service = get_object_or_404(Service, id=service_id, user=request.user)
+        service.state = new_state
+        service.save()
+        return {"message": f"Service '{service.title}' state updated to '{new_state}'"}
+    
+    
+    
 #if it is canceled, later make sure no one can apply to it
     def cancel_service(self, request, service_id: int) -> dict:
         service = get_object_or_404(Service, id=service_id, user=request.user)
@@ -224,15 +248,26 @@ class ServiceController:
         service.save()
         return {"message": f"Service '{service.title}' has been canceled"}
 
-
+    
     def reject_applicant(self, request, service_id: int, user_id: int) -> dict:
-        service = get_object_or_404(Service, id=service_id, user=request.user)
-        applicant = get_object_or_404(settings.AUTH_USER_MODEL, id=user_id)
+        try:
+            service = Service.objects.get(id=service_id, user=request.user)
+        except Service.DoesNotExist:
+            raise HttpError(404, "Service not found or does not belong to the logged-in user!")
+
+        User = get_user_model()
+
+        try:
+            applicant = User.objects.get(id=user_id)
+        except User.DoesNotExist:
+            raise HttpError(404, "Applicant not found!")
+
         if applicant not in service.applicants.all():
             raise HttpError(400, f"User '{applicant}' has not applied to this service!")
+
         service.applicants.remove(applicant)
         return {"message": f"Applicant '{applicant.email}' rejected from service '{service.title}'."}
-    
+        
 
     def get_all_services(self) -> list[Service]:
         return Service.objects.all()
@@ -259,29 +294,18 @@ class ServiceController:
     def get_services_by_date_time_range(self, date_time_range: list[str]) -> list[Service]:
         return Service.objects.filter(date_time_range=date_time_range)
     
-    
 
-    def update_service_state(self, request, service_id: int, new_state: str) -> dict:
-        allowed_states = ["pending", "accepted", "inProgress", "completed"]
-        if new_state not in allowed_states:
-            raise HttpError(400, f"Invalid state '{new_state}'! Allowed states: {', '.join(allowed_states)}")
-        
-        service = get_object_or_404(Service, id=service_id, user=request.user)
-        service.state = new_state
-        service.save()
-        return {"message": f"Service '{service.title}' state updated to '{new_state}'"}
-    
     
     def get_completed_services_of_user(self, user_id: Optional[int] = None) -> list[Service]:
         if user_id:
             return Service.objects.filter(state="completed", user__id=user_id)
         return Service.objects.filter(state="completed")
 
-
-    def validate_users_worked_together(self, user_id: int, provider_id: int) -> bool:
+ 
+    def validate_users_worked_together(self, user_id: int, participant_id: int) -> bool:
         completed_services = Service.objects.filter(
             state="completed",
             user__id=user_id,
-            applicants__id=provider_id
+            applicants__id=participant_id
         )
         return completed_services.exists()

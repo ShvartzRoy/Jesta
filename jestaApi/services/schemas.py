@@ -1,6 +1,9 @@
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, validator
 from typing import List, Optional
 from datetime import timedelta
+from pydantic import validator
+import re
+
 
 
 class ServiceSchema(BaseModel):
@@ -67,18 +70,50 @@ class ServiceUpdateSchema(BaseModel):
     service_id: int
     field: str = Field(description="Field to update: title, description, tags, location, etc.")
     new_data: str = Field(description="New value for the specified field")
+    
+def parse_iso8601_duration(duration_str: str) -> timedelta:
+    pattern = (
+        r"^P(?:(?P<days>\d+)D)?"
+        r"(?:T(?:(?P<hours>\d+)H)?(?:(?P<minutes>\d+)M)?(?:(?P<seconds>\d+)S)?)?$"
+    )
+    match = re.match(pattern, duration_str)
+
+    if not match:
+        raise ValueError("Invalid duration format! Use ISO 8601 format (e.g., P3D, PT5H)!")
+
+    days = int(match.group("days") or 0)
+    hours = int(match.group("hours") or 0)
+    minutes = int(match.group("minutes") or 0)
+    seconds = int(match.group("seconds") or 0)
+
+    return timedelta(days=days, hours=hours, minutes=minutes, seconds=seconds)
+
 
 
 class SearchCriteriaSchema(BaseModel):
     location: Optional[str] = Field(None, description="Filter by location")
     tags: Optional[List[str]] = Field(None, description="Filter by tags")
     duration: Optional[str] = Field(None, description="Filter by maximum duration")
+    price_range: Optional[List[float]] = Field(None, description="Filter by price range [min_price, max_price]")
 
+    @validator("duration")
+    def validate_duration(cls, value):
+        if value:
+            try:
+                #validate ISO 8601 duration format
+                parse_iso8601_duration(value)
+                return value
+            except ValueError as e:
+                raise ValueError(str(e))
+        return value
 
-class SearchProviderSchema(SearchCriteriaSchema):
-    price_range: Optional[List[float]] = Field(None, description="Filter by price range for job services")
-
-
+    @validator("price_range")
+    def validate_price_range(cls, value):
+        if value and len(value) == 2 and value[0] <= value[1]:
+            return value
+        raise ValueError("Price range must be a list of two values [min_price, max_price] where min_price <= max_price!")
+    
+    
 class UpdateServiceStateSchema(BaseModel):
     service_id: int
     new_state: str = Field(description="New state for the service")

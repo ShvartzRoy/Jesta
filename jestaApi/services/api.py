@@ -7,7 +7,6 @@ from .schemas import (
     ServiceUpdateSchema,
     ServiceSchema,
     SearchCriteriaSchema,
-    SearchProviderSchema
 )
 
 from .models import JobService, Service
@@ -77,13 +76,13 @@ def remove_from_service(request, service_id: int):
     return sc.remove_from_service(request, service_id)
 
 
-@router.post("/search_needed_services", response=list)
+@router.post("/search_needed_services", response=List[ServiceSchema])
 def search_needed_services(request, payload: SearchCriteriaSchema):
     return sc.search_needed_services(request, payload.dict())
 
-@router.post("/search_providers", response=list)
-def search_providers(request, payload: SearchProviderSchema):
-    return sc.search_providers(request, payload.dict())
+@router.post("/search_completed_services", response=List[ServiceSchema])
+def search_completed_services(request, payload: SearchCriteriaSchema):
+    return sc.search_completed_services(request, payload.dict())
 
 
 @router.post("/mark_service_completed/{service_id}", response={200: dict})
@@ -98,14 +97,15 @@ def cancel_service(request, service_id: int):
 def reject_applicant(request, service_id: int, user_id: int):
     return sc.reject_applicant(request, service_id, user_id)
 
+
 @router.post("/update_service_state/{service_id}", response={200: dict})
 def update_service_state(request, service_id: int, new_state: str):
     return sc.update_service_state(request, service_id, new_state)
 
 
 @router.post("/validate_users_worked_together", response={200: dict})
-def validate_users_worked_together(request, user_id: int, provider_id: int):
-    validated = sc.validate_users_worked_together(user_id, provider_id)
+def validate_users_worked_together(request, user_id: int, participant_id: int):
+    validated = sc.validate_users_worked_together(user_id, participant_id)
     return {"worked_together": validated}
 
 
@@ -125,10 +125,6 @@ def get_offered_services(request):
     services = sc.get_offered_services()
     return [ServiceSchema.from_model(service) for service in services]
 
-
-@router.get("/get_applied_services/{user_id}", response=list)
-def get_applied_services(request, user_id: int):
-    return sc.get_applied_service_by_user_id(user_id)
 
 # @router.get("/get_saved_services/{user_id}", response=list)
 # def get_saved_services(request, user_id: int):
