@@ -34,7 +34,9 @@ class ServiceSchema(BaseModel):
             location=instance.location,
             date_time_range=instance.date_time_range,
             estimated_duration=instance.estimated_duration,
-            applicants=[{"user_id": applicant.id, "applicant_state": applicant.applicant_state} for applicant in instance.applicants.all()],
+            applicants=[
+                ApplicantSchema(**applicant) for applicant in instance.applicants
+            ],
             state=instance.state,
             offered_payment=float(instance.offered_payment),
             service_from=instance.service_from,

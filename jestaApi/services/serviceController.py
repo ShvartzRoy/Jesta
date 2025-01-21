@@ -38,6 +38,7 @@ class ServiceController:
                 state="pending",
                 service_from=service_from,
                 offered_payment=payload.offered_payment,
+                applicants=[],
             )
             
         else:
@@ -51,6 +52,8 @@ class ServiceController:
                 state="pending",
                 service_from=service_from,
                 offered_payment=0,
+                applicants=[],
+
             )
         
         service.tags.set(tags)
@@ -132,8 +135,12 @@ class ServiceController:
 
     def apply_to_service(self, request, service_id: int) -> dict:
         service = get_object_or_404(Service, id=service_id)
-        if request.user in service.applicants.all():
+        if request.user in service.applicants:
             raise HttpError(400, "You have already applied to this service!")
+        
+        if service.state != "pending" and service.state != "accepted":
+            raise HttpError(400, "Service is not available for application!")
+        
         service.applicants.append({"user_id": request.user.id, "applicant_state": "pending"})
         service.save()
         return {"message": "Application successful!"}
@@ -143,23 +150,24 @@ class ServiceController:
 
     def remove_from_service(self, request, service_id: int) -> dict:
         service = get_object_or_404(Service, id=service_id)
-        applicant_entry = service.applicants.through.objects.filter(
-            service_id=service.id, user_id=request.user.id
-        ).first()
-        
-        if not applicant_entry:
+        applicants = service.applicants
+
+        for applicant in applicants:
+            if applicant["user_id"] == request.user.id:
+                applicants.remove(applicant)
+                break
+        else:
             raise HttpError(400, "You have not applied to this service!")
-        
-        service.applicants.remove(request.user)
+
+        service.applicants = applicants
+        service.save()
         return {"message": "Removed from service successfully!"}
 
-    
+        
     def get_applicants(self, request, service_id: int) -> list:
         service = get_object_or_404(Service, id=service_id)
-        return [
-            {"id": applicant.user.id, "username": applicant.user.username, "email": applicant.user.email, "applicant_state": applicant.applicant_state}
-            for applicant in service.applicants.through.objects.filter(service_id=service.id).select_related("user")
-        ]
+        return service.applicants
+
 
 
     
@@ -237,16 +245,37 @@ class ServiceController:
     
     def reject_applicant(self, request, service_id: int, user_id: int) -> dict:
         service = get_object_or_404(Service, id=service_id, user=request.user)
-        applicant_entry = service.applicants.through.objects.filter(
-            service_id=service.id, user_id=user_id
-        ).first()
-        
-        if not applicant_entry:
-            raise HttpError(400, "Applicant not found or has not applied to this service!")
-        
-        applicant_entry.applicant_state = "rejected"
-        applicant_entry.save()
-        return {"message": f"Applicant '{applicant_entry.user.email}' rejected from service '{service.title}'."}
+        applicants = service.applicants
+
+        for applicant in applicants:
+            if applicant["user_id"] == user_id:
+                if applicant["applicant_state"] == "rejected":
+                    raise HttpError(400, "Applicant is already rejected!")
+                applicant["applicant_state"] = "rejected"
+                break
+        else:
+            raise HttpError(400, f"User '{user_id}' has not applied to this service!")
+
+        service.applicants = applicants
+        service.save()
+        return {"message": f"Applicant '{user_id}' rejected from service '{service.title}'."}
+    
+    def accept_applicant(self, request, service_id: int, user_id: int) -> dict:
+        service = get_object_or_404(Service, id=service_id, user=request.user)
+        applicants = service.applicants
+
+        for applicant in applicants:
+            if applicant["user_id"] == user_id:
+                if applicant["applicant_state"] == "accepted":
+                    raise HttpError(400, "Applicant is already accepted!")
+                applicant["applicant_state"] = "accepted"
+                break
+        else:
+            raise HttpError(400, f"User '{user_id}' has not applied to this service!")
+
+        service.applicants = applicants
+        service.save()
+        return {"message": f"Applicant '{user_id}' accepted to service '{service.title}'."}
 
 
     def get_all_services(self) -> list[Service]:
@@ -294,11 +323,10 @@ class ServiceController:
     
 
     def get_services_by_applicant(self, applicant_id: int) -> list[Service]:
-        return [
-            service
-            for service in Service.objects.prefetch_related("applicants")
-            if service.applicants.through.objects.filter(user_id=applicant_id).exists()
-        ]
+        services = Service.objects.filter(
+            applicants__contains=[{"user_id": applicant_id}]
+        )
+        return services
 
     def get_services_by_date_time_range(self, date_time_range: list[str]) -> list[Service]:
         return Service.objects.filter(date_time_range=date_time_range)
@@ -310,11 +338,13 @@ class ServiceController:
         return Service.objects.filter(state="completed")
 
  
-    def validate_users_worked_together(self, user_id: int, participant_id: int) -> bool:
-        return Service.objects.filter(
-            state="completed",
-            user_id=user_id,
-            applicants__user_id=participant_id,
-            applicants__applicant_state="accepted"
-        ).exists()
 
+    def validate_users_worked_together(self, user_id: int, participant_id: int) -> bool:
+        completed_services = Service.objects.filter(state="completed", user_id=user_id)
+
+        for service in completed_services:
+            for applicant in service.applicants:
+                if applicant["user_id"] == participant_id and applicant["applicant_state"] == "accepted":
+                    return True
+
+        return False

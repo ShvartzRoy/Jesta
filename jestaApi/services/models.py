@@ -31,6 +31,7 @@ class Service(models.Model):
     applicants = models.JSONField(default=list, blank=True)
     
     
+    
     # applicants = models.ManyToManyField(
     #     settings.AUTH_USER_MODEL,
     #     related_name="applied_services",
@@ -41,7 +42,7 @@ class Service(models.Model):
     
     state = models.CharField(
         max_length=20,
-        choices=[("pending", "Pending"), ("accepted", "Accepted"), ("inProgress", "In Progress"), ("completed", "Completed")],
+        choices=[("pending", "Pending"), ("accepted", "Accepted"), ("inProgress", "In Progress"), ("completed", "Completed"), ("cancelled", "Cancelled")],
         default="pending"
     )
     

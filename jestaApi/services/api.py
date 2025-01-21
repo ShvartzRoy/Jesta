@@ -97,6 +97,10 @@ def cancel_service(request, service_id: int):
 def reject_applicant(request, service_id: int, user_id: int):
     return sc.reject_applicant(request, service_id, user_id)
 
+@router.post("/accept_applicant/{service_id}/{user_id}", response={200: dict})
+def accept_applicant(request, service_id: int, user_id: int):
+    return sc.accept_applicant(request, service_id, user_id)
+
 
 @router.post("/update_service_state/{service_id}", response={200: dict})
 def update_service_state(request, service_id: int, new_state: str):
