@@ -46,19 +46,3 @@ def edit_profile(request, payload: ProfileSchema, image: UploadedFile = File(Non
 def get_profile(request, user_id: int):
     user = uc.get_profile(request, user_id)
     return user
-
-@router.get("/published_services", response=list[ServiceSchema])
-def get_published_services(request):
-    return uc.get_published_services(request)
-
-@router.get("/applied_services", response=list[ServiceSchema])
-def get_applied_services(request):
-    return uc.get_applied_services(request)
-
-@router.get("/specialist_profile", response={200: SpecialistSchema, 404: dict})
-def get_specialist_profile(request):
-    return uc.get_specialist_profile(request)
-
-@router.delete("/specialist_profile", response={200: dict, 404: dict})
-def remove_specialist_profile(request):
-    return uc.remove_specialist_profile(request)

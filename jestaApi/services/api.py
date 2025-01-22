@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import List, Optional
 from ninja import Router
 from ninja.errors import HttpError
 from .serviceController import ServiceController
@@ -7,10 +7,9 @@ from .schemas import (
     ServiceUpdateSchema,
     ServiceSchema,
     SearchCriteriaSchema,
-    SearchProviderSchema
 )
 
-from .models import Service
+from .models import JobService, Service
 from django.shortcuts import get_object_or_404
 from json import loads 
 
@@ -26,10 +25,6 @@ def create_service(request, payload: ServiceCreateSchema):
 @router.delete("/delete_service/{service_id}", response={200: dict})
 def delete_service(request, service_id: int):
     return sc.delete_service(request, service_id)
-
-@router.post("/offer_as_provider", response=ServiceSchema)
-def offer_as_provider(request, payload: ServiceCreateSchema):
-    return sc.offer_as_provider(request, payload)
 
 
 
@@ -54,19 +49,23 @@ def update_location(request, service_id: int, new_data: str):
     return sc.update_location(service, new_data)
 
 @router.post("/update_date_time_range/{service_id}", response={200: bool})
-def update_date_time_range(request, service_id: int, new_data: dict):
+def update_date_time_range(request, service_id: int, new_data: list[str]):
     service = sc.get_service(service_id)
     return sc.update_date_time_range(service, new_data)
+
 
 @router.post("/update_estimated_duration/{service_id}", response={200: bool})
 def update_estimated_duration(request, service_id: int, new_data: str):
     service = sc.get_service(service_id)
     return sc.update_estimated_duration(service, new_data)
 
-@router.post("/update_offered_payment/{service_id}", response={200: bool})
+@router.post("/update_offered_payment/{service_id}")
 def update_offered_payment(request, service_id: int, new_data: float):
-    service = sc.get_service(service_id)
+    service = JobService.objects.filter(id=service_id).first()
+    if not service:
+        raise HttpError(400, "Service not found or not a JobService!!")
     return sc.update_offered_payment(service, new_data)
+
 
 @router.post("/apply_to_service/{service_id}", response={200: dict})
 def apply_to_service(request, service_id: int):
@@ -77,13 +76,13 @@ def remove_from_service(request, service_id: int):
     return sc.remove_from_service(request, service_id)
 
 
-@router.post("/search_needed_services", response=list)
+@router.post("/search_needed_services", response=List[ServiceSchema])
 def search_needed_services(request, payload: SearchCriteriaSchema):
     return sc.search_needed_services(request, payload.dict())
 
-@router.post("/search_providers", response=list)
-def search_providers(request, payload: SearchProviderSchema):
-    return sc.search_providers(request, payload.dict())
+@router.post("/search_completed_services", response=List[ServiceSchema])
+def search_completed_services(request, payload: SearchCriteriaSchema):
+    return sc.search_completed_services(request, payload.dict())
 
 
 @router.post("/mark_service_completed/{service_id}", response={200: dict})
@@ -98,14 +97,19 @@ def cancel_service(request, service_id: int):
 def reject_applicant(request, service_id: int, user_id: int):
     return sc.reject_applicant(request, service_id, user_id)
 
+@router.post("/accept_applicant/{service_id}/{user_id}", response={200: dict})
+def accept_applicant(request, service_id: int, user_id: int):
+    return sc.accept_applicant(request, service_id, user_id)
+
+
 @router.post("/update_service_state/{service_id}", response={200: dict})
 def update_service_state(request, service_id: int, new_state: str):
     return sc.update_service_state(request, service_id, new_state)
 
 
 @router.post("/validate_users_worked_together", response={200: dict})
-def validate_users_worked_together(request, publisher_id: int, provider_id: int):
-    validated = sc.validate_users_worked_together(publisher_id, provider_id)
+def validate_users_worked_together(request, user_id: int, participant_id: int):
+    validated = sc.validate_users_worked_together(user_id, participant_id)
     return {"worked_together": validated}
 
 
@@ -125,10 +129,6 @@ def get_offered_services(request):
     services = sc.get_offered_services()
     return [ServiceSchema.from_model(service) for service in services]
 
-
-@router.get("/get_applied_services/{user_id}", response=list)
-def get_applied_services(request, user_id: int):
-    return sc.get_applied_service_by_user_id(user_id)
 
 # @router.get("/get_saved_services/{user_id}", response=list)
 # def get_saved_services(request, user_id: int):
@@ -181,17 +181,22 @@ def get_services_by_applicant(request, applicant_id: int):
     services = sc.get_services_by_applicant(applicant_id)
     return [ServiceSchema.from_model(service) for service in services]
 
-@router.get("/get_services_by_date_time_range/{date_time_range}", response={200: list[ServiceSchema]})
+@router.get("/get_services_by_date_time_range/{date_time_range}")
 def get_services_by_date_time_range(request, date_time_range: str):
     try:
-        date_time_range_list = loads(date_time_range)  
-        if not isinstance(date_time_range_list, list) or not all(isinstance(item, str) for item in date_time_range_list):
-            raise ValueError("Invalid format for date_time_range. Expected a list of strings.")
-    except Exception as e:
-        raise HttpError(400, f"Invalid date_time_range: {str(e)}")
+        date_range = eval(date_time_range)  
+        if len(date_range) != 2:
+            raise ValueError("Invalid date_time_range format! Provide a start and end date.")
 
-    services = sc.get_services_by_date_time_range(date_time_range_list)
-    return [ServiceSchema.from_orm(service) for service in services]
+        start_date = date_range[0]
+        end_date = date_range[1]
+
+        services = Service.objects.filter(
+            date_time_range__contains=[start_date, end_date]
+        )
+        return [ServiceSchema.from_model(service) for service in services]
+    except Exception as e:
+        return {"error": str(e)}
 
 
 
@@ -199,7 +204,3 @@ def get_services_by_date_time_range(request, date_time_range: str):
 def get_completed_services(request, user_id: Optional[int] = None):
     services = sc.get_completed_services_of_user(user_id)
     return [ServiceSchema.from_model(service) for service in services]
-
-
-
-

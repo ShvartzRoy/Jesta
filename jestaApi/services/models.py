@@ -4,7 +4,7 @@ from tags.models import Tag
 
 
 class Service(models.Model):
-    publisher = models.ForeignKey(
+    user = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         related_name="published_services",
         on_delete=models.CASCADE
@@ -27,33 +27,49 @@ class Service(models.Model):
     #PT30M= 30 minutes
     #PT2H45M= 2 hours and 45 minutes
     estimated_duration = models.DurationField()  
-
     
-    applicants = models.ManyToManyField(
-        settings.AUTH_USER_MODEL,
-        related_name="applied_services",
-        blank=True
-    )
+    applicants = models.JSONField(default=list, blank=True)
+    
+    
+    
+    # applicants = models.ManyToManyField(
+    #     settings.AUTH_USER_MODEL,
+    #     related_name="applied_services",
+    #     blank=True
+    # )
+    
+    
     
     state = models.CharField(
         max_length=20,
-        choices=[("pending", "Pending"), ("accepted", "Accepted"), ("inProgress", "In Progress"), ("completed", "Completed")],
+        choices=[("pending", "Pending"), ("accepted", "Accepted"), ("inProgress", "In Progress"), ("completed", "Completed"), ("cancelled", "Cancelled")],
         default="pending"
     )
     
-    service_type = models.CharField(
+    offered_payment = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+
+    
+    service_from = models.CharField( #is it a publisher or a provider
         max_length=20,
         choices=[("provider", "Provider"), ("publisher", "Publisher")],
         default="publisher"
     )
+    
+    is_job = models.BooleanField(default=False) 
+    
+    
+    def save(self, *args, **kwargs):
+        self.is_job = self.offered_payment > 0
+        super().save(*args, **kwargs)   
 
     def __str__(self):
-        return f"{self.title} ({self.publisher})"
+        return f"{self.title} ({self.user})"
 
 
 class JobService(Service):
-    offered_payment = models.DecimalField(max_digits=10, decimal_places=2)
-
+    def save(self, *args, **kwargs):
+        self.is_job = True  
+        super().save(*args, **kwargs)
 
 class FreeService(Service):
     pass
