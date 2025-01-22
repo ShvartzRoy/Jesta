@@ -1,6 +1,8 @@
 from ninja import NinjaAPI, Router
 from ninja.security import django_auth
 from .schemas import *
+from services.schemas import ServiceSchema
+from specialists.schemas import SpecialistSchema
 from .userController import userController
 from .profileController import profileController
 from ninja import File

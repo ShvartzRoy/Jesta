@@ -3,6 +3,8 @@ from django.contrib.auth.hashers import make_password
 from ninja import File
 from ninja.files import UploadedFile
 from .models import CustomUser
+from services.models import Service
+from specialists.schemas import SpecialistSchema
 from .schemas import *
 from ninja.errors import *
 from .check_fields import *
@@ -66,6 +68,7 @@ class userController:
         user.delete()
         return {"msg": "User deleted"}
     
+
     def change_email(self, request, new_email: str, password: str) -> dict:
         user = request.user
         # Check if the old password is correct
