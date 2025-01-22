@@ -2,9 +2,12 @@ import React, { useContext, useEffect, useState } from 'react';
 import { View, Text, ActivityIndicator } from 'react-native';
 import { useRouter } from 'expo-router';
 import { UserContext } from './contexts/authContext';
+import { ProfileContext } from './contexts/profileContext';
+
 
 const Index = () => {
   const { user } = useContext(UserContext); // Access user context
+  const { profile } = useContext(ProfileContext); // Access profile context
   const router = useRouter();
   const [isReady, setIsReady] = useState(false); // Tracks when context is ready
 

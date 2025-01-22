@@ -3,12 +3,14 @@ import React, { useState, useContext} from "react";
 import { View, Text, TextInput, Button, StyleSheet, Alert } from "react-native";
 import {Link, useRouter} from 'expo-router';
 import { UserContext } from "../contexts/authContext";
+import { ProfileContext } from "../contexts/profileContext";
 import axios from "axios";
 
 export default function LoginScreen() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const {user,setUser, saveToken} = useContext(UserContext);
+  const { profile } = useContext(ProfileContext); // Access profile context
   const router = useRouter();
 
   const handleLogin = async () => {
@@ -28,7 +30,13 @@ export default function LoginScreen() {
       setUser({loggedIn: true, userName: response.data.username, id: response.data.id});
 
       //navigate to another screen or clear input fields
-      router.push("/explore_page");
+      //if the user has not set up their profile, redirect to set_profile page
+      if (profile.name == null) {
+        router.push('/set_profile');
+      }
+      else{
+        router.push("/explore_page");
+      }
       setEmail("");
       setPassword("");
     } catch (error) {

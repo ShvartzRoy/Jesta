@@ -1,13 +1,14 @@
 // screens/RegisterScreen.js
 import React, { useState } from "react";
 import { View, Text, TextInput, Button, StyleSheet, Alert } from "react-native";
-import {Link} from 'expo-router';
+import {Link, useRouter} from 'expo-router';
 import axios from "axios";
 
 export default function RegisterScreen() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const router = useRouter();
 
   const handleRegister = async () => {
     if (!email || !password) {
@@ -27,6 +28,7 @@ export default function RegisterScreen() {
       console.log("User registered:", response.data);
 
       // Optionally navigate to another screen or clear input fields
+      router.push("/set_profile");
       setEmail("");
       setPassword("");
     } catch (error) {
