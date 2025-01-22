@@ -4,3 +4,4 @@ psycopg2-binary
 django-cors-headers
 pillow
 python-dateutil
+djangorestframework-simplejwt

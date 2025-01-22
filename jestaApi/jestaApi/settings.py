@@ -32,7 +32,7 @@ ALLOWED_HOSTS = ["*"]
 CORS_ALLOW_CREDENTIALS = True
 CORS_ALLOW_ALL_ORIGINS = True
 #CSRF_COOKIE_HTTPONLY = False  # Allows frontend to access CSRF cookies
-# CORS_ALLOWED_ORIGINS = ["http://localhost:8000"]  # React app URL
+CORS_ALLOWED_ORIGINS = ["http://localhost:8081"]  # expo dev server
 # CSRF_TRUSTED_ORIGINS = ['http://localhost:8000']
 
 AUTH_USER_MODEL = 'users.CustomUser'

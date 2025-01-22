@@ -336,8 +336,13 @@ The application should be available at [http://localhost:8000/](http://127.0.0.1
 Click the Python Interpreter selector and choose Add Interpreter (Add the existing one you created in the virtual environment)
 https://www.jetbrains.com/help/pycharm/creating-virtual-environment.html#python_create_virtual_env
 
+## Start expo
+```bash
+  cd jestaFront
+  npx expo start
+```
 
-\
+
 
 # Must read docs for development
 

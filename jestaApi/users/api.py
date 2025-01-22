@@ -4,13 +4,14 @@ from .schemas import *
 from services.schemas import ServiceSchema
 from specialists.schemas import SpecialistSchema
 from .userController import userController
+from .profileController import profileController
 from ninja import File
 from ninja.files import UploadedFile
 
 
 router = Router(tags=["user"])
 uc = userController()
-
+pc = profileController()
 
 @router.post("/login", response={200: UserSchema, 401: Error})
 def login(request, payload: LogInSchema):
@@ -37,12 +38,20 @@ def register(request, payload: RegisterSchema):
 def delete_user(request, user_password: str):
     return uc.delete_user(request, user_password)
 
-@router.post("/edit_profile", response={200: ProfileSchema, 401: Error})
+@router.put("/edit_profile", response={200: ProfileSchema, 401: Error})
 def edit_profile(request, payload: ProfileSchema, image: UploadedFile = File(None), resume: UploadedFile = File(None)):
-    user = uc.edit_profile(request, payload , image, resume)
+    user = pc.edit_profile(request, payload , image, resume)
     return user
 
-@router.get("/get_profile/{user_id}", response={200: ProfileSchema, 401: Error})
+@router.get("/get_profile/{user_id}", response={200: GetProfileSchema, 401: Error})
 def get_profile(request, user_id: int):
-    user = uc.get_profile(request, user_id)
+    user = pc.get_profile(request, user_id)
     return user
+
+@router.put("/change-email/", response={200: dict, 400: dict})
+def update_email(request, email: str, password: str):
+    return uc.change_email(request, email, password)
+
+@router.put("/change-password/", response={200: dict, 400: dict})
+def update_password(request, old_password: str, new_password: str):
+    return uc.change_password(request, old_password, new_password)
