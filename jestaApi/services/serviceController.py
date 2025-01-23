@@ -27,6 +27,9 @@ class ServiceController:
         #publisher or provider
         service_from = payload.service_from or "publisher"
         
+        if payload.offered_payment and payload.offered_payment > 0 and payload.is_volunteering==True:
+            raise HttpError(400, "You cannot offer a payment for a volunteering service!")
+        
         if payload.offered_payment and payload.offered_payment > 0:
             service = JobService.objects.create(
                 user=request.user,
@@ -37,12 +40,14 @@ class ServiceController:
                 estimated_duration=payload.estimated_duration,
                 state="pending",
                 service_from=service_from,
+                is_volunteering=False,
+                is_job=True,
                 offered_payment=payload.offered_payment,
                 applicants=[],
             )
             
-        else:
-            service = Service.objects.create(
+        if payload.offered_payment == 0 and payload.is_volunteering==False:
+            service = FreeService.objects.create(
                 user=request.user,
                 title=payload.title,
                 description=payload.description,
@@ -51,6 +56,25 @@ class ServiceController:
                 estimated_duration=payload.estimated_duration,
                 state="pending",
                 service_from=service_from,
+                is_volunteering=False,
+                is_job=False,
+                offered_payment=0,
+                applicants=[],
+
+            )
+                
+        else:
+            service = VolunteeringService.objects.create(
+                user=request.user,
+                title=payload.title,
+                description=payload.description,
+                location=payload.location,
+                date_time_range=payload.date_time_range,
+                estimated_duration=payload.estimated_duration,
+                state="pending",
+                service_from=service_from,
+                is_volunteering=True,
+                is_job=False,
                 offered_payment=0,
                 applicants=[],
 
@@ -135,6 +159,9 @@ class ServiceController:
 
     def apply_to_service(self, request, service_id: int) -> dict:
         service = get_object_or_404(Service, id=service_id)
+        if service.user == request.user:
+            raise HttpError(400, "You cannot apply to your own service!")
+        
         if request.user in service.applicants:
             raise HttpError(400, "You have already applied to this service!")
         
@@ -215,11 +242,67 @@ class ServiceController:
         
     def mark_service_completed(self, request, service_id: int) -> dict:
         service = get_object_or_404(Service, id=service_id, user=request.user)
+        if service.state == "completed":
+            raise HttpError(400, "Service is already completed!")
         service.state = "completed"
         service.save()
+        
         return {"message": f"Service '{service.title}' marked as completed!"}
+    
+    def get_progress_status_of_service(self, request, service_id: int) -> dict:
+            service = get_object_or_404(Service, id=service_id, user=request.user)
+            return {"state": service.state}
+        
+    def get_list_of_applicants_with_their_states(self, request, service_id: int) -> dict:
+        service = get_object_or_404(Service, id=service_id)
+        res = {}
+        for applicant in service.applicants:
+            user = get_user_model().objects.get(id=applicant["user_id"])
+            res[user.username] = applicant["applicant_state"]
+            
+        return res
+    
+    def get_list_of_all_user_jobs_with_status(self, request, user_id) -> list:
+        services = JobService.objects.filter(user=user_id)
+        res = []
+        for service in services:
+            res.append({'title': service.title, 'state': service.state})
+        return res
 
+    def get_list_of_all_user_free_services_with_status(self, request, user_id) -> list:
+        services = FreeService.objects.filter(user=user_id)
+        res = []
+        for service in services:
+            res.append({'title': service.title, 'state': service.state})
+        return res
 
+    def get_list_of_all_user_volunteering_services_with_status(self, request, user_id) -> list:
+        services = VolunteeringService.objects.filter(user=user_id)
+        res = []
+        for service in services:
+            res.append({'title': service.title, 'state': service.state})
+        return res
+
+    def get_list_of_all_user_services_with_status(self, request, user_id) -> list:
+        res = []
+        res.extend(self.get_list_of_all_user_jobs_with_status(request, user_id))
+        res.extend(self.get_list_of_all_user_free_services_with_status(request, user_id))
+        res.extend(self.get_list_of_all_user_volunteering_services_with_status(request, user_id))
+        return res
+
+        
+    
+    def get_applicant_state(self, request, service_id: int) -> dict:
+        user= request.user
+        
+        service= get_object_or_404(Service, id=service_id)
+
+        for applicant in service.applicants:
+            if applicant["user_id"] == user.id:
+                return {"state": applicant["applicant_state"]}
+        raise HttpError(400, f"User '{user.id}' has not applied to this service!")
+        
+                
 
     def update_service_state(self, request, service_id: int, new_state: str) -> dict:
         allowed_states = ["pending", "accepted", "inProgress", "completed"]
@@ -233,7 +316,6 @@ class ServiceController:
     
     
     
-#if it is canceled, later make sure no one can apply to it
     def cancel_service(self, request, service_id: int) -> dict:
         service = get_object_or_404(Service, id=service_id, user=request.user)
         if service.state != "pending":
@@ -294,8 +376,38 @@ class ServiceController:
     
 
    
-    # def get_saved_service_by_user_id(self, user_id: int) -> list[Service]:
-    #     return Service.objects.filter(saved_users__id=user_id)
+    def save_service(self, request, service_id: int) -> dict:
+        user = request.user
+        service = get_object_or_404(Service, id=service_id)
+        
+        saved_service_data = {"id": service.id, "title": service.title, "state": service.state}
+        
+        for saved_service in user.saved_services:
+            if saved_service["id"] == service.id:
+                saved_service["title"] = service.title
+                saved_service["state"] = service.state
+                user.save()
+                return {"message": f"Service '{service.title}' updated successfully!"}
+        
+        user.saved_services.append(saved_service_data)
+        user.save()
+        return {"message": f"Service '{service.title}' saved successfully!"}
+    
+
+    def unsave_service(self, request, service_id: int) -> dict:
+        user = request.user
+        service = get_object_or_404(Service, id=service_id)
+        
+        saved_service_data = {"id": service.id, "title": service.title, "state": service.state}
+        
+        for saved_service in user.saved_services:
+            if saved_service["id"] == service.id:
+                user.saved_services.remove(saved_service)
+                user.save()
+                return {"message": f"Service '{service.title}' removed from saved services!"}
+        
+        raise HttpError(400, f"Service '{service.title}' is not saved!")
+    
     
     
 
@@ -330,6 +442,15 @@ class ServiceController:
 
     def get_services_by_date_time_range(self, date_time_range: list[str]) -> list[Service]:
         return Service.objects.filter(date_time_range=date_time_range)
+    
+    def get_all_free_services(self) -> list[Service]:
+        return FreeService.objects.all()
+    
+    def get_all_job_services(self) -> list[Service]:
+        return JobService.objects.all()
+    
+    def get_all_volunteering_services(self) -> list[Service]:
+        return VolunteeringService.objects.all()
     
     
     def get_completed_services_of_user(self, user_id: Optional[int] = None) -> list[Service]:

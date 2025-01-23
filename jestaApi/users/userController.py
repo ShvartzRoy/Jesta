@@ -9,6 +9,9 @@ from .schemas import *
 from ninja.errors import *
 from .check_fields import *
 from django.contrib.auth.hashers import check_password
+from django.core.mail import send_mail
+from django.conf import settings
+
 
 
 class userController:
@@ -96,3 +99,45 @@ class userController:
         user.set_password(new_password)
         user.save()
         return {"success": True, "message": "Password updated successfully"}
+    
+    
+    def get_saved_services(self, request) -> list:
+        user = request.user
+        if not user.is_authenticated:
+            raise HttpError(401, "Unauthorized")
+        return user.saved_services
+   
+   
+    '''
+    #later make sharing possible, like open different platforms to share the saved servicess
+    def share_saved_services_listing_to_a_given_email(self, request, email: str) -> dict:
+        user = request.user
+        saved_services = user.saved_services 
+        if not saved_services:
+            return {"message": "No saved services to share."}
+        
+        services_list = "\n".join(
+            [f"ID: {service['id']}, Title: {service['title']}, State: {service['state']}" for service in saved_services]
+        )
+        
+        email_subject = f"{user.email} has shared their saved services with you!!"
+        email_body = (
+            f"Hello,\n\n"
+            f"{user.email} has shared their saved services listing with you. Here are the details:\n\n"
+            f"{services_list}\n\n"
+            f"Best regards,\nYour Platform Team"
+        )
+        
+        try:
+            send_mail(
+                subject=email_subject,
+                message=email_body,
+                from_email=settings.DEFAULT_FROM_EMAIL,  
+                recipient_list=[email],
+                fail_silently=False,
+            )
+            return {"message": f"Saved services listing shared successfully to {email}."}
+        except Exception as e:
+            return {"error": f"Failed to send email. Error: {str(e)}"}
+
+        '''

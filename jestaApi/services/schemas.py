@@ -22,6 +22,7 @@ class ServiceSchema(BaseModel):
     service_from: str
     offered_payment: float 
     is_job: bool
+    is_volunteering: bool
 
     @classmethod
     def from_model(cls, instance):
@@ -41,6 +42,7 @@ class ServiceSchema(BaseModel):
             offered_payment=float(instance.offered_payment),
             service_from=instance.service_from,
             is_job=instance.is_job,
+            is_volunteering=instance.is_volunteering
         )
         
     class Config:
@@ -69,6 +71,7 @@ class ServiceCreateSchema(BaseModel):
     estimated_duration: timedelta  #format is ISO8601, example: PT50M = 50 minutes
     offered_payment: Optional[float] = Field(None, description="The offered payment for job services")
     service_from: Optional[str] = Field("publisher", description="Service type: publisher or provider")
+    is_volunteering: Optional[bool] = Field(False, description="True if the service is a volunteering service")
 
 
 class ServiceUpdateSchema(BaseModel):

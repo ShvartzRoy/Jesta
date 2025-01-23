@@ -89,6 +89,38 @@ def search_completed_services(request, payload: SearchCriteriaSchema):
 def mark_service_completed(request, service_id: int):
     return sc.mark_service_completed(request, service_id)
 
+
+@router.post("/get_progress_status_of_service/{service_id}", response={200: dict})
+def get_progress_status_of_service(request, service_id: int):
+    return sc.get_progress_status_of_service(request, service_id)
+
+@router.post("/get_list_of_applicants_with_their_states/{service_id}", response={200: dict})
+def get_list_of_applicants_with_their_states(request, service_id: int):
+    return sc.get_list_of_applicants_with_their_states(request, service_id)
+
+
+@router.post("/get_list_of_all_user_jobs_with_status/{user_id}", response={200: list})
+def get_list_of_all_user_jobs_with_status(request, user_id: int):
+    return sc.get_list_of_all_user_jobs_with_status(request, user_id)
+
+@router.post("/get_list_of_all_user_free_services_with_status/{user_id}", response={200: list})
+def get_list_of_all_user_free_services_with_status(request, user_id: int):
+    return sc.get_list_of_all_user_free_services_with_status(request, user_id)
+
+@router.post("/get_list_of_all_user_volunteering_services_with_status/{user_id}", response={200: list})
+def get_list_of_all_user_volunteering_services_with_status(request, user_id: int):
+    return sc.get_list_of_all_user_volunteering_services_with_status(request, user_id)
+
+@router.post("/get_list_of_all_user_services_with_status/{user_id}", response={200: list})
+def get_list_of_all_user_services_with_status(request, user_id: int):
+    return sc.get_list_of_all_user_services_with_status(request, user_id)
+
+
+@router.post("/get_applicant_state/{service_id}", response={200: dict})
+def get_applicant_state(request, service_id: int):
+    return sc.get_applicant_state(request, service_id)
+
+
 @router.post("/cancel_service/{service_id}", response={200: dict})
 def cancel_service(request, service_id: int):
     return sc.cancel_service(request, service_id)
@@ -130,9 +162,14 @@ def get_offered_services(request):
     return [ServiceSchema.from_model(service) for service in services]
 
 
-# @router.get("/get_saved_services/{user_id}", response=list)
-# def get_saved_services(request, user_id: int):
-#     return sc.get_saved_service_by_user_id(user_id)
+@router.get("/save_service/{service_id}", response={200: dict})
+def save_service(request, service_id: int):
+    return sc.save_service(request, service_id)
+
+@router.get("/unsave_service/{service_id}", response={200: dict})
+def unsave_service(request, service_id: int):
+    return sc.unsave_service(request, service_id)
+
 
 @router.get("/get_published_services/{user_id}", response={200: list[ServiceSchema]})
 def get_published_services(request, user_id: int):
@@ -197,6 +234,24 @@ def get_services_by_date_time_range(request, date_time_range: str):
         return [ServiceSchema.from_model(service) for service in services]
     except Exception as e:
         return {"error": str(e)}
+    
+    
+@router.get("/get_all_job_services", response={200: list[ServiceSchema]})
+def get_all_job_services(request):
+    services = JobService.objects.all()
+    return [ServiceSchema.from_model(service) for service in services]
+
+@router.get("/get_all_free_services", response={200: list[ServiceSchema]})
+def get_all_free_services(request):
+    services = Service.objects.filter(offered_payment=0)
+    return [ServiceSchema.from_model(service) for service in services]
+
+@router.get("/get_all_volunteering_services", response={200: list[ServiceSchema]})
+def get_all_volunteering_services(request):
+    services = Service.objects.filter(is_volunteering=True)
+    return [ServiceSchema.from_model(service) for service in services]
+
+
 
 
 

@@ -1,4 +1,5 @@
-from pydantic import BaseModel
+from typing import List
+from pydantic import BaseModel, EmailStr
 from ninja import Schema, ModelSchema
 
 from .models import *
@@ -10,11 +11,20 @@ class LogInSchema(BaseModel):
 class RegisterSchema(BaseModel):
     email: str
     password: str
+    
+class SavedServiceSchema(BaseModel):
+    id: int
+    state: str
+    title: str
+
 
 class UserSchema(ModelSchema):
+    saved_services: List[SavedServiceSchema]
+    
     class Meta:
         model = CustomUser
-        fields = ["id","email"]
+        fields = ["id","email", "saved_services"]
+        
 
 class Error(Schema):
     error:str
@@ -22,6 +32,9 @@ class Error(Schema):
 class Msg(Schema):
     msg:str
 
+class EmailSchema(BaseModel):
+    email: EmailStr
+    
 
 class ProfileSchema(ModelSchema):
     class Meta:
