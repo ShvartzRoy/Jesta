@@ -242,6 +242,8 @@ class ServiceController:
         
     def mark_service_completed(self, request, service_id: int) -> dict:
         service = get_object_or_404(Service, id=service_id, user=request.user)
+        if service.state == "completed":
+            raise HttpError(400, "Service is already completed!")
         service.state = "completed"
         service.save()
         
@@ -374,8 +376,38 @@ class ServiceController:
     
 
    
-    # def get_saved_service_by_user_id(self, user_id: int) -> list[Service]:
-    #     return Service.objects.filter(saved_users__id=user_id)
+    def save_service(self, request, service_id: int) -> dict:
+        user = request.user
+        service = get_object_or_404(Service, id=service_id)
+        
+        saved_service_data = {"id": service.id, "title": service.title, "state": service.state}
+        
+        for saved_service in user.saved_services:
+            if saved_service["id"] == service.id:
+                saved_service["title"] = service.title
+                saved_service["state"] = service.state
+                user.save()
+                return {"message": f"Service '{service.title}' updated successfully!"}
+        
+        user.saved_services.append(saved_service_data)
+        user.save()
+        return {"message": f"Service '{service.title}' saved successfully!"}
+    
+
+    def unsave_service(self, request, service_id: int) -> dict:
+        user = request.user
+        service = get_object_or_404(Service, id=service_id)
+        
+        saved_service_data = {"id": service.id, "title": service.title, "state": service.state}
+        
+        for saved_service in user.saved_services:
+            if saved_service["id"] == service.id:
+                user.saved_services.remove(saved_service)
+                user.save()
+                return {"message": f"Service '{service.title}' removed from saved services!"}
+        
+        raise HttpError(400, f"Service '{service.title}' is not saved!")
+    
     
     
 

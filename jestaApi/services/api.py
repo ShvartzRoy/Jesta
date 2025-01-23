@@ -162,9 +162,14 @@ def get_offered_services(request):
     return [ServiceSchema.from_model(service) for service in services]
 
 
-# @router.get("/get_saved_services/{user_id}", response=list)
-# def get_saved_services(request, user_id: int):
-#     return sc.get_saved_service_by_user_id(user_id)
+@router.get("/save_service/{service_id}", response={200: dict})
+def save_service(request, service_id: int):
+    return sc.save_service(request, service_id)
+
+@router.get("/unsave_service/{service_id}", response={200: dict})
+def unsave_service(request, service_id: int):
+    return sc.unsave_service(request, service_id)
+
 
 @router.get("/get_published_services/{user_id}", response={200: list[ServiceSchema]})
 def get_published_services(request, user_id: int):
