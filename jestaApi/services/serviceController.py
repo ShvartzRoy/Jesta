@@ -159,6 +159,9 @@ class ServiceController:
 
     def apply_to_service(self, request, service_id: int) -> dict:
         service = get_object_or_404(Service, id=service_id)
+        if service.user == request.user:
+            raise HttpError(400, "You cannot apply to your own service!")
+        
         if request.user in service.applicants:
             raise HttpError(400, "You have already applied to this service!")
         
@@ -243,8 +246,61 @@ class ServiceController:
         service.save()
         
         return {"message": f"Service '{service.title}' marked as completed!"}
+    
+    def get_progress_status_of_service(self, request, service_id: int) -> dict:
+            service = get_object_or_404(Service, id=service_id, user=request.user)
+            return {"state": service.state}
+        
+    def get_list_of_applicants_with_their_states(self, request, service_id: int) -> dict:
+        service = get_object_or_404(Service, id=service_id)
+        res = {}
+        for applicant in service.applicants:
+            user = get_user_model().objects.get(id=applicant["user_id"])
+            res[user.username] = applicant["applicant_state"]
+            
+        return res
+    
+    def get_list_of_all_user_jobs_with_status(self, request, user_id) -> list:
+        services = JobService.objects.filter(user=user_id)
+        res = []
+        for service in services:
+            res.append({'title': service.title, 'state': service.state})
+        return res
 
+    def get_list_of_all_user_free_services_with_status(self, request, user_id) -> list:
+        services = FreeService.objects.filter(user=user_id)
+        res = []
+        for service in services:
+            res.append({'title': service.title, 'state': service.state})
+        return res
 
+    def get_list_of_all_user_volunteering_services_with_status(self, request, user_id) -> list:
+        services = VolunteeringService.objects.filter(user=user_id)
+        res = []
+        for service in services:
+            res.append({'title': service.title, 'state': service.state})
+        return res
+
+    def get_list_of_all_user_services_with_status(self, request, user_id) -> list:
+        res = []
+        res.extend(self.get_list_of_all_user_jobs_with_status(request, user_id))
+        res.extend(self.get_list_of_all_user_free_services_with_status(request, user_id))
+        res.extend(self.get_list_of_all_user_volunteering_services_with_status(request, user_id))
+        return res
+
+        
+    
+    def get_applicant_state(self, request, service_id: int) -> dict:
+        user= request.user
+        
+        service= get_object_or_404(Service, id=service_id)
+
+        for applicant in service.applicants:
+            if applicant["user_id"] == user.id:
+                return {"state": applicant["applicant_state"]}
+        raise HttpError(400, f"User '{user.id}' has not applied to this service!")
+        
+                
 
     def update_service_state(self, request, service_id: int, new_state: str) -> dict:
         allowed_states = ["pending", "accepted", "inProgress", "completed"]
