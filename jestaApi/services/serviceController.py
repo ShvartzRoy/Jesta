@@ -27,6 +27,9 @@ class ServiceController:
         #publisher or provider
         service_from = payload.service_from or "publisher"
         
+        if payload.offered_payment and payload.offered_payment > 0 and payload.is_volunteering==True:
+            raise HttpError(400, "You cannot offer a payment for a volunteering service!")
+        
         if payload.offered_payment and payload.offered_payment > 0:
             service = JobService.objects.create(
                 user=request.user,
@@ -37,12 +40,14 @@ class ServiceController:
                 estimated_duration=payload.estimated_duration,
                 state="pending",
                 service_from=service_from,
+                is_volunteering=False,
+                is_job=True,
                 offered_payment=payload.offered_payment,
                 applicants=[],
             )
             
-        else:
-            service = Service.objects.create(
+        if payload.offered_payment == 0 and payload.is_volunteering==False:
+            service = FreeService.objects.create(
                 user=request.user,
                 title=payload.title,
                 description=payload.description,
@@ -51,6 +56,25 @@ class ServiceController:
                 estimated_duration=payload.estimated_duration,
                 state="pending",
                 service_from=service_from,
+                is_volunteering=False,
+                is_job=False,
+                offered_payment=0,
+                applicants=[],
+
+            )
+                
+        else:
+            service = VolunteeringService.objects.create(
+                user=request.user,
+                title=payload.title,
+                description=payload.description,
+                location=payload.location,
+                date_time_range=payload.date_time_range,
+                estimated_duration=payload.estimated_duration,
+                state="pending",
+                service_from=service_from,
+                is_volunteering=True,
+                is_job=False,
                 offered_payment=0,
                 applicants=[],
 
@@ -217,6 +241,7 @@ class ServiceController:
         service = get_object_or_404(Service, id=service_id, user=request.user)
         service.state = "completed"
         service.save()
+        
         return {"message": f"Service '{service.title}' marked as completed!"}
 
 
@@ -233,7 +258,6 @@ class ServiceController:
     
     
     
-#if it is canceled, later make sure no one can apply to it
     def cancel_service(self, request, service_id: int) -> dict:
         service = get_object_or_404(Service, id=service_id, user=request.user)
         if service.state != "pending":
@@ -330,6 +354,15 @@ class ServiceController:
 
     def get_services_by_date_time_range(self, date_time_range: list[str]) -> list[Service]:
         return Service.objects.filter(date_time_range=date_time_range)
+    
+    def get_all_free_services(self) -> list[Service]:
+        return FreeService.objects.all()
+    
+    def get_all_job_services(self) -> list[Service]:
+        return JobService.objects.all()
+    
+    def get_all_volunteering_services(self) -> list[Service]:
+        return VolunteeringService.objects.all()
     
     
     def get_completed_services_of_user(self, user_id: Optional[int] = None) -> list[Service]:

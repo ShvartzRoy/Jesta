@@ -57,6 +57,8 @@ class Service(models.Model):
     
     is_job = models.BooleanField(default=False) 
     
+    is_volunteering = models.BooleanField(default=False)
+    
     
     def save(self, *args, **kwargs):
         self.is_job = self.offered_payment > 0
@@ -72,8 +74,14 @@ class JobService(Service):
         super().save(*args, **kwargs)
 
 class FreeService(Service):
-    pass
-
+    def save(self, *args, **kwargs):
+        self.offered_payment = 0 
+        self.is_job = False 
+        super().save(*args, **kwargs)
+    
 
 class VolunteeringService(Service):
-    pass
+    def save(self, *args, **kwargs):
+        self.is_volunteering = True  
+        super().save(*args, **kwargs)
+    

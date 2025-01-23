@@ -197,6 +197,24 @@ def get_services_by_date_time_range(request, date_time_range: str):
         return [ServiceSchema.from_model(service) for service in services]
     except Exception as e:
         return {"error": str(e)}
+    
+    
+@router.get("/get_all_job_services", response={200: list[ServiceSchema]})
+def get_all_job_services(request):
+    services = JobService.objects.all()
+    return [ServiceSchema.from_model(service) for service in services]
+
+@router.get("/get_all_free_services", response={200: list[ServiceSchema]})
+def get_all_free_services(request):
+    services = Service.objects.filter(offered_payment=0)
+    return [ServiceSchema.from_model(service) for service in services]
+
+@router.get("/get_all_volunteering_services", response={200: list[ServiceSchema]})
+def get_all_volunteering_services(request):
+    services = Service.objects.filter(is_volunteering=True)
+    return [ServiceSchema.from_model(service) for service in services]
+
+
 
 
 
