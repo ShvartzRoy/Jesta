@@ -63,7 +63,7 @@ class ServiceController:
 
             )
                 
-        else:
+        if payload.offered_payment == 0 and payload.is_volunteering==True:
             service = VolunteeringService.objects.create(
                 user=request.user,
                 title=payload.title,
@@ -89,7 +89,7 @@ class ServiceController:
     def delete_service(self, request, service_id: int) -> dict:
         service = get_object_or_404(Service, id=service_id)
         if service.user != request.user:
-            raise HttpError(403, "You do not have permission to delete this service!")
+            raise HttpError(403, "You do not have permission to delete this service!!")
         service.delete()
         return {"message": "Service deleted"}
     

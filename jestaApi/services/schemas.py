@@ -1,7 +1,6 @@
 from pydantic import BaseModel, Field, validator
 from typing import List, Optional
 from datetime import timedelta
-from pydantic import validator
 import re
 
 class ApplicantSchema(BaseModel):

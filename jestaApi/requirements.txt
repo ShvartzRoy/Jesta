@@ -6,4 +6,4 @@ pillow
 python-dateutil
 djangorestframework-simplejwt
 
-#pydantic[email]>=1.10.0
+pydantic[email]>=1.10.0
