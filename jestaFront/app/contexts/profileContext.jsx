@@ -8,42 +8,47 @@ axios.defaults.withCredentials = true;
 const ProfileContext = createContext();
 
 const PContext = ({ children }) => {
-    const { user } = useContext(UserContext);
-    //starting state for profile
+    const { user } = useContext(UserContext); // Access UserContext
     const [profile, setProfile] = useState({
-        name: null,
+        name: undefined,
     });
 
     useEffect(() => {
-        console.log("Im right here!");
         const initializeAuth = async () => {
-        try {
-            console.log("checking profile context for:", user.id);
-            const response = await axios.get(`${process.env.EXPO_PUBLIC_HOST}/api/users/get_profile/${user.id}`, {
-            headers: {"Content-Type": "application/json"},
-            withCredentials: true
-            });
-            console.log("User response:", response.data);
-            setProfile({
-                name: response.data.name,
-                "bio": response.data.bio,
-                "age": response.data.age,
-                "image": response.data.image,
-                "resume": response.data.resume,
-                "facebook": response.data.facebook,
-                "linkedin": response.data.linkedin,
-                "instagram": response.data.instagram,
-            });
-        } catch (error) {
-            setProfile({name: null});
-            console.log("didnt find profile for:", user.id);
-        }
+            if (user?.id) { // Only fetch if user.id exists
+                try {
+                    console.log("Fetching profile for:", user.id);
+                    const response = await axios.get(`${process.env.EXPO_PUBLIC_HOST}/api/users/get_profile/${user.id}`, {
+                        headers: { "Content-Type": "application/json" },
+                        withCredentials: true,
+                    });
+                    console.log("Profile data:", response.data);
+
+                    setProfile({
+                        name: response.data.name,
+                        bio: response.data.bio,
+                        age: response.data.age,
+                        image: response.data.image,
+                        resume: response.data.resume,
+                        facebook: response.data.facebook,
+                        linkedin: response.data.linkedin,
+                        instagram: response.data.instagram,
+                    });
+                } catch (error) {
+                    console.error("Error fetching profile:", error);
+                    setProfile({ name: null }); // Fallback for users without profiles
+                }
+            }
         };
 
         initializeAuth();
-    }, []);
+    }, [user?.id]); // Re-run whenever `user.id` changes
 
-    return <ProfileContext.Provider value={{ profile, setProfile}}>{children}</ProfileContext.Provider>;
+    return (
+        <ProfileContext.Provider value={{ profile, setProfile }}>
+            {children}
+        </ProfileContext.Provider>
+    );
 };
 
 export default PContext;

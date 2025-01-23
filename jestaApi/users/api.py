@@ -38,6 +38,7 @@ def delete_user(request, user_password: str):
 
 @router.post("/edit_profile", response={200: ProfileSchema, 401: Error})
 def edit_profile(request, payload: ProfileSchema, image: UploadedFile = File(None), resume: UploadedFile = File(None)):
+    print("here")
     user = pc.edit_profile(request, payload , image, resume)
     return user
 

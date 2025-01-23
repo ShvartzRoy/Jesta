@@ -10,7 +10,8 @@ export default function LoginScreen() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const {user,setUser, saveToken} = useContext(UserContext);
-  const { profile } = useContext(ProfileContext); // Access profile context
+  const { profile, setProfile} = useContext(ProfileContext); // Access profile context
+  const { fetchAndSetProfile } = useContext(ProfileContext);
   const router = useRouter();
 
   const handleLogin = async () => {
@@ -29,14 +30,35 @@ export default function LoginScreen() {
       //set current user
       setUser({loggedIn: true, userName: response.data.username, id: response.data.id});
 
-      //navigate to another screen or clear input fields
       //if the user has not set up their profile, redirect to set_profile page
-      if (profile.name == null) {
-        router.push('/set_profile');
+      //check user profile
+      // Fetch the profile of the logged-in user
+      try {
+            console.log("checking profile context for:", user.id);
+            const response = await axios.get(`${process.env.EXPO_PUBLIC_HOST}/api/users/get_profile/${user.id}`, {
+            headers: {"Content-Type": "application/json"},
+            withCredentials: true
+            });
+            console.log("User response:", response.data);
+            setProfile({
+                name: response.data.name,
+                "bio": response.data.bio,
+                "age": response.data.age,
+                "image": response.data.image,
+                "resume": response.data.resume,
+                "facebook": response.data.facebook,
+                "linkedin": response.data.linkedin,
+                "instagram": response.data.instagram,
+            });
+            console.log("Profile set to:", profile);
+      } catch (error) {
+            setProfile({name: null});
+            router.replace('/set_profile');
+            console.log("didnt find profile for:", user.id);
       }
-      else{
-        router.push("/explore_page");
-      }
+
+      
+      router.replace("/explore_page");
       setEmail("");
       setPassword("");
     } catch (error) {

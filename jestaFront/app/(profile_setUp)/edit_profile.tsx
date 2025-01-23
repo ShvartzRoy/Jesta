@@ -14,7 +14,7 @@ import { useRouter } from 'expo-router';
 import axios from 'axios';
 import { UserContext } from '../contexts/authContext';
 
-const Set_profile = () => {
+const Edit_profile = () => {
   const { user } = useContext(UserContext);
   const router = useRouter();
   // State variables for form inputs
@@ -109,10 +109,13 @@ const Set_profile = () => {
 
   return (
     <View style={styles.container}>
+      <TouchableOpacity style={styles.returnButton} onPress={() => router.replace('/profile')}>
+        <Text style={styles.returnButtonText}>{'<'}</Text>
+      </TouchableOpacity>
       <Text style={styles.header}>Edit Profile</Text>
       <TextInput
         style={styles.input}
-        placeholder="Name*"
+        placeholder="Name"
         value={name}
         onChangeText={setName}
       />
@@ -125,7 +128,7 @@ const Set_profile = () => {
       />
       <TextInput
         style={styles.input}
-        placeholder="Age* (must be at least 15)"
+        placeholder="Age"
         value={age}
         onChangeText={setAge}
         keyboardType="numeric"
@@ -201,13 +204,6 @@ const styles = StyleSheet.create({
     padding: 12,
     marginBottom: 12,
   },
-  required_field: {
-    borderWidth: 1,
-    borderColor: '#ccc',
-    borderRadius: 8,
-    padding: 12,
-    marginBottom: 12,
-  },
   button: {
     backgroundColor: '#007bff',
     padding: 12,
@@ -238,6 +234,20 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     fontSize: 16,
   },
+  returnButton: {
+    backgroundColor: '#007bff',
+    paddingVertical: 10,
+    paddingHorizontal: 8,
+    borderRadius: 8,
+    alignItems: 'center',
+    width:40,
+    justifyContent: 'center',
+  },
+  returnButtonText: {
+    color: '#fff',
+    fontWeight: 'bold',
+    fontSize: 16,
+  },
 });
 
-export default Set_profile;
+export default Edit_profile;
