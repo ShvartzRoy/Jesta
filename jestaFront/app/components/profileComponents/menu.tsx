@@ -24,6 +24,9 @@ const Menu = ({ onClose }) => {
         <TouchableOpacity onPress={handleLogout} style={styles.menuItem}>
           <Text style={styles.menuText}>Logout</Text>
         </TouchableOpacity>
+        <TouchableOpacity onPress={() => router.replace('/edit_profile')} style={styles.menuItem}>
+          <Text style={styles.menuText}>Edit Profile</Text>
+        </TouchableOpacity>
         <TouchableOpacity onPress={onClose} style={styles.closeButton}>
           <Text style={styles.closeButtonText}>Close</Text>
         </TouchableOpacity>
@@ -52,6 +55,7 @@ const styles = StyleSheet.create({
   },
   menuItem: {
     padding: 12,
+    marginBottom: 8,
     backgroundColor: '#f2f2f2',
     width: '100%',
     alignItems: 'center',

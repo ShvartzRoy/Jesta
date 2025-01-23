@@ -38,8 +38,9 @@ def register(request, payload: RegisterSchema):
 def delete_user(request, user_password: str):
     return uc.delete_user(request, user_password)
 
-@router.put("/edit_profile", response={200: ProfileSchema, 401: Error})
+@router.post("/edit_profile", response={200: ProfileSchema, 401: Error})
 def edit_profile(request, payload: ProfileSchema, image: UploadedFile = File(None), resume: UploadedFile = File(None)):
+    print("here")
     user = pc.edit_profile(request, payload , image, resume)
     return user
 

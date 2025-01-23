@@ -67,13 +67,28 @@ const ProfileScreen = () => {
       {/* Profile Details */}
       <ScrollView contentContainerStyle={styles.container}>
         <Image source={{ uri: profile?.image }} style={styles.image} />
-        <Text style={styles.name}>{profile?.name}</Text>
+        <View style={styles.nameAndAgeContainer}> 
+          <Text style={styles.name}>{profile?.name}</Text>
+          <Text style={styles.age}>({profile?.age})</Text>
+        </View>
         <Text style={styles.bio}>{profile?.bio}</Text>
-        <Text style={styles.details}>Age: {profile?.age}</Text>
-        <Text style={styles.details}>Resume: {profile?.resume}</Text>
-        <Text style={styles.links}>Facebook: {profile?.facebook}</Text>
-        <Text style={styles.links}>LinkedIn: {profile?.linkedin}</Text>
-        <Text style={styles.links}>Instagram: {profile?.instagram}</Text>
+        <View style={styles.socialLinks}>
+          {profile?.facebook && (
+            <TouchableOpacity style={styles.linkContainer}>
+              <Text style={styles.linkText}>Facebook</Text>
+            </TouchableOpacity>
+          )}
+          {profile?.linkedin && (
+            <TouchableOpacity style={styles.linkContainer}>
+              <Text style={styles.linkText}>LinkedIn</Text>
+            </TouchableOpacity>
+          )}
+          {profile?.instagram && (
+            <TouchableOpacity style={styles.linkContainer}>
+              <Text style={styles.linkText}>Instagram</Text>
+            </TouchableOpacity>
+          )}
+        </View>
       </ScrollView>
 
       {/* Menu */}
@@ -108,16 +123,30 @@ const styles = StyleSheet.create({
     padding: 16,
     alignItems: 'center',
   },
-  image: {
-    width: 150,
-    height: 150,
-    borderRadius: 75,
+  profileInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
     marginBottom: 16,
+  },
+  image: {
+    width: 100,
+    height: 100,
+    borderRadius: 50,
+    marginRight: 16,
+  },
+  nameAndAgeContainer: { 
+    alignItems: 'center', 
+    flexDirection: 'row',
   },
   name: {
     fontSize: 24,
     fontWeight: 'bold',
-    marginBottom: 8,
+    marginBottom: 4,
+    marginRight: 8,
+  },
+  age: {
+    fontSize: 16,
+    color: '#888',
   },
   bio: {
     fontSize: 16,
@@ -125,18 +154,18 @@ const styles = StyleSheet.create({
     marginBottom: 16,
     textAlign: 'center',
   },
-  details: {
-    fontSize: 16,
-    marginBottom: 8,
+  socialLinks: {
+    flexDirection: 'row',
   },
-  links: {
-    fontSize: 16,
-    color: 'blue',
-    marginBottom: 8,
+  linkContainer: {
+    borderWidth: 1,
+    borderColor: '#ccc',
+    borderRadius: 8,
+    padding: 8,
+    marginHorizontal: 8,
   },
-  error: {
-    color: 'red',
-    fontSize: 16,
+  linkText: {
+    color: '#007bff',
   },
 });
 
