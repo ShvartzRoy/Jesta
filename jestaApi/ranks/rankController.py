@@ -111,3 +111,18 @@ class RankController():
         rank.save()
 
         return rank.save()
+    
+    def get_badges(self, user_id: int) -> list[Badge]:
+        user = get_object_or_404(settings.AUTH_USER_MODEL, id=user_id)
+        rank = Rank.objects.get(user=user)
+        return list(rank.badges.all())
+    
+    def get_level(self, user_id: int) -> int:
+        user = get_object_or_404(settings.AUTH_USER_MODEL, id=user_id)
+        rank = Rank.objects.get(user=user)
+        return rank.level
+    
+    def get_xp(self, user_id: int) -> int:
+        user = get_object_or_404(settings.AUTH_USER_MODEL, id=user_id)
+        rank = Rank.objects.get(user=user)
+        return rank.xp
