@@ -11,7 +11,6 @@ from ninja.errors import HttpError
 from dateutil.parser import isoparse
 from datetime import timedelta
 
-
 class ServiceController:
     
     
