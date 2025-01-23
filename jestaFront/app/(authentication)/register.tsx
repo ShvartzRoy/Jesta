@@ -1,12 +1,14 @@
 // screens/RegisterScreen.js
-import React, { useState } from "react";
+import React, { useState , useContext} from "react";
 import { View, Text, TextInput, Button, StyleSheet, Alert } from "react-native";
 import {Link, useRouter} from 'expo-router';
+import { UserContext } from "../contexts/authContext";
 import axios from "axios";
 
 export default function RegisterScreen() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const {user,setUser} = useContext(UserContext);
   const [loading, setLoading] = useState(false);
   const router = useRouter();
 
@@ -26,7 +28,15 @@ export default function RegisterScreen() {
       // Handle success
       Alert.alert("Success", "Registration successful!");
       console.log("User registered:", response.data);
-
+      const loginResponse = await axios.post(`${process.env.EXPO_PUBLIC_HOST}/api/users/login`, {
+        email: email.trim(),
+        password: password.trim(),
+      });
+      // Handle success
+      Alert.alert("Success", "Login successful!");
+      console.log("User logged in:", response.data);
+      //set current user
+      setUser({loggedIn: true, userName: response.data.username, id: response.data.id});
       // Optionally navigate to another screen or clear input fields
       router.push("/set_profile");
       setEmail("");
