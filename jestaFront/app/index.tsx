@@ -7,7 +7,7 @@ import { ProfileContext } from './contexts/profileContext';
 
 const Index = () => {
   const { user } = useContext(UserContext); // Access user context
-  const { profile } = useContext(ProfileContext); // Access profile context
+  const { profile, loading} = useContext(ProfileContext); // Access profile context
   const router = useRouter();
   const [isReady, setIsReady] = useState(false); // Tracks when context is ready
 
@@ -15,9 +15,7 @@ const Index = () => {
     // Navigate based on user state after context is ready
     if (user.loggedIn != undefined) {
       if (user?.loggedIn) {
-        if(profile?.name == null){
-          console.log("profile ",profile)
-          console.log(" im here ");
+        if(profile?.name != null && !loading){
           router.replace('/set_profile');
         }
         else{

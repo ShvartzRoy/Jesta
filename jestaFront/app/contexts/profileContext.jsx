@@ -12,7 +12,7 @@ const PContext = ({ children }) => {
     const [profile, setProfile] = useState({
         name: undefined,
     });
-
+    const [loading, setLoading] = useState(true); // Track profile loading state
     useEffect(() => {
         const initializeAuth = async () => {
             if (user?.id) { // Only fetch if user.id exists
@@ -40,12 +40,12 @@ const PContext = ({ children }) => {
                 }
             }
         };
-
+        setLoading(false); // Done loading
         initializeAuth();
     }, [user?.id]); // Re-run whenever `user.id` changes
 
     return (
-        <ProfileContext.Provider value={{ profile, setProfile }}>
+        <ProfileContext.Provider value={{ profile, loading, setProfile }}>
             {children}
         </ProfileContext.Provider>
     );

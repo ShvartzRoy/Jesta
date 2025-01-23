@@ -1,4 +1,4 @@
-import React, { useContext, useState } from 'react';
+import React, { useContext, useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -28,7 +28,7 @@ const Edit_profile = () => {
   const [resume, setResume] = useState(null);
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
-  const [isError, setError] = useState([false,'']);
+  const [isError, setError] = useState([false, '']);
 
   const handleImageUpload = async () => {
     const result = await launchImageLibrary({
@@ -58,11 +58,11 @@ const Edit_profile = () => {
   const handleSubmit = async () => {
     setLoading(true);
     setSuccess(false);
-    setError([false,''])
+    setError([false, '']);
     const formData = new FormData();
 
     // Wrap all fields in a 'payload' key
-      formData.append(
+    formData.append(
       'payload',
       JSON.stringify({
         name,
@@ -98,13 +98,46 @@ const Edit_profile = () => {
       });
       setSuccess(true);
     } catch (error) {
-      setError([true,error.response?.data]);
-      console.log(isError[1])
+      setError([true, error.response?.data]);
+      console.log(isError[1]);
       console.log('Error updating profile:', error.response?.data || error.message);
     } finally {
       setLoading(false);
     }
   };
+
+  // Fetch profile data on component mount
+  useEffect(() => {
+    const fetchProfile = async () => {
+      if (user.id) {
+        setLoading(true);
+        try {
+          const response = await axios.get(
+            `${process.env.EXPO_PUBLIC_HOST}/api/users/get_profile/${user.id}`,
+            {
+              headers: { 'Content-Type': 'application/json' },
+              withCredentials: true,
+            }
+          );
+          console.log('Profile data:', response.data);
+
+          setName(response.data.name);
+          setBio(response.data.bio);
+          setAge(response.data.age?.toString()); // Convert age to string for input
+          setFacebook(response.data.facebook);
+          setLinkedin(response.data.linkedin);
+          setInstagram(response.data.instagram); 
+        } catch (error) {
+          console.error("Error fetching profile:", error);
+          setLoading(false); 
+        } finally {
+          setLoading(false); 
+        }
+      }
+    };
+
+    fetchProfile();
+  }, [user.id]); 
 
 
   return (
@@ -241,6 +274,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     alignItems: 'center',
     width:40,
+    marginBottom: 16,
     justifyContent: 'center',
   },
   returnButtonText: {
