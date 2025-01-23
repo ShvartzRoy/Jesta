@@ -18,12 +18,10 @@ class SavedServiceSchema(BaseModel):
     title: str
 
 
-class UserSchema(ModelSchema):
-    saved_services: List[SavedServiceSchema]
-    
+class UserSchema(ModelSchema):    
     class Meta:
         model = CustomUser
-        fields = ["id","email", "saved_services"]
+        fields = ["id","email"]
         
 
 class Error(Schema):

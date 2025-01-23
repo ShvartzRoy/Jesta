@@ -57,15 +57,3 @@ def update_email(request, email: str, password: str):
 def update_password(request, old_password: str, new_password: str):
     return uc.change_password(request, old_password, new_password)
 
-
-
-@router.get("/get_saved_services", response=list)
-def get_saved_services(request):
-    return uc.get_saved_services(request)
-
-'''
-@router.post("/share_saved_services_listing", response={200: dict, 400: dict})
-def share_saved_services_listing_to_a_given_email(request, data: EmailSchema):
-    return uc.share_saved_services_listing_to_a_given_email(request, data.email)
-    
-'''
