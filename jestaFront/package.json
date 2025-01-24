@@ -16,7 +16,11 @@
   },
   "dependencies": {
     "@expo/vector-icons": "^14.0.2",
+    "@ptomasroos/react-native-multi-slider": "^2.2.2",
     "@react-native-async-storage/async-storage": "^2.1.0",
+    "@react-native-community/datetimepicker": "^8.2.0",
+    "@react-native-community/slider": "^4.5.5",
+    "@react-native-picker/picker": "^2.11.0",
     "@react-navigation/bottom-tabs": "^7.2.0",
     "@react-navigation/native": "^7.0.14",
     "@react-navigation/stack": "^7.1.1",

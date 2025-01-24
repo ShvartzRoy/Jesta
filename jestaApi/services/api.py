@@ -191,6 +191,11 @@ def get_services_by_tag(request, tag_name: str):
     services = sc.get_services_by_tag(tag_name)
     return [ServiceSchema.from_model(service) for service in services]
 
+@router.get("/get_services_by_title/{name}", response={200: list[ServiceSchema]})
+def get_services_by_title(request, name: str):
+    services = sc.get_services_by_title(name)
+    return [ServiceSchema.from_model(service) for service in services]
+
 @router.get("/get_services_by_location/{location}", response={200: list[ServiceSchema]})
 def get_services_by_location(request, location: str):
     services = sc.get_services_by_location(location)

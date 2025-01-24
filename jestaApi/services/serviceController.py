@@ -414,6 +414,9 @@ class ServiceController:
     def get_services_by_tag(self, tag_name: str) -> list[Service]:
         tag = get_object_or_404(Tag, name=tag_name)
         return Service.objects.filter(tags=tag)
+    
+    def get_services_by_title(self, title: str) -> list[Service]:
+        return Service.objects.filter(title__icontains=title)
 
     def get_services_by_location(self, location: str) -> list[Service]:
         return Service.objects.filter(location__icontains=location)
