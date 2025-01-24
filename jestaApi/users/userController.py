@@ -9,8 +9,8 @@ from .schemas import *
 from ninja.errors import *
 from .check_fields import *
 from django.contrib.auth.hashers import check_password
-from django.core.mail import send_mail
-from django.conf import settings
+# from django.core.mail import send_mail
+# from django.conf import settings
 
 
 
