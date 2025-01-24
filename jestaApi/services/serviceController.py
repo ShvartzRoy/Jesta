@@ -63,7 +63,7 @@ class ServiceController:
 
             )
                 
-        else:
+        if payload.offered_payment == 0 and payload.is_volunteering==True:
             service = VolunteeringService.objects.create(
                 user=request.user,
                 title=payload.title,
