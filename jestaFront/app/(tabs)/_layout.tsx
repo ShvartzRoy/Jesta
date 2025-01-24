@@ -21,7 +21,7 @@ export default function TabLayout() {
         <Tabs.Screen
         name="(explore_page)/explore_page"
         options={{
-          title: 'Welcome to Jesta!',
+          title: 'explore',
           tabBarIcon: ({ color, focused }) => (
             <Ionicons name="briefcase-outline" color={color} size={24}/>
             

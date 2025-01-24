@@ -151,14 +151,24 @@ def get_service(request, service_id: int):
     return ServiceSchema.from_model(service)
 
 
-@router.get("/get_requested_services", response={200: list[ServiceSchema]})
-def get_requested_services(request):
-    services = sc.get_requested_services()
+@router.get("/get_requested_user_services", response={200: list[ServiceSchema]})
+def get_requested_user_services(request):
+    services = sc.get_requested_user_services(request)
     return [ServiceSchema.from_model(service) for service in services]
 
-@router.get("/get_offered_services", response={200: list[ServiceSchema]})
-def get_offered_services(request):
-    services = sc.get_offered_services()
+@router.get("/get_requested_other_user_services", response={200: list[ServiceSchema]})
+def get_requested_other_user_services(request):
+    services = sc.get_requested_other_user_services(request)
+    return [ServiceSchema.from_model(service) for service in services]
+
+@router.get("/get_offered_user_services", response={200: list[ServiceSchema]})
+def get_offered_user_services(request):
+    services = sc.get_offered_user_services(request)
+    return [ServiceSchema.from_model(service) for service in services]
+
+@router.get("/get_offered_other_user_services", response={200: list[ServiceSchema]})
+def get_offered_other_user_services(request):
+    services = sc.get_offered_other_user_services(request)
     return [ServiceSchema.from_model(service) for service in services]
 
 

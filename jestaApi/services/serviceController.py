@@ -368,13 +368,22 @@ class ServiceController:
     def get_service(self, service_id: int) -> Service:
         return get_object_or_404(Service, id=service_id)
     
-    def get_requested_services(self):
-        return Service.objects.filter(service_from="publisher")
+    def get_requested_user_services(self, request) -> list[Service]:
+        return Service.objects.filter(user=request.user, service_from="publisher")
+        
 
-    def get_offered_services(self):
-        return Service.objects.filter(service_from="provider")
+    def get_requested_other_user_services(self , request) -> list[Service]:
+        return Service.objects.filter(service_from="publisher").exclude(user=request.user)
+
     
+    def get_offered_user_services(self, request) -> list[Service]:
+        return Service.objects.filter(user=request.user, service_from="provider")
 
+    
+    def get_offered_other_user_services(self, request) -> list[Service]:
+        return Service.objects.filter(service_from="provider").exclude(user=request.user)
+    
+    
    
     def save_service(self, request, service_id: int) -> dict:
         user = request.user
