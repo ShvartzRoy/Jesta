@@ -1,4 +1,4 @@
-from typing import List
+#from typing import List
 from pydantic import BaseModel, EmailStr
 from ninja import Schema, ModelSchema
 
@@ -19,7 +19,7 @@ class SavedServiceSchema(BaseModel):
 
 
 class UserSchema(ModelSchema):
-    saved_services: List[SavedServiceSchema]
+    saved_services: list[SavedServiceSchema]
     
     class Meta:
         model = CustomUser
@@ -32,8 +32,8 @@ class Error(Schema):
 class Msg(Schema):
     msg:str
 
-class EmailSchema(BaseModel):
-    email: EmailStr
+# class EmailSchema(BaseModel):
+#     email: EmailStr
     
 
 class ProfileSchema(ModelSchema):
