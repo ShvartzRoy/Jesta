@@ -35,7 +35,6 @@ const PContext = ({ children }) => {
                         instagram: response.data.instagram,
                     });
                 } catch (error) {
-                    console.error("Error fetching profile:", error);
                     setProfile({ name: null }); // Fallback for users without profiles
                 }
             }

@@ -128,7 +128,7 @@ const Edit_profile = () => {
           setLinkedin(response.data.linkedin);
           setInstagram(response.data.instagram); 
         } catch (error) {
-          console.error("Error fetching profile:", error);
+          console.log("Error fetching profile:", error);
           setLoading(false); 
         } finally {
           setLoading(false); 
