@@ -15,10 +15,6 @@ class CustomUser(AbstractUser):
     def __str__(self):
         return self.email
     
-    # def save(self, *args, **kwargs):
-    #         if not self.id:
-    #             self.set_password(self.password)
-    #         super().save(*args, **kwargs)
 
     def add_service_to_saved(self, service):
             saved_service_data = {"id": service.id, "title": service.title, "state": service.state}
