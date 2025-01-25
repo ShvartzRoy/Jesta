@@ -23,6 +23,7 @@ import { Picker } from "@react-native-picker/picker";
 import { UserContext } from "../../contexts/authContext";
 import axios from "axios";
 import { DatePicker } from '@mui/x-date-pickers';
+import { initialWindowSafeAreaInsets } from "react-native-safe-area-context";
 
 
 interface Service {
@@ -109,8 +110,6 @@ const ServiceCard: React.FC<{ service: Service; user: any; openServiceModal: (se
  
   const handleApply = async () => {
     try {
-      console.log("Applying to service with ID:", service.id);
-
       const response = await axios.post(
         `${process.env.EXPO_PUBLIC_HOST}/api/services/apply_to_service/${service.id}`,
         {},
@@ -123,24 +122,18 @@ const ServiceCard: React.FC<{ service: Service; user: any; openServiceModal: (se
 
       if (response.status === 200) {
         Alert.alert("Success", "You have applied successfully!");
-        window.alert("You have applied successfully!");
-        setIsApplied(true); 
+        fetchServices();
       } else {
         Alert.alert("Error", "Something went wrong. Please try again.");
-        window.alert("Something went wrong. Please try again.");
-
       }
     } catch (error) {
       console.error("Failed to apply to the service:", error.response?.data || error.message);
       Alert.alert("Error", "Failed to apply to the service. Please try again.");
-      window.alert("Failed to apply to the service. Please try again.");
     }
   };
 
   const handleUnapply = async () => {
     try {
-      console.log("Unapplying from service with ID:", service.id);
-
       const response = await axios.post(
         `${process.env.EXPO_PUBLIC_HOST}/api/services/remove_from_service/${service.id}`,
         {},
@@ -153,31 +146,30 @@ const ServiceCard: React.FC<{ service: Service; user: any; openServiceModal: (se
 
       if (response.status === 200) {
         Alert.alert("Success", "You have unapplied successfully!");
-        window.alert("You have unapplied successfully!");
-        setIsApplied(false); 
+        fetchServices();
       } else {
         Alert.alert("Error", "Something went wrong. Please try again.");
-        window.alert("Something went wrong. Please try again.");
       }
     } catch (error) {
       console.error("Failed to unapply from the service:", error.response?.data || error.message);
       Alert.alert("Error", "Failed to unapply from the service. Please try again.");
-      window.alert("Failed to unapply from the service. Please try again.");
     }
   };
-    
+
 
  
-  
 
+  const userApplicant = service.applicants.find(applicant => applicant.user_id === user.id);
+
+
+  
     const shouldShowApplyButton =
-    !isApplied && service.service_from === "publisher" && service.user_id !== user.id && service.user_id;
-
-
-    const shouldShowUnapplyButton = 
-    isApplied && service.service_from === "publisher" && service.user_id !== user.id && service.user_id;
+    (userApplicant?.applicant_state === "rejected" || !userApplicant) &&
+    service.user_id !== user.id && !isApplied && service.service_from === "publisher" && service.user_id;
   
-
+  const shouldShowUnapplyButton =
+    (userApplicant?.applicant_state === "pending" || userApplicant?.applicant_state === "accepted") &&
+    service.user_id !== user.id && isApplied && service.service_from === "publisher" && service.user_id;
     
 
   return (
@@ -804,6 +796,29 @@ const Explore_Page = () => {
   //   }
   // };
 
+
+  const fetchApplicantState = async (serviceId) => {
+    try {
+      const response = await axios.get(
+        `${process.env.EXPO_PUBLIC_HOST}/api/services/get_applicant_state/${serviceId}`,
+        {
+          headers: { Authorization: `Bearer ${user.token}` },
+        }
+      );
+  
+      if (response.status === 200) {
+        return response.data.state; 
+      } else {
+        console.error("Failed to fetch applicant state.");
+        return null;
+      }
+    } catch (error) {
+      console.error("Error fetching applicant state:", error.response?.data || error.message);
+      return null;
+    }
+  };
+  
+
   const fetchApplicants = async () => {
     try {
       const response = await axios.get(
@@ -829,43 +844,80 @@ const Explore_Page = () => {
   };
   
 
-  const handleAccept = async (userId) => {
+  const handleAccept = async (email) => {
     try {
-      const response = await axios.post(
-        `${process.env.EXPO_PUBLIC_HOST}/api/services/accept_applicant/${selectedService.id}/${userId}`,
-        {},
-        {
-          headers: { Authorization: `Bearer ${user.token}` },
-        }
-      );
-      if (response.status === 200) {
-        Alert.alert("Success", "Applicant accepted successfully.");
-        fetchApplicants(); 
-      }
-    } catch (error) {
-      console.error("Error accepting applicant:", error.response?.data || error.message);
-      Alert.alert("Error", "Failed to accept applicant.");
-    }
-  };
+        const encodedEmail = encodeURIComponent(email);
 
-  const handleReject = async (userId) => {
-    try {
-      const response = await axios.post(
-        `${process.env.EXPO_PUBLIC_HOST}/api/services/reject_applicant/${selectedService.id}/${userId}`,
-        {},
-        {
-          headers: { Authorization: `Bearer ${user.token}` },
+        console.log('Fetching user ID for email:', email);
+        let response = await axios.get(
+            `${process.env.EXPO_PUBLIC_HOST}/api/services/get_user_id_by_email/${encodedEmail}`,
+            {
+                headers: { Authorization: `Bearer ${user.token}` },
+            }
+        );
+
+        const user_id = response.data["user_id"];
+        console.log('User ID retrieved:', user_id);
+
+        console.log('Accepting applicant with user ID:', user_id);
+        response = await axios.post(
+            `${process.env.EXPO_PUBLIC_HOST}/api/services/accept_applicant/${selectedService.id}/${user_id}`,
+            {}, 
+            {
+                headers: { Authorization: `Bearer ${user.token}` }, 
+            }
+        );
+
+        if (response.status === 200) {
+            Alert.alert("Success", "Applicant accepted successfully.");
+            window.alert("Applicant accepted successfully.");
+            fetchApplicants(); 
         }
-      );
-      if (response.status === 200) {
-        Alert.alert("Success", "Applicant rejected successfully.");
-        fetchApplicants(); 
-      }
     } catch (error) {
+        console.error("Error accepting applicant:", error.response?.data || error.message);
+        Alert.alert("Error", "Failed to accept applicant.");
+        window.alert(`Failed to accept applicant. ${error.message}`);
+    }
+};
+
+
+
+const handleReject = async (email) => {
+  try {
+      const encodedEmail = encodeURIComponent(email);
+
+      console.log('Fetching user ID for email:', email);
+      let response = await axios.get(
+          `${process.env.EXPO_PUBLIC_HOST}/api/services/get_user_id_by_email/${encodedEmail}`,
+          {
+              headers: { Authorization: `Bearer ${user.token}` },
+          }
+      );
+
+      const user_id = response.data["user_id"];
+      console.log('User ID retrieved:', user_id);
+
+      console.log('Rejecting applicant with user ID:', user_id);
+      response = await axios.post(
+          `${process.env.EXPO_PUBLIC_HOST}/api/services/reject_applicant/${selectedService.id}/${user_id}`,
+          {}, 
+          {
+              headers: { Authorization: `Bearer ${user.token}` }, 
+          }
+      );
+
+      if (response.status === 200) {
+          Alert.alert("Success", "Applicant rejected successfully.");
+          window.alert("Applicant rejected successfully.");
+          fetchApplicants(); 
+      }
+  } catch (error) {
       console.error("Error rejecting applicant:", error.response?.data || error.message);
       Alert.alert("Error", "Failed to reject applicant.");
-    }
-  };
+      window.alert(`Failed to reject applicant. ${error.message}`);
+  }
+};
+
 
   const renderApplicantsModal = () => (
     <Modal
@@ -878,24 +930,36 @@ const Explore_Page = () => {
           <Text style={styles.modalTitle}>Applicants</Text>
           <FlatList
             data={applicants}
-            keyExtractor={(item, index) => item?.email?.toString() || index.toString()} 
+            keyExtractor={(item, index) => item?.email?.toString() || index.toString()}
             renderItem={({ item }) => (
               <View style={styles.applicantItem}>
                 <Text style={styles.applicantText}>Email: {item.email || "N/A"}</Text>
-                <Text style={styles.applicantText}>Status: {item.status || "Unknown"}</Text>
+                <Text
+                  style={[
+                    styles.applicantText,
+                    item.status === "accepted" && styles.acceptedText,
+                    item.status === "rejected" && styles.rejectedText,
+                  ]}
+                >
+                  Status: {item.status || "Unknown"}
+                </Text>
                 <View style={styles.applicantActions}>
-                  <TouchableOpacity
-                    style={styles.acceptButton}
-                    onPress={() => handleAccept(item.email)}
-                  >
-                    <Text style={styles.buttonText}>Accept</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    style={styles.rejectButton}
-                    onPress={() => handleReject(item.email)}
-                  >
-                    <Text style={styles.buttonText}>Reject</Text>
-                  </TouchableOpacity>
+                  {item.status === "pending" && (
+                    <>
+                      <TouchableOpacity
+                        style={styles.acceptButton}
+                        onPress={() => handleAccept(item.email)}
+                      >
+                        <Text style={styles.buttonText}>Accept</Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        style={styles.rejectButton}
+                        onPress={() => handleReject(item.email)}
+                      >
+                        <Text style={styles.buttonText}>Reject</Text>
+                      </TouchableOpacity>
+                    </>
+                  )}
                 </View>
               </View>
             )}
@@ -910,6 +974,7 @@ const Explore_Page = () => {
       </View>
     </Modal>
   );
+  
   
 
 
@@ -953,7 +1018,6 @@ const Explore_Page = () => {
   
     setEditField(field);
   
-    // Set the appropriate state based on the field being edited
     switch (field) {
       case "name":
         setEditName(value as string || "");
@@ -1053,6 +1117,13 @@ const Explore_Page = () => {
         default:
           throw new Error("Invalid toggle configuration.");
       }
+
+      const servicesWithApplicantState = await Promise.all(
+        fetchedServices.map(async (service) => {
+          const applicantState = await fetchApplicantState(service.id);
+          return { ...service, applicantState };
+        })
+      );
 
       setServices(fetchedServices);
       handleSortAndFilter(fetchedServices);
@@ -1798,6 +1869,19 @@ const styles = StyleSheet.create({
     color: "#1565C0",
     fontWeight: "600", 
     elevation: 3,
+  },
+
+  applicantText: {
+    fontSize: 16,
+    marginBottom: 5,
+  },
+  acceptedText: {
+    color: "green", // Green color for "accepted" status
+    fontWeight: "bold",
+  },
+  rejectedText: {
+    color: "red", // Red color for "rejected" status
+    fontWeight: "bold",
   },
 
   modalContainer: {

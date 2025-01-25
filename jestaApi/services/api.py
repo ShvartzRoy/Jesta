@@ -1,3 +1,4 @@
+from email.utils import unquote
 from typing import List, Optional
 from ninja import Router
 from ninja.errors import HttpError
@@ -157,6 +158,15 @@ def get_progress_status_of_service(request, service_id: int):
 @router.get("/get_list_of_applicants_with_their_states/{service_id}", response={200: dict})
 def get_list_of_applicants_with_their_states(request, service_id: int):
     return sc.get_list_of_applicants_with_their_states(request, service_id)
+
+
+
+
+@router.get("/get_user_id_by_email/{email}", response={200: dict})
+def get_user_id_by_email(request, email: str):
+    decoded_email = unquote(email)
+    return sc.get_user_id_by_email(request, decoded_email)
+
 
 
 @router.get("/get_list_of_all_user_jobs_with_status/{user_id}", response={200: list})

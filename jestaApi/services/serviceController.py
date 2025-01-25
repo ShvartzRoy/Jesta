@@ -162,11 +162,15 @@ class ServiceController:
         if service.user == request.user:
             raise HttpError(400, "You cannot apply to your own service!")
         
-        if request.user in service.applicants:
+        if {"user_id":request.user, "applicant_state": "pending"} in service.applicants:
             raise HttpError(400, "You have already applied to this service!")
         
         if service.state != "pending" and service.state != "accepted":
             raise HttpError(400, "Service is not available for application!")
+        
+        service.applicants = [
+        applicant for applicant in service.applicants 
+        if not (applicant["user_id"] == request.user.id and applicant["applicant_state"] == "rejected")]
         
         service.applicants.append({"user_id": request.user.id, "applicant_state": "pending"})
         service.save()
@@ -262,6 +266,12 @@ class ServiceController:
             
         return res
     
+    def get_user_id_by_email(self, request, email: str) -> int: 
+        user = get_user_model().objects.get(email=email)
+        return {"user_id": user.id}
+       
+    
+    
     def get_list_of_all_user_jobs_with_status(self, request, user_id) -> list:
         services = JobService.objects.filter(user=user_id)
         res = []
@@ -337,7 +347,11 @@ class ServiceController:
             if applicant["user_id"] == user_id:
                 if applicant["applicant_state"] == "rejected":
                     raise HttpError(400, "Applicant is already rejected!")
-                applicant["applicant_state"] = "rejected"
+                new_user_id = applicant["user_id"]
+                new_applicant_state = "rejected"
+                applicants.remove(applicant)
+                applicants.append({"user_id": new_user_id, "applicant_state": new_applicant_state})
+ 
                 break
         else:
             raise HttpError(400, f"User '{user_id}' has not applied to this service!")
@@ -354,7 +368,11 @@ class ServiceController:
             if applicant["user_id"] == user_id:
                 if applicant["applicant_state"] == "accepted":
                     raise HttpError(400, "Applicant is already accepted!")
-                applicant["applicant_state"] = "accepted"
+                
+                new_user_id = applicant["user_id"]
+                new_applicant_state = "accepted"
+                applicants.remove(applicant)
+                applicants.append({"user_id": new_user_id, "applicant_state": new_applicant_state})
                 break
         else:
             raise HttpError(400, f"User '{user_id}' has not applied to this service!")
