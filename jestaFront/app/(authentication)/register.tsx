@@ -1,6 +1,6 @@
 // screens/RegisterScreen.js
 import React, { useState, useContext} from "react";
-import { View, Text, TextInput, Button, StyleSheet, Alert } from "react-native";
+import { View, Text, TextInput, Button, StyleSheet, Alert, Keyboard, TouchableWithoutFeedback} from "react-native";
 import { UserContext } from "../contexts/authContext";
 import {Link, useRouter} from 'expo-router';
 import axios from "axios";
@@ -43,10 +43,10 @@ export default function RegisterScreen() {
       setPassword("");
     } catch (error) {
       if (axios.isAxiosError(error)) {
-        console.error("Registration error:", error.response?.data);
+        //console.error("Registration error:", error.response?.data);
         Alert.alert("Error, ", error.response?.data);
       } else {
-        console.error("Registration error:", error);
+        //console.error("Registration error:", error);
         Alert.alert("Error, Something went wrong.");
       }
     } finally {
@@ -55,26 +55,28 @@ export default function RegisterScreen() {
   };
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Register</Text>
-      <TextInput
-        style={styles.input}
-        placeholder="Email"
-        value={email}
-        onChangeText={setEmail}
-        keyboardType="email-address"
-      />
-      <TextInput
-        style={styles.input}
-        placeholder="Password"
-        value={password}
-        onChangeText={setPassword}
-        secureTextEntry
-      />
-      <Button title="Register" onPress={handleRegister} />
+    <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
+      <View style={styles.container}>
+        <Text style={styles.title}>Register</Text>
+        <TextInput
+          style={styles.input}
+          placeholder="Email"
+          value={email}
+          onChangeText={setEmail}
+          keyboardType="email-address"
+        />
+        <TextInput
+          style={styles.input}
+          placeholder="Password"
+          value={password}
+          onChangeText={setPassword}
+          secureTextEntry
+        />
+        <Button title="Register" onPress={handleRegister} />
 
-      <Link href= "/login">Log in</Link>
-    </View>
+        <Link href= "/login">Log in</Link>
+      </View>
+    </TouchableWithoutFeedback>
   );
 }
 
