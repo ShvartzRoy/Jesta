@@ -17,11 +17,13 @@ import MultiSlider from "@ptomasroos/react-native-multi-slider";
 import { LocalizationProvider } from "@mui/x-date-pickers";
 //import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
-import { format } from 'date-fns';
+import { parse, isBefore, isAfter, format, isValid, set } from 'date-fns';
 import { DateTimePicker } from "@mui/x-date-pickers";
 import { Picker } from "@react-native-picker/picker";
 import { UserContext } from "../../contexts/authContext";
 import axios from "axios";
+import { DatePicker } from '@mui/x-date-pickers';
+
 
 interface Service {
   id: number;
@@ -235,15 +237,207 @@ const ServiceCard: React.FC<{ service: Service; user: any; openServiceModal: (se
   );
 };
 
+// const AddServiceModal = ({visible, onClose, fetchServices}) => {
+//   const { user } = useContext(UserContext);
+
+//   const [title, setTitle] = useState("");
+//   const [description, setDescription] = useState("");
+//   const [tags, setTags] = useState([]);
+//   const [location, setLocation] = useState("");
+//   const [startTime, setStartTime] = useState<Date | null>(null);
+//   const [endTime, setEndTime] = useState<Date | null>(null);
+//   const [duration, setDuration] = useState({
+//     minutes: 0,
+//     hours: 0,
+//     days: 0,
+//     months: 0,
+//     years: 0,
+//   });
+//   const [offeredPayment, setOfferedPayment] = useState(0);
+//   const [serviceFrom, setServiceFrom] = useState("publisher");
+//   const [isVolunteering, setIsVolunteering] = useState(false);
+
+//   const formattedStartTime = startTime ? format(startTime, 'yyyy-MM-dd') : null;
+//   const formattedEndTime = endTime ? format(endTime, 'yyyy-MM-dd') : null;
+  
+
+//   const convertToISO8601 = () => {
+//     const { years, months, days, hours, minutes } = duration;
+//     return `P${years ? `${years}Y` : ""}${months ? `${months}M` : ""}${
+//       days ? `${days}D` : ""
+//     }T${hours ? `${hours}H` : ""}${minutes ? `${minutes}M` : ""}`;
+//   };
+
+//   const handleSubmit = async () => {
+//     if (!title || !description || !tags.length || !location || !startTime || !endTime) {
+//       Alert.alert("Error", "All fields are required!");
+//       window.alert("All fields are required!");
+//       return;
+//     }
+
+//     const payload = {
+//       title,
+//       description,
+//       tags,
+//       location,
+//       date_time_range: [formattedStartTime, formattedEndTime],
+//       estimated_duration: convertToISO8601(),
+//       offered_payment: offeredPayment,
+//       service_from: serviceFrom,
+//       is_volunteering: isVolunteering,
+//     };
+
+//     try {
+//       const response = await axios.post(
+//         `${process.env.EXPO_PUBLIC_HOST}/api/services/create_service`,
+//         payload,
+//         {
+//           headers: { Authorization: `Bearer ${user.token}` },
+//         }
+//       );
+//       if (response.status === 200) {
+//         Alert.alert("Success", "Service created successfully!");
+//         window.alert("Service created successfully!");
+//         fetchServices();
+//         onClose();
+//       }
+//     } catch (error) {
+//       console.error("Failed to create service:", error);
+//       Alert.alert("Error", "Failed to create service. Please try again.");
+//       window.alert("Failed to create service. Please try again.");
+//     }
+//   };
+
+//   return (
+//     <Modal visible={visible} animationType="slide" transparent={true}>
+//       <View style={styles.modalContainer}>
+//         <View style={styles.modalContent}>
+//           <Text style={styles.modalTitle}>Add a Service</Text>
+//           <TextInput
+//             placeholder="Title"
+//             value={title}
+//             onChangeText={setTitle}
+//             style={styles.input}
+//           />
+//           <TextInput
+//             placeholder="Description"
+//             value={description}
+//             onChangeText={setDescription}
+//             style={styles.input}
+//           />
+//           <Picker
+//             selectedValue={tags}
+//             onValueChange={(value) => setTags([...tags, value])}
+//             style={styles.picker}
+//           >
+//             <Picker.Item label="Select Tags" value="" />
+//             {predefinedTags.map((tag) => (
+//               <Picker.Item key={tag} label={tag} value={tag} />
+//             ))}
+//           </Picker>
+//           <Picker
+//             selectedValue={location}
+//             onValueChange={setLocation}
+//             style={styles.picker}
+//           >
+//             <Picker.Item label="Select Location" value="" />
+//             {israeliCities.map((city) => (
+//               <Picker.Item key={city} label={city} value={city} />
+//             ))}
+//           </Picker>
+//           <Text>Start Time:</Text>
+//           <DateTimePicker
+//             label="Start Time"
+//             value={startTime}
+//             onChange={(newValue) => setStartTime(newValue)}
+//           />
+//           <DateTimePicker
+//             label="End Time"
+//             value={endTime}
+//             onChange={(newValue) => setEndTime(newValue)}
+//           />
+//           <View style={styles.durationInputs}>
+//             <TextInput
+//               placeholder="Minutes"
+//               keyboardType="numeric"
+//               onChangeText={(value) => setDuration({ ...duration, minutes: parseInt(value) })}
+//               style={styles.inputSmall}
+//             />
+//             <TextInput
+//               placeholder="Hours"
+//               keyboardType="numeric"
+//               onChangeText={(value) => setDuration({ ...duration, hours: parseInt(value) })}
+//               style={styles.inputSmall}
+//             />
+//             <TextInput
+//               placeholder="Days"
+//               keyboardType="numeric"
+//               onChangeText={(value) => setDuration({ ...duration, days: parseInt(value) })}
+//               style={styles.inputSmall}
+//             />
+//             <TextInput
+//               placeholder="Months"
+//               keyboardType="numeric"
+//               onChangeText={(value) => setDuration({ ...duration, months: parseInt(value) })}
+//               style={styles.inputSmall}
+//             />
+//             <TextInput
+//               placeholder="Years"
+//               keyboardType="numeric"
+//               onChangeText={(value) => setDuration({ ...duration, years: parseInt(value) })}
+//               style={styles.inputSmall}
+//             />
+//           </View>
+//           <TextInput
+//             placeholder="Offered Payment"
+//             keyboardType="numeric"
+//             value={offeredPayment.toString()}
+//             onChangeText={(value) => setOfferedPayment(parseInt(value))}
+//             style={styles.input}
+//           />
+//           <Picker
+//             selectedValue={serviceFrom}
+//             onValueChange={setServiceFrom}
+//             style={styles.picker}
+//           >
+//             <Picker.Item label="Request" value="publisher" />
+//             <Picker.Item label="Offer" value="provider" />
+//           </Picker>
+//           <Picker
+//             selectedValue={isVolunteering}
+//             onValueChange={(value) => setIsVolunteering(value === true)}
+//             style={styles.picker}
+//           >
+//             <Picker.Item label="Not Volunteering" value="false" />
+//             <Picker.Item label="Volunteering" value="true" />
+//           </Picker>
+//           <View style={styles.modalButtons}>
+//             <TouchableOpacity onPress={handleSubmit} style={styles.modalButton}>
+//               <Text style={styles.modalButtonText}>Submit</Text>
+//             </TouchableOpacity>
+//             <TouchableOpacity onPress={onClose} style={styles.modalButtonCancel}>
+//               <Text style={styles.modalButtonText}>Cancel</Text>
+//             </TouchableOpacity>
+//           </View>
+//         </View>
+//       </View>
+//     </Modal>
+//   );
+// };
+
+
+
 const AddServiceModal = ({ visible, onClose, fetchServices }) => {
   const { user } = useContext(UserContext);
 
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
-  const [tags, setTags] = useState([]);
+  const [tags, setTags] = useState<string[]>([]);
   const [location, setLocation] = useState("");
-  const [startTime, setStartTime] = useState(null);
-  const [endTime, setEndTime] = useState(null);
+  const [startTime, setStartTime] = useState("");
+  const [endTime, setEndTime] = useState("");
+  const [showStartPicker, setShowStartPicker] = useState(false);
+  const [showEndPicker, setShowEndPicker] = useState(false);
   const [duration, setDuration] = useState({
     minutes: 0,
     hours: 0,
@@ -254,10 +448,40 @@ const AddServiceModal = ({ visible, onClose, fetchServices }) => {
   const [offeredPayment, setOfferedPayment] = useState(0);
   const [serviceFrom, setServiceFrom] = useState("publisher");
   const [isVolunteering, setIsVolunteering] = useState(false);
+  const [isDurationVisible, setIsDurationVisible] = useState(false);
 
-  const formattedStartTime = startTime ? format(startTime, 'yyyy-MM-dd') : null;
-  const formattedEndTime = endTime ? format(endTime, 'yyyy-MM-dd') : null;
-  
+  const resetForm = () => {
+    setTitle("");
+    setDescription("");
+    setTags([]);
+    setLocation("");
+    setStartTime("");
+    setEndTime("");
+    setDuration({ minutes: 0, hours: 0, days: 0, months: 0, years: 0 });
+    setOfferedPayment(0);
+    setServiceFrom("publisher");
+    setIsVolunteering(false);
+    setIsDurationVisible(false);
+  };
+
+  const validateInputs = () => {
+    if (!title || !description || !tags.length || !location) {
+      Alert.alert("Error", "Please fill in all the required fields!");
+      return false;
+    }
+
+    if (!startTime || !endTime) {
+      Alert.alert("Error", "Please select both start and end dates!");
+      return false;
+    }
+
+    if (startTime > endTime) {
+      Alert.alert("Error", "End time cannot be before start time!");
+      return false;
+    }
+
+    return true;
+  };
 
   const convertToISO8601 = () => {
     const { years, months, days, hours, minutes } = duration;
@@ -267,18 +491,14 @@ const AddServiceModal = ({ visible, onClose, fetchServices }) => {
   };
 
   const handleSubmit = async () => {
-    if (!title || !description || !tags.length || !location || !startTime || !endTime) {
-      Alert.alert("Error", "All fields are required!");
-      window.alert("All fields are required!");
-      return;
-    }
+    if (!validateInputs()) return;
 
     const payload = {
       title,
       description,
       tags,
       location,
-      date_time_range: [startTime.toISOString(), endTime.toISOString()],
+      date_time_range: [startTime, endTime],
       estimated_duration: convertToISO8601(),
       offered_payment: offeredPayment,
       service_from: serviceFrom,
@@ -295,133 +515,234 @@ const AddServiceModal = ({ visible, onClose, fetchServices }) => {
       );
       if (response.status === 200) {
         Alert.alert("Success", "Service created successfully!");
-        window.alert("Service created successfully!");
         fetchServices();
+        resetForm();
         onClose();
+      } else {
+        Alert.alert("Error", "Failed to create service. Please try again.");
       }
     } catch (error) {
-      console.error("Failed to create service:", error);
+      console.error("Failed to create service:", error.response?.data || error.message);
       Alert.alert("Error", "Failed to create service. Please try again.");
-      window.alert("Failed to create service. Please try again.");
     }
   };
 
+  const handleTagSelection = (selectedTag) => {
+    setTags((prevTags) =>
+      prevTags.includes(selectedTag)
+        ? prevTags.filter((tag) => tag !== selectedTag)
+        : [...prevTags, selectedTag]
+    );
+  };
   return (
     <Modal visible={visible} animationType="slide" transparent={true}>
       <View style={styles.modalContainer}>
         <View style={styles.modalContent}>
-          <Text style={styles.modalTitle}>Add a Service</Text>
-          <TextInput
-            placeholder="Title"
-            value={title}
-            onChangeText={setTitle}
-            style={styles.input}
-          />
-          <TextInput
-            placeholder="Description"
-            value={description}
-            onChangeText={setDescription}
-            style={styles.input}
-          />
-          <Picker
-            selectedValue={tags}
-            onValueChange={(value) => setTags([...tags, value])}
-            style={styles.picker}
-          >
-            <Picker.Item label="Select Tags" value="" />
-            {predefinedTags.map((tag) => (
-              <Picker.Item key={tag} label={tag} value={tag} />
-            ))}
-          </Picker>
-          <Picker
-            selectedValue={location}
-            onValueChange={setLocation}
-            style={styles.picker}
-          >
-            <Picker.Item label="Select Location" value="" />
-            {israeliCities.map((city) => (
-              <Picker.Item key={city} label={city} value={city} />
-            ))}
-          </Picker>
-          <Text>Start Time:</Text>
-          <DateTimePicker
-            label="Start Time"
-            value={startTime}
-            onChange={(newValue) => setStartTime(newValue)}
-          />
-          <DateTimePicker
-            label="End Time"
-            value={endTime}
-            onChange={(newValue) => setEndTime(newValue)}
-          />
-          <View style={styles.durationInputs}>
+          <ScrollView contentContainerStyle={styles.scrollContent}>
+            <Text style={styles.modalTitle}>Add a Service</Text>
+  
+            <Text style={styles.sectionTitle}>Basic Information</Text>
             <TextInput
-              placeholder="Minutes"
-              keyboardType="numeric"
-              onChangeText={(value) => setDuration({ ...duration, minutes: parseInt(value) })}
-              style={styles.inputSmall}
+              placeholder="Title"
+              value={title}
+              onChangeText={setTitle}
+              style={styles.input}
             />
             <TextInput
-              placeholder="Hours"
-              keyboardType="numeric"
-              onChangeText={(value) => setDuration({ ...duration, hours: parseInt(value) })}
-              style={styles.inputSmall}
+              placeholder="Description"
+              value={description}
+              onChangeText={setDescription}
+              style={styles.input}
             />
-            <TextInput
-              placeholder="Days"
-              keyboardType="numeric"
-              onChangeText={(value) => setDuration({ ...duration, days: parseInt(value) })}
-              style={styles.inputSmall}
-            />
-            <TextInput
-              placeholder="Months"
-              keyboardType="numeric"
-              onChangeText={(value) => setDuration({ ...duration, months: parseInt(value) })}
-              style={styles.inputSmall}
-            />
-            <TextInput
-              placeholder="Years"
-              keyboardType="numeric"
-              onChangeText={(value) => setDuration({ ...duration, years: parseInt(value) })}
-              style={styles.inputSmall}
-            />
-          </View>
-          <TextInput
-            placeholder="Offered Payment"
-            keyboardType="numeric"
-            value={offeredPayment.toString()}
-            onChangeText={(value) => setOfferedPayment(parseInt(value))}
-            style={styles.input}
-          />
-          <Picker
-            selectedValue={serviceFrom}
-            onValueChange={setServiceFrom}
-            style={styles.picker}
-          >
-            <Picker.Item label="Request" value="publisher" />
-            <Picker.Item label="Offer" value="provider" />
-          </Picker>
-          <Picker
-            selectedValue={isVolunteering}
-            onValueChange={(value) => setIsVolunteering(value === "true")}
-            style={styles.picker}
-          >
-            <Picker.Item label="Not Volunteering" value="false" />
-            <Picker.Item label="Volunteering" value="true" />
-          </Picker>
-          <View style={styles.modalButtons}>
-            <TouchableOpacity onPress={handleSubmit} style={styles.modalButton}>
-              <Text style={styles.modalButtonText}>Submit</Text>
+            <View style={styles.divider} />
+  
+            <Text style={styles.sectionTitle}>Tags</Text>
+            <Picker
+              selectedValue=""
+              onValueChange={(value) => value && handleTagSelection(value)}
+              style={styles.picker}
+            >
+              <Picker.Item label="Select Tags" value="" />
+              {predefinedTags.map((tag) => (
+                <Picker.Item key={tag} label={tag} value={tag} />
+              ))}
+            </Picker>
+            <Text style={styles.selectedTags}>
+              Selected Tags: {tags.join(", ")}
+            </Text>
+            <View style={styles.divider} />
+  
+            <Text style={styles.sectionTitle}>Location</Text>
+            <Picker
+              selectedValue={location}
+              onValueChange={setLocation}
+              style={styles.picker}
+            >
+              <Picker.Item label="Select Location" value="" />
+              {israeliCities.map((city) => (
+                <Picker.Item key={city} label={city} value={city} />
+              ))}
+            </Picker>
+            <View style={styles.divider} />
+  
+            <Text style={styles.sectionTitle}>Date and Time</Text>
+            <Text style={styles.datePickerLabel}>Start Date</Text>
+            <TouchableOpacity
+              onPress={() => setShowStartPicker(true)}
+              style={styles.dateButton}
+            >
+              <Image
+                source={require("../../../assets/images/timeperiod.png")}
+                style={styles.dateIcon}
+              />
             </TouchableOpacity>
-            <TouchableOpacity onPress={onClose} style={styles.modalButtonCancel}>
-              <Text style={styles.modalButtonText}>Cancel</Text>
+            <Text style={styles.dateText}>
+              {startTime ? `The Start date picked is ${startTime}` : ""}
+            </Text>
+            <Text style={styles.datePickerLabel}>End Date</Text>
+            <TouchableOpacity
+              onPress={() => setShowEndPicker(true)}
+              style={styles.dateButton}
+            >
+              <Image
+                source={require("../../../assets/images/timeperiod.png")}
+                style={styles.dateIcon}
+              />
             </TouchableOpacity>
-          </View>
+            <Text style={styles.dateText}>
+              {endTime ? `The End date picked is ${endTime}` : ""}
+            </Text>
+  
+            <Modal visible={showStartPicker} transparent={true}>
+              <View style={styles.pickerContainer}>
+                <Text style={styles.pickerTitle}>Please pick Start Date</Text>
+                <DateTimePicker
+                  mode="date"
+                  value={new Date()}
+                  onChange={(_, selectedDate) => {
+                    if (selectedDate) setStartTime(format(selectedDate, "yyyy-MM-dd"));
+                    setShowStartPicker(false);
+                  }}
+                />
+              </View>
+            </Modal>
+  
+            <Modal visible={showEndPicker} transparent={true}>
+              <View style={styles.pickerContainer}>
+                <Text style={styles.pickerTitle}>Please pick End Date</Text>
+                <DateTimePicker
+                  mode="date"
+                  value={new Date()}
+                  onChange={(_, selectedDate) => {
+                    if (selectedDate) setEndTime(format(selectedDate, "yyyy-MM-dd"));
+                    setShowEndPicker(false);
+                  }}
+                />
+              </View>
+            </Modal>
+            <View style={styles.divider} />
+  
+            <Text style={styles.sectionTitle}>Duration</Text>
+            <TouchableOpacity
+              onPress={() => setIsDurationVisible(!isDurationVisible)}
+              style={styles.toggleDuration}
+            >
+              <Text>{isDurationVisible ? "Hide Duration" : "Show Duration"}</Text>
+            </TouchableOpacity>
+            {isDurationVisible && (
+              <View style={styles.durationBox}>
+                <TextInput
+                  placeholder="Minutes"
+                  keyboardType="numeric"
+                  onChangeText={(value) =>
+                    setDuration({ ...duration, minutes: parseInt(value) || 0 })
+                  }
+                  style={styles.durationInput}
+                />
+                <TextInput
+                  placeholder="Hours"
+                  keyboardType="numeric"
+                  onChangeText={(value) =>
+                    setDuration({ ...duration, hours: parseInt(value) || 0 })
+                  }
+                  style={styles.durationInput}
+                />
+                <TextInput
+                  placeholder="Days"
+                  keyboardType="numeric"
+                  onChangeText={(value) =>
+                    setDuration({ ...duration, days: parseInt(value) || 0 })
+                  }
+                  style={styles.durationInput}
+                />
+                <TextInput
+                  placeholder="Months"
+                  keyboardType="numeric"
+                  onChangeText={(value) =>
+                    setDuration({ ...duration, months: parseInt(value) || 0 })
+                  }
+                  style={styles.durationInput}
+                />
+                <TextInput
+                  placeholder="Years"
+                  keyboardType="numeric"
+                  onChangeText={(value) =>
+                    setDuration({ ...duration, years: parseInt(value) || 0 })
+                  }
+                  style={styles.durationInput}
+                />
+              </View>
+            )}
+            <View style={styles.divider} />
+  
+            <Text style={styles.sectionTitle}>Payment and Type</Text>
+            <TextInput
+              placeholder="Offered Payment"
+              keyboardType="numeric"
+              value={offeredPayment.toString()}
+              onChangeText={(value) =>
+                setOfferedPayment(parseInt(value) || 0)
+              }
+              style={styles.input}
+            />
+            <Picker
+              selectedValue={serviceFrom}
+              onValueChange={setServiceFrom}
+              style={styles.picker}
+            >
+              <Picker.Item label="Request" value="publisher" />
+              <Picker.Item label="Offer" value="provider" />
+            </Picker>
+            <Picker
+              selectedValue={isVolunteering ? "true" : "false"}
+              onValueChange={(value) => setIsVolunteering(value === "true")}
+              style={styles.picker}
+            >
+              <Picker.Item label="Not Volunteering" value="false" />
+              <Picker.Item label="Volunteering" value="true" />
+            </Picker>
+  
+            <View style={styles.modalButtons}>
+              <TouchableOpacity onPress={handleSubmit} style={styles.modalButton}>
+                <Text style={styles.modalButtonText}>Submit</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={() => {
+                  resetForm();
+                  onClose();
+                }}
+                style={styles.modalButtonCancel}
+              >
+                <Text style={styles.modalButtonText}>Cancel</Text>
+              </TouchableOpacity>
+            </View>
+          </ScrollView>
         </View>
       </View>
     </Modal>
   );
-};
+};  
+
 
 
 const Explore_Page = () => {
@@ -445,26 +766,59 @@ const Explore_Page = () => {
   const [selectedService, setSelectedService] = useState<Service & { publisherOrProviderName?: string } | null>(null);
   const [showModal, setShowModal] = useState(false);
   const [editModalVisible, setEditModalVisible] = useState(false);
-  const [editField, setEditField] = useState<string | null>(null);
-  const [editValue, setEditValue] = useState<string | null>(null);
+  const [editField, setEditField] = useState("");
+  const [editValue, setEditValue] = useState("");
   const [applicantsModalVisible, setApplicantsModalVisible] = useState(false);
-  const [applicants, setApplicants] = useState([]);
+  const [applicants, setApplicants] = useState({});
   const [addModalVisible, setAddModalVisible] = useState(false);
+  
+  const [editName, setEditName] = useState("");
+  const [editDescription, setEditDescription] = useState("");
+  const [editLocation, setEditLocation] = useState("");
+  const [editDateTimeRange, setEditDateTimeRange] = useState<string[]>(["", ""]);
+  const [editEstimatedDuration, setEditEstimatedDuration] = useState("");
+  const [editOfferedPayment, setEditOfferedPayment] = useState(0);
 
 
 
+
+  // const fetchApplicants = async () => {
+  //   try {
+  //     const response = await axios.get(
+  //       `${process.env.EXPO_PUBLIC_HOST}/api/services/get_list_of_applicants_with_their_states/${selectedService.id}`,
+  //       {
+  //         headers: { Authorization: `Bearer ${user.token}` },
+  //       }
+  //     );
+  //     if (response.status === 200) {
+  //       window.alert(`Applicants: ${response.data}`);
+  //       setApplicants(response.data || {});
+  //     } else {
+  //       Alert.alert("Error", "Failed to load applicants.");
+  //       window.alert("Failed to load applicants.");
+  //     }
+  //   } catch (error) {
+  //     console.error("Error fetching applicants:", error.response?.data || error.message);
+  //     Alert.alert("Error", "Unable to fetch applicants.");
+  //     window.alert(`Unable to fetch applicants. ${error.response?.data || error.message}`);
+  //   }
+  // };
 
   const fetchApplicants = async () => {
     try {
-      const response = await axios.post(
+      const response = await axios.get(
         `${process.env.EXPO_PUBLIC_HOST}/api/services/get_list_of_applicants_with_their_states/${selectedService.id}`,
-        {},
         {
           headers: { Authorization: `Bearer ${user.token}` },
         }
       );
       if (response.status === 200) {
-        setApplicants(response.data.applicants || []);
+        const applicantsDict = response.data || {};
+        const applicantsArray = Object.entries(applicantsDict).map(([email, status]) => ({
+          email,
+          status,
+        }));
+        setApplicants(applicantsArray); 
       } else {
         Alert.alert("Error", "Failed to load applicants.");
       }
@@ -473,6 +827,7 @@ const Explore_Page = () => {
       Alert.alert("Error", "Unable to fetch applicants.");
     }
   };
+  
 
   const handleAccept = async (userId) => {
     try {
@@ -523,21 +878,21 @@ const Explore_Page = () => {
           <Text style={styles.modalTitle}>Applicants</Text>
           <FlatList
             data={applicants}
-            keyExtractor={(item) => item.user_id.toString()}
+            keyExtractor={(item, index) => item?.email?.toString() || index.toString()} 
             renderItem={({ item }) => (
               <View style={styles.applicantItem}>
-                <Text style={styles.applicantText}>Email: {item.email}</Text>
-                <Text style={styles.applicantText}>Status: {item.status}</Text>
+                <Text style={styles.applicantText}>Email: {item.email || "N/A"}</Text>
+                <Text style={styles.applicantText}>Status: {item.status || "Unknown"}</Text>
                 <View style={styles.applicantActions}>
                   <TouchableOpacity
                     style={styles.acceptButton}
-                    onPress={() => handleAccept(item.user_id)}
+                    onPress={() => handleAccept(item.email)}
                   >
                     <Text style={styles.buttonText}>Accept</Text>
                   </TouchableOpacity>
                   <TouchableOpacity
                     style={styles.rejectButton}
-                    onPress={() => handleReject(item.user_id)}
+                    onPress={() => handleReject(item.email)}
                   >
                     <Text style={styles.buttonText}>Reject</Text>
                   </TouchableOpacity>
@@ -586,13 +941,49 @@ const Explore_Page = () => {
   };
 
 
+  // const openEditModal = (field: string, value: string | number | null) => {
+  //   console.log("Opening edit modal for field:", field, "with value:", value); 
+  //   setEditField(field);
+  //   setEditValue(value);
+  //   setEditModalVisible(true);
+  // };
+  
   const openEditModal = (field: string, value: string | number | null) => {
-    console.log("Opening edit modal for field:", field, "with value:", value); 
+    console.log("Opening edit modal for field:", field, "with value:", value);
+  
     setEditField(field);
-    setEditValue(value);
+  
+    // Set the appropriate state based on the field being edited
+    switch (field) {
+      case "name":
+        setEditName(value as string || "");
+        break;
+      case "description":
+        setEditDescription(value as string || "");
+        break;
+      case "location":
+        setEditLocation(value as string || "");
+        break;
+      case "date_time_range":
+        if (Array.isArray(value) && value.length === 2) {
+          setEditDateTimeRange(value as string[]);
+        } else {
+          setEditDateTimeRange(["", ""]);
+        }
+        break;
+      case "estimated_duration":
+        setEditEstimatedDuration(value as string || "");
+        break;
+      case "offered_payment":
+        setEditOfferedPayment(value as number || 0);
+        break;
+      default:
+        console.error("Unsupported field:", field);
+        break;
+    }
+  
     setEditModalVisible(true);
   };
-  
   
   
  
@@ -866,64 +1257,221 @@ const Explore_Page = () => {
   
 
 
+  // const renderEditModal = () => {
+  //   if (!selectedService) return "";
+  
+  //   const handleSaveEdit = async () => {
+  //     if (!editField || editValue === "") {
+  //       Alert.alert("Error", "Please provide a value to update.");
+  //       window.alert("Please provide a value to update.");
+  //       return;
+  //     }
+    
+  //     try {
+  //       const endpointMap: { [key: string]: string } = {
+  //         name: "update_name",
+  //         description: "update_description",
+  //         location: "update_location",
+  //         date_time_range: "update_date_time_range",
+  //         estimated_duration: "update_estimated_duration",
+  //         offered_payment: "update_offered_payment",
+  //       };
+  //       const endpoint = endpointMap[editField];
+  //       if (!endpoint) {
+  //         Alert.alert("Error", "Invalid field selected.");
+  //         window.alert("Invalid field selected.");
+  //         return;
+  //       }
+    
+  //       const requestBody =
+  //         editField === "date_time_range"
+  //           ? { new_data: editValue.split(",") } 
+  //           : { new_data: editValue};
+    
+  //       const response = await axios.post(
+  //         `${process.env.EXPO_PUBLIC_HOST}/api/services/${endpoint}/${selectedService?.id}`,
+  //         requestBody.new_data,
+  //         {
+  //           headers: { Authorization: `Bearer ${user.token}` },
+  //         }
+  //       );
+    
+  //       if (response.status === 200) {
+  //         Alert.alert("Success", `${editField.replace("_", " ")} updated successfully!`);
+  //         window.alert(`${editField.replace("_", " ")} updated successfully!`);
+    
+  //         setSelectedService((prev) => {
+  //           if (!prev) return null;
+  //           return { ...prev, [editField]: editValue };
+  //         });
+    
+  //         setServices((prevServices) =>
+  //           prevServices.map((service) =>
+  //             service.id === selectedService?.id
+  //               ? { ...service, [editField]: editValue }
+  //               : service
+  //           )
+  //         );
+    
+  //         setEditModalVisible(false); 
+  //       } else {
+  //         Alert.alert("Error", "Failed to update the service. Please try again.");
+  //         window.alert("Failed to update the service. Please try again.");
+  //       }
+  //     } catch (error) {
+  //       console.error("API Error:", error.response?.data || error.message);
+  //       Alert.alert("Error", "Failed to update the service. Please try again.");
+  //       window.alert(`Failed to update the service. Please try again: ${error.message}`);
+  //     }
+  //   };
+    
+    
+  //   return (
+  //     <Modal visible={editModalVisible} transparent={true} animationType="slide">
+  //       <View style={styles.modalContainer}>
+  //         <View style={styles.modalContent}>
+  //           <Text style={styles.modalTitle}>Edit Service</Text>
+  
+  //           {editField ? (
+  //             <>
+  //               <Text style={styles.modalField}>Editing: {editField.replace("_", " ")}</Text>
+  //               <TextInput
+  //                 style={styles.input}
+  //                 placeholder={`Enter new ${editField.replace("_", " ")}`}
+  //                 value={editValue || ""}
+  //                 onChangeText={setEditValue}
+  //               />
+  //               <View style={styles.modalButtons}>
+  //               <TouchableOpacity style={styles.modalButton} onPress={handleSaveEdit}>
+  //                 <Text style={styles.modalButtonText}>Save</Text>
+  //               </TouchableOpacity>
+
+  //                 <TouchableOpacity
+  //                   style={[styles.modalButton, { backgroundColor: "#f94449" }]}
+  //                   onPress={() => {setEditModalVisible(false);
+  //                     setEditField("");
+  //                     setEditValue("");
+  //                   }}
+  //                 >
+  //                   <Text style={styles.modalButtonText}>Discard</Text>
+  //                 </TouchableOpacity>
+  //               </View>
+  //             </>
+  //           ) : (
+  //             <>
+  //               <Text style={styles.modalField}>Select a field to edit:</Text>
+  //               {["name", "description", "location", "date_time_range", "estimated_duration", "offered_payment"].map(
+  //                 (field) => (
+  //                   <TouchableOpacity
+  //                     key={field}
+  //                     style={styles.modalButton}
+  //                     onPress={() => setEditField(field)}
+  //                   >
+  //                     <Text style={styles.modalButtonText}>{field.replace("_", " ")}</Text>
+  //                   </TouchableOpacity>
+  //                 )
+  //               )}
+  //               <TouchableOpacity
+  //                 style={[styles.modalButton, { backgroundColor: "#f94449" }]}
+  //                 onPress={() => setEditModalVisible(false)}
+  //               >
+  //                 <Text style={styles.modalButtonText}>Cancel</Text>
+  //               </TouchableOpacity>
+  //             </>
+  //           )}
+  //         </View>
+  //       </View>
+  //     </Modal>
+  //   );
+  // };
   const renderEditModal = () => {
     if (!selectedService) return null;
   
+  
     const handleSaveEdit = async () => {
-      if (!editField || editValue === null) {
-        Alert.alert("Error", "Please provide a value to update.");
-        window.alert("Please provide a value to update.");
-        return;
-      }
-    
       try {
-        const endpointMap: { [key: string]: string } = {
-          title: "update_name",
-          description: "update_description",
-          location: "update_location",
-          date_time_range: "update_date_time_range",
-          estimated_duration: "update_estimated_duration",
-          offered_payment: "update_offered_payment",
-        };
-    
-        const endpoint = endpointMap[editField];
-        if (!endpoint) {
-          Alert.alert("Error", "Invalid field selected.");
-          window.alert("Invalid field selected.");
-          return;
+        let endpoint = "";
+        let new_data = null;
+  
+        switch (editField) {
+          case "name":
+            endpoint = "update_name";
+            new_data = editName;
+            break;
+          case "description":
+            endpoint = "update_description";
+            new_data = editDescription;
+            break;
+          case "location":
+            endpoint = "update_location";
+            new_data =editLocation;
+            break;
+          case "date_time_range":
+            endpoint = "update_date_time_range";
+            new_data = editDateTimeRange;
+            break;
+          case "estimated_duration":
+            endpoint = "update_estimated_duration";
+            new_data = editEstimatedDuration;
+            break;
+          case "offered_payment":
+            endpoint = "update_offered_payment";
+            new_data = parseFloat(editOfferedPayment);
+            break;
+          default:
+            Alert.alert("Error", "Invalid field selected.");
+            window.alert("Invalid field selected.");
+            return;
         }
-    
-        const requestBody =
-          editField === "date_time_range"
-            ? { new_data: editValue.split(",") } 
-            : { new_data: editValue };
-    
-        const response = await axios.post(
-          `${process.env.EXPO_PUBLIC_HOST}/api/services/${endpoint}/${selectedService?.id}`,
-          requestBody,
-          {
-            headers: { Authorization: `Bearer ${user.token}` },
-          }
-        );
-    
+  
+        let response = null;
+
+        if (editField === "date_time_range"){
+          response = await axios.post(
+            `${process.env.EXPO_PUBLIC_HOST}/api/services/${endpoint}/${selectedService?.id}`,
+            new_data,
+            {
+              headers: { Authorization: `Bearer ${user.token}` },
+            }
+          );
+        }else{
+          response = await axios.post(
+            `${process.env.EXPO_PUBLIC_HOST}/api/services/${endpoint}/${selectedService?.id}?new_data=${encodeURIComponent(
+              (new_data.toString())
+            )}`,
+            {},
+            {
+              headers: { Authorization: `Bearer ${user.token}` },
+            }
+          );
+        }
+        
+  
         if (response.status === 200) {
           Alert.alert("Success", `${editField.replace("_", " ")} updated successfully!`);
           window.alert(`${editField.replace("_", " ")} updated successfully!`);
-    
           setSelectedService((prev) => {
             if (!prev) return null;
-            return { ...prev, [editField]: editValue };
+            return { ...prev, [editField]: new_data };
           });
-    
           setServices((prevServices) =>
             prevServices.map((service) =>
               service.id === selectedService?.id
-                ? { ...service, [editField]: editValue }
+                ? { ...service, [editField]: new_data }
                 : service
             )
           );
-    
-          setEditModalVisible(false); 
+          await fetchServices(); 
+          setEditModalVisible(false);
+          setModalVisible(false);
+          setEditField("");
+          setEditName("");
+          setEditDescription("");
+          setEditLocation("");
+          setEditDateTimeRange(["", ""]);
+          setEditEstimatedDuration("");
+          setEditOfferedPayment(0);
+
         } else {
           Alert.alert("Error", "Failed to update the service. Please try again.");
           window.alert("Failed to update the service. Please try again.");
@@ -931,11 +1479,10 @@ const Explore_Page = () => {
       } catch (error) {
         console.error("API Error:", error.response?.data || error.message);
         Alert.alert("Error", "Failed to update the service. Please try again.");
-        window.alert("Failed to update the service. Please try again.");
+        window.alert(`Failed to update the service. Please try again: ${error.message}`);
       }
     };
-    
-    
+  
     return (
       <Modal visible={editModalVisible} transparent={true} animationType="slide">
         <View style={styles.modalContainer}>
@@ -945,20 +1492,86 @@ const Explore_Page = () => {
             {editField ? (
               <>
                 <Text style={styles.modalField}>Editing: {editField.replace("_", " ")}</Text>
-                <TextInput
-                  style={styles.input}
-                  placeholder={`Enter new ${editField.replace("_", " ")}`}
-                  value={editValue || ""}
-                  onChangeText={setEditValue}
-                />
+                {editField === "name" && (
+                  <TextInput
+                    style={styles.input}
+                    placeholder="Enter new name"
+                    value={editName}
+                    onChangeText={setEditName}
+                  />
+                )}
+                {editField === "description" && (
+                  <TextInput
+                    style={styles.input}
+                    placeholder="Enter new description"
+                    value={editDescription}
+                    onChangeText={setEditDescription}
+                  />
+                )}
+                {editField === "location" && (
+                  <TextInput
+                    style={styles.input}
+                    placeholder="Enter new location"
+                    value={editLocation}
+                    onChangeText={setEditLocation}
+                  />
+                )}
+                {editField === "date_time_range" && (
+                  <>
+                    <TextInput
+                      style={styles.input}
+                      placeholder="Enter start date (YYYY-MM-DD)"
+                      value={editDateTimeRange[0]}
+                      onChangeText={(value) =>
+                        setEditDateTimeRange((prev) => [value, prev[1]])
+                      }
+                    />
+                    <TextInput
+                      style={styles.input}
+                      placeholder="Enter end date (YYYY-MM-DD)"
+                      value={editDateTimeRange[1]}
+                      onChangeText={(value) =>
+                        setEditDateTimeRange((prev) => [prev[0], value])
+                      }
+                    />
+                  </>
+                )}
+                {editField === "estimated_duration" && (
+                  <TextInput
+                    style={styles.input}
+                    placeholder="Enter estimated duration"
+                    value={editEstimatedDuration}
+                    onChangeText={setEditEstimatedDuration}
+                  />
+                )}
+                {editField === "offered_payment" && (
+                  <TextInput
+                    style={styles.input}
+                    placeholder="Enter offered payment"
+                    keyboardType="numeric"
+                    value={editOfferedPayment.toString()}
+                    onChangeText={(value) =>
+                      setEditOfferedPayment(parseFloat(value) || 0)
+                    }
+                  />
+                )}
                 <View style={styles.modalButtons}>
-                <TouchableOpacity style={styles.modalButton} onPress={handleSaveEdit}>
-                  <Text style={styles.modalButtonText}>Save</Text>
-                </TouchableOpacity>
-
+                  <TouchableOpacity style={styles.modalButton} onPress={handleSaveEdit}>
+                    <Text style={styles.modalButtonText}>Save</Text>
+                  </TouchableOpacity>
+  
                   <TouchableOpacity
                     style={[styles.modalButton, { backgroundColor: "#f94449" }]}
-                    onPress={() => setEditModalVisible(false)}
+                    onPress={() => {
+                      setEditModalVisible(false);
+                      setEditField("");
+                      setEditName("");
+                      setEditDescription("");
+                      setEditLocation("");
+                      setEditDateTimeRange(["", ""]);
+                      setEditEstimatedDuration("");
+                      setEditOfferedPayment(0);
+                    }}
                   >
                     <Text style={styles.modalButtonText}>Discard</Text>
                   </TouchableOpacity>
@@ -967,17 +1580,22 @@ const Explore_Page = () => {
             ) : (
               <>
                 <Text style={styles.modalField}>Select a field to edit:</Text>
-                {["name", "description", "location", "date_time_range", "estimated_duration", "offered_payment"].map(
-                  (field) => (
-                    <TouchableOpacity
-                      key={field}
-                      style={styles.modalButton}
-                      onPress={() => setEditField(field)}
-                    >
-                      <Text style={styles.modalButtonText}>{field.replace("_", " ")}</Text>
-                    </TouchableOpacity>
-                  )
-                )}
+                {[
+                  "name",
+                  "description",
+                  "location",
+                  "date_time_range",
+                  "estimated_duration",
+                  "offered_payment",
+                ].map((field) => (
+                  <TouchableOpacity
+                    key={field}
+                    style={styles.inputEdit}
+                    onPress={() => setEditField(field)}
+                  >
+                    <Text style={styles.modalButtonText}>{field.replaceAll("_", " ")}</Text>
+                  </TouchableOpacity>
+                ))}
                 <TouchableOpacity
                   style={[styles.modalButton, { backgroundColor: "#f94449" }]}
                   onPress={() => setEditModalVisible(false)}
@@ -1164,6 +1782,73 @@ const Explore_Page = () => {
 };
 
 const styles = StyleSheet.create({
+  inputEdit: {
+    backgroundColor: "#64B5F6", 
+    borderWidth: 1,
+    borderColor: "#64B5F6",
+    borderRadius: 8, 
+    padding: 10, 
+    marginVertical: 5, 
+    alignItems: "center", 
+    justifyContent: "center", 
+    shadowColor: "#000", 
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    color: "#1565C0",
+    fontWeight: "600", 
+    elevation: 3,
+  },
+
+  modalContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
+  },
+  modalContent: {
+    width: "90%",
+    backgroundColor: "white",
+    padding: 20,
+    borderRadius: 10,
+    elevation: 5,
+    maxHeight: "90%",
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: "bold",
+    marginBottom: 10,
+  },
+  sectionTitle: {
+    fontSize: 16,
+    fontWeight: "bold",
+    marginTop: 10,
+    marginBottom: 5,
+  },
+  input: {
+    borderWidth: 1,
+    borderColor: "#ccc",
+    borderRadius: 5,
+    padding: 10,
+    marginBottom: 10,
+  },
+  picker: {
+    height: 40,
+    marginBottom: 10,
+  },
+  selectedTags: {
+    fontSize: 14,
+    color: "#555",
+    marginBottom: 10,
+  },
+  toggleDuration: {
+    backgroundColor: "#e6e6e6",
+    padding: 10,
+    borderRadius: 5,
+    marginBottom: 10,
+    alignItems: "center",
+  },
+  
   tagBar: {
     flexDirection: "row",
     flexWrap: "wrap",
@@ -1178,13 +1863,6 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
 
-  input: {
-    borderWidth: 1,
-    borderColor: "#ccc",
-    borderRadius: 5,
-    padding: 10,
-    marginBottom: 20,
-  },
 
   addButton: {
     marginVertical: 10,
@@ -1196,12 +1874,6 @@ const styles = StyleSheet.create({
   addButtonText: {
     color: "white",
     fontWeight: "bold",
-  },
-  modalButtonCancel: {
-    padding: 10,
-    backgroundColor: "#f94449",
-    borderRadius: 5,
-    alignItems: "center",
   },
   durationInputs: {
     flexDirection: "row",
@@ -1283,7 +1955,6 @@ const styles = StyleSheet.create({
     marginRight: 8,
     opacity: 0.5,
   },
-  picker: { height: 40, marginHorizontal: 5 },
   filterIcon: { marginRight: 10 },
   toggleGroup: { flexDirection: "row", justifyContent: "space-between", marginLeft: 10 },
   toggleButton: { padding: 10, borderRadius: 5, borderColor: "#ddd", borderWidth: 1, marginHorizontal: 5 },
@@ -1358,48 +2029,9 @@ const styles = StyleSheet.create({
     backgroundColor: "#f4f6f9",
   },
 
-  modalContainer: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    backgroundColor: "rgba(0, 0, 0, 0.5)",
-  },
-  modalContent: {
-    width: "90%",
-    backgroundColor: "white",
-    padding: 20,
-    borderRadius: 10,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 4,
-    elevation: 5,
-  },
-  modalTitle: {
-    fontSize: 20,
-    fontWeight: "bold",
-    marginBottom: 10,
-  },
   modalField: {
     fontSize: 16,
     marginBottom: 10,
-  },
-  modalButtons: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    marginTop: 20,
-  },
-  modalButton: {
-    backgroundColor: "#A1CEFF",
-    paddingVertical: 10,
-    paddingHorizontal: 15,
-    borderRadius: 5,
-    marginTop: 10,
-
-  },
-  modalButtonText: {
-    color: "black",
-    fontWeight: "bold",
   },
 
   applicantItem: {
@@ -1465,7 +2097,144 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
   },
 
+  dateButton: {
+    alignItems: "center",
+    justifyContent: "center",
+    padding: 10,
+    borderRadius: 5,
+    backgroundColor: "#e6e6e6",
+    marginVertical: 10,
+  },
+  dateIcon: {
+    width: 30,
+    height: 30,
+    tintColor: "#007AFF",
+  },
+  dateText: {
+    fontSize: 14,
+    color: "#333",
+    marginTop: 5,
+    textAlign: "center",
+  },
+
+  datePickerModal: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
+  },
+  datePickerContent: {
+    width: "80%",
+    backgroundColor: "white",
+    padding: 20,
+    borderRadius: 10,
+    elevation: 5,
+  },
+  datePickerTitle: {
+    fontSize: 18,
+    fontWeight: "bold",
+    marginBottom: 10,
+    textAlign: "center",
+  },
+  closeDatePickerButton: {
+    backgroundColor: "#007AFF",
+    padding: 10,
+    borderRadius: 5,
+    marginTop: 20,
+    alignItems: "center",
+  },
+  closeDatePickerButtonText: {
+    color: "white",
+    fontWeight: "bold",
+    textAlign: "center",
+  },
+
+  scrollContent: {
+    flexGrow: 1,
+    paddingBottom: 20,
+  },
+
+  divider: {
+    height: 1,
+    backgroundColor: "#ddd",
+    marginVertical: 15,
+  },
+
+
+  modalButtons: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginTop: 20,
+  },
+  modalButton: {
+    backgroundColor: "#007AFF",
+    padding: 10,
+    borderRadius: 5,
+    flex: 1,
+    alignItems: "center",
+    marginRight: 10,
+  },
+  modalButtonCancel: {
+    backgroundColor: "#f94449",
+    padding: 10,
+    borderRadius: 5,
+    flex: 1,
+    alignItems: "center",
+  },
+  modalButtonText: {
+    color: "white",
+    fontWeight: "bold",
+    fontSize: 16,
+  },
+  durationBox: {
+    padding: 10,
+    borderWidth: 1,
+    borderColor: "#ddd",
+    borderRadius: 5,
+    backgroundColor: "#f9f9f9",
+    marginBottom: 15,
+  },
+
+  durationInput: {
+    borderWidth: 1,
+    borderColor: "#ccc",
+    borderRadius: 5,
+    padding: 8,
+    marginBottom: 10,
+    width: "90%", 
+    alignSelf: "center",
+  },
+
+
+  fieldContainer: {
+    marginBottom: 15,
+  },
+
+  fieldLabel: {
+    fontSize: 16,
+    fontWeight: "bold",
+    marginBottom: 5,
+  },
+
+  
+  dropdown: {
+    borderWidth: 1,
+    borderColor: "#ccc",
+    borderRadius: 5,
+    padding: 10,
+    marginBottom: 10,
+  },
+  inputField: {
+    borderWidth: 1,
+    borderColor: "#ccc",
+    borderRadius: 5,
+    padding: 10,
+    marginBottom: 10,
+  },
 });
+
+
+
 
 export default Explore_Page;
 

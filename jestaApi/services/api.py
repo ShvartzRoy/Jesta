@@ -30,6 +30,7 @@ def delete_service(request, service_id: int):
 
 @router.post("/update_name/{service_id}", response={200: bool})
 def update_name(request, service_id: int, new_data: str):
+    
     service = sc.get_service(service_id)
     return sc.update_name(service, new_data)
 
