@@ -103,7 +103,16 @@ const ServiceCard: React.FC<{ service: Service; user: any; openServiceModal: (se
   openServiceModal,
 }) => {
   const serviceType = service.service_from === "provider" ? "Offer" : "Request";
-  const [isApplied, setIsApplied] = useState(service.applicants.includes(user.id));
+  //const [isApplied, setIsApplied] = useState(service.applicants.includes(user.id));
+  const [isApplied, setIsApplied] = useState(
+    service.applicants.some((applicant) => applicant.user_id === user.id)
+  );
+  const [applicantState, setApplicantState] = useState(() => {
+    const userApplicant = service.applicants.find(
+      (applicant) => applicant.user_id === user.id
+    );
+    return userApplicant ? userApplicant.applicant_state : null;
+  });
   
 
 
@@ -122,18 +131,51 @@ const ServiceCard: React.FC<{ service: Service; user: any; openServiceModal: (se
 
       if (response.status === 200) {
         Alert.alert("Success", "You have applied successfully!");
-        fetchServices();
+        window.alert("You have applied successfully!");
+        setIsApplied(true);
+        setApplicantState("pending");  
       } else {
         Alert.alert("Error", "Something went wrong. Please try again.");
+        window.alert("Something went wrong. Please try again.");
       }
     } catch (error) {
       console.error("Failed to apply to the service:", error.response?.data || error.message);
       Alert.alert("Error", "Failed to apply to the service. Please try again.");
+      window.alert("Failed to apply to the service. Please try again.");
     }
   };
 
+
+
+  const renderApplicantStatus = () => {
+    if (!isApplied) return null;
+
+    let statusColor;
+    switch (applicantState) {
+      case "accepted":
+        statusColor = "green";
+        break;
+      case "rejected":
+        statusColor = "red";
+        break;
+      case "pending":
+      default:
+        statusColor = "blue";
+        break;
+    }
+
+    return (
+      <Text style={{ color: statusColor, fontWeight: "bold", marginTop: 10 }}>
+        Your Status: {applicantState}
+      </Text>
+    );
+  };
+
+
   const handleUnapply = async () => {
     try {
+      console.log("Unapplying from service with ID:", service.id);
+  
       const response = await axios.post(
         `${process.env.EXPO_PUBLIC_HOST}/api/services/remove_from_service/${service.id}`,
         {},
@@ -143,18 +185,22 @@ const ServiceCard: React.FC<{ service: Service; user: any; openServiceModal: (se
           },
         }
       );
-
+  
       if (response.status === 200) {
-        Alert.alert("Success", "You have unapplied successfully!");
-        fetchServices();
+        setIsApplied(false); 
+        setApplicantState(null); 
       } else {
-        Alert.alert("Error", "Something went wrong. Please try again.");
+        window.alert("Something went wrong. Please try again.");
       }
     } catch (error) {
-      console.error("Failed to unapply from the service:", error.response?.data || error.message);
-      Alert.alert("Error", "Failed to unapply from the service. Please try again.");
+      console.error(
+        "Failed to unapply from the service:",
+        error.response?.data || error.message
+      );
+      window.alert("Failed to unapply from the service. Please try again.");
     }
   };
+  
 
 
  
@@ -224,7 +270,7 @@ const ServiceCard: React.FC<{ service: Service; user: any; openServiceModal: (se
           <Text style={styles.uapplyButtonText}>Unapply</Text>
         </TouchableOpacity>
       )}
-
+      {renderApplicantStatus()}
     </TouchableOpacity>
   );
 };
@@ -1876,11 +1922,11 @@ const styles = StyleSheet.create({
     marginBottom: 5,
   },
   acceptedText: {
-    color: "green", // Green color for "accepted" status
+    color: "green", 
     fontWeight: "bold",
   },
   rejectedText: {
-    color: "red", // Red color for "rejected" status
+    color: "red", 
     fontWeight: "bold",
   },
 
