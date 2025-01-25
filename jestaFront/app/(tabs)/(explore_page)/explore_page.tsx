@@ -505,21 +505,13 @@ const AddServiceModal = ({ visible, onClose, fetchServices }) => {
   const validateInputs = () => {
     if (!title || !description || !tags.length || !location) {
       Alert.alert("Error", "Please fill in all the required fields!");
-      return false;
-    }
-
-    if (!startTime || !endTime) {
-      Alert.alert("Error", "Please select both start and end dates!");
-      return false;
-    }
-
-    if (startTime > endTime) {
-      Alert.alert("Error", "End time cannot be before start time!");
+      window.alert("Please fill in all the required fields!");
       return false;
     }
 
     return true;
   };
+
 
   const convertToISO8601 = () => {
     const { years, months, days, hours, minutes } = duration;
@@ -530,7 +522,34 @@ const AddServiceModal = ({ visible, onClose, fetchServices }) => {
 
   const handleSubmit = async () => {
     if (!validateInputs()) return;
+  
+    const isDateValid = (date) =>
+      /^\d{4}-\d{2}-\d{2}$/.test(date) && !isNaN(new Date(date).getTime());
+  
+    if (!isDateValid(startTime) || !isDateValid(endTime)) {
+      Alert.alert("Error", "Please ensure dates are in YYYY-MM-DD format and valid.");
+      window.alert("Please ensure dates are in YYYY-MM-DD format and valid.");
+      return;
+    }
+  
+    if (new Date(startTime) > new Date(endTime)) {
+      Alert.alert("Error", "End time cannot be before start time!");
+      window.alert("End time cannot be before start time!");
+      return;
+    }
 
+    if(offeredPayment < 0){
+      Alert.alert("Error", "Offered payment cannot be negative!");
+      window.alert("Offered payment cannot be negative!");
+      return;
+    }
+
+    if(offeredPayment > 0 && isVolunteering){
+      Alert.alert("Error", "Service cannot be both paid and volunteering!");
+      window.alert("Service cannot be both paid and volunteering!");
+      return;
+    }
+  
     const payload = {
       title,
       description,
@@ -542,7 +561,7 @@ const AddServiceModal = ({ visible, onClose, fetchServices }) => {
       service_from: serviceFrom,
       is_volunteering: isVolunteering,
     };
-
+  
     try {
       const response = await axios.post(
         `${process.env.EXPO_PUBLIC_HOST}/api/services/create_service`,
@@ -553,17 +572,20 @@ const AddServiceModal = ({ visible, onClose, fetchServices }) => {
       );
       if (response.status === 200) {
         Alert.alert("Success", "Service created successfully!");
+        window.alert("Service created successfully!");
         fetchServices();
         resetForm();
         onClose();
       } else {
         Alert.alert("Error", "Failed to create service. Please try again.");
+        window.alert("Failed to create service. Please try again.");
       }
     } catch (error) {
-      console.error("Failed to create service:", error.response?.data || error.message);
+      console.error("Failed to create service:", error.message);
       Alert.alert("Error", "Failed to create service. Please try again.");
+      window.alert(`Failed to create service: ${error.message}`);
     }
-  };
+  };  
 
   const handleTagSelection = (selectedTag) => {
     setTags((prevTags) =>
@@ -624,60 +646,18 @@ const AddServiceModal = ({ visible, onClose, fetchServices }) => {
             <View style={styles.divider} />
   
             <Text style={styles.sectionTitle}>Date and Time</Text>
-            <Text style={styles.datePickerLabel}>Start Date</Text>
-            <TouchableOpacity
-              onPress={() => setShowStartPicker(true)}
-              style={styles.dateButton}
-            >
-              <Image
-                source={require("../../../assets/images/timeperiod.png")}
-                style={styles.dateIcon}
-              />
-            </TouchableOpacity>
-            <Text style={styles.dateText}>
-              {startTime ? `The Start date picked is ${startTime}` : ""}
-            </Text>
-            <Text style={styles.datePickerLabel}>End Date</Text>
-            <TouchableOpacity
-              onPress={() => setShowEndPicker(true)}
-              style={styles.dateButton}
-            >
-              <Image
-                source={require("../../../assets/images/timeperiod.png")}
-                style={styles.dateIcon}
-              />
-            </TouchableOpacity>
-            <Text style={styles.dateText}>
-              {endTime ? `The End date picked is ${endTime}` : ""}
-            </Text>
-  
-            <Modal visible={showStartPicker} transparent={true}>
-              <View style={styles.pickerContainer}>
-                <Text style={styles.pickerTitle}>Please pick Start Date</Text>
-                <DateTimePicker
-                  mode="date"
-                  value={new Date()}
-                  onChange={(_, selectedDate) => {
-                    if (selectedDate) setStartTime(format(selectedDate, "yyyy-MM-dd"));
-                    setShowStartPicker(false);
-                  }}
-                />
-              </View>
-            </Modal>
-  
-            <Modal visible={showEndPicker} transparent={true}>
-              <View style={styles.pickerContainer}>
-                <Text style={styles.pickerTitle}>Please pick End Date</Text>
-                <DateTimePicker
-                  mode="date"
-                  value={new Date()}
-                  onChange={(_, selectedDate) => {
-                    if (selectedDate) setEndTime(format(selectedDate, "yyyy-MM-dd"));
-                    setShowEndPicker(false);
-                  }}
-                />
-              </View>
-            </Modal>
+            <TextInput
+              placeholder="Start Date (YYYY-MM-DD)"
+              value={startTime}
+              onChangeText={setStartTime}
+              style={styles.input}
+            />
+            <TextInput
+              placeholder="End Date (YYYY-MM-DD)"
+              value={endTime}
+              onChangeText={setEndTime}
+              style={styles.input}
+            />
             <View style={styles.divider} />
   
             <Text style={styles.sectionTitle}>Duration</Text>
@@ -779,7 +759,7 @@ const AddServiceModal = ({ visible, onClose, fetchServices }) => {
       </View>
     </Modal>
   );
-};  
+};
 
 
 
@@ -816,8 +796,38 @@ const Explore_Page = () => {
   const [editDateTimeRange, setEditDateTimeRange] = useState<string[]>(["", ""]);
   const [editEstimatedDuration, setEditEstimatedDuration] = useState("");
   const [editOfferedPayment, setEditOfferedPayment] = useState(0);
+  const [profileModalVisible, setProfileModalVisible] = useState(false);
+  const [selectedProfile, setSelectedProfile] = useState(null); 
+  const [selectedUserProfile, setSelectedUserProfile] = useState(null);
 
+  
 
+  const openProfileModal = async (userId) => {
+    try {
+      const response = await axios.get(
+        `${process.env.EXPO_PUBLIC_HOST}/api/users/get_profile/${userId}`,
+        {
+          headers: { Authorization: `Bearer ${user.token}` },
+        }
+      );
+  
+      if (response.status === 200) {
+        setSelectedUserProfile(response.data); 
+        setProfileModalVisible(true);
+      } else {
+        Alert.alert("Error", "Failed to fetch user profile.");
+      }
+    } catch (error) {
+      console.error("Error fetching user profile:", error.response?.data || error.message);
+      Alert.alert("Error", "Unable to fetch user profile.");
+    }
+  };
+  
+  
+  const closeProfileModal = () => {
+    setProfileModalVisible(false);
+    setSelectedProfile(null);
+  };
 
 
   // const fetchApplicants = async () => {
@@ -965,64 +975,119 @@ const handleReject = async (email) => {
 };
 
 
-  const renderApplicantsModal = () => (
-    <Modal
-      visible={applicantsModalVisible}
-      transparent={true}
-      animationType="slide"
-    >
-      <View style={styles.modalContainer}>
-        <View style={styles.modalContent}>
-          <Text style={styles.modalTitle}>Applicants</Text>
-          <FlatList
-            data={applicants}
-            keyExtractor={(item, index) => item?.email?.toString() || index.toString()}
-            renderItem={({ item }) => (
-              <View style={styles.applicantItem}>
-                <Text style={styles.applicantText}>Email: {item.email || "N/A"}</Text>
-                <Text
-                  style={[
-                    styles.applicantText,
-                    item.status === "accepted" && styles.acceptedText,
-                    item.status === "rejected" && styles.rejectedText,
-                  ]}
-                >
-                  Status: {item.status || "Unknown"}
-                </Text>
-                <View style={styles.applicantActions}>
-                  {item.status === "pending" && (
-                    <>
-                      <TouchableOpacity
-                        style={styles.acceptButton}
-                        onPress={() => handleAccept(item.email)}
-                      >
-                        <Text style={styles.buttonText}>Accept</Text>
-                      </TouchableOpacity>
-                      <TouchableOpacity
-                        style={styles.rejectButton}
-                        onPress={() => handleReject(item.email)}
-                      >
-                        <Text style={styles.buttonText}>Reject</Text>
-                      </TouchableOpacity>
-                    </>
-                  )}
-                </View>
-              </View>
-            )}
-          />
-          <TouchableOpacity
-            style={styles.closeButton}
-            onPress={() => setApplicantsModalVisible(false)}
-          >
-            <Text style={styles.closeButtonText}>Close</Text>
-          </TouchableOpacity>
-        </View>
+const renderApplicantsModal = () => (
+  <Modal
+    visible={applicantsModalVisible}
+    transparent={true}
+    animationType="slide"
+  >
+    <View style={styles.modalContainer}>
+      <View style={styles.modalContent}>
+        <Text style={styles.modalTitle}>Applicants</Text>
+        <FlatList
+        data={applicants}
+        keyExtractor={(item, index) => (item?.user_id ? item.user_id.toString() : index.toString())}
+        renderItem={({ item }) => (
+          <View style={styles.applicantItem}>
+            <Text
+              style={[styles.applicantText, styles.clickableEmail]}
+              onPress={() => openProfileModal(item.user_id)} 
+            >
+              Email: {item.email || "N/A"}
+            </Text>
+
+            <Text
+              style={[
+                styles.applicantText,
+                {
+                  color:
+                    item.status === "accepted"
+                      ? "green"
+                      : item.status === "rejected"
+                      ? "red"
+                      : "blue",
+                },
+              ]}
+            >
+              Status: {item.status || "Unknown"}
+            </Text>
+            <View style={styles.applicantActions}>
+              {item.status === "pending" && (
+                <>
+                  <TouchableOpacity
+                    style={styles.acceptButton}
+                    onPress={() => handleAccept(item.email)}
+                  >
+                    <Text style={styles.buttonText}>Accept</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={styles.rejectButton}
+                    onPress={() => handleReject(item.email)}
+                  >
+                    <Text style={styles.buttonText}>Reject</Text>
+                  </TouchableOpacity>
+                </>
+                
+        )}
       </View>
-    </Modal>
-  );
+      {renderProfileModal()}
+    </View>
+    
+  )}
+/>
+
+        <TouchableOpacity
+          style={styles.closeButton}
+          onPress={() => setApplicantsModalVisible(false)}
+        >
+          <Text style={styles.closeButtonText}>Close</Text>
+        </TouchableOpacity>
+      </View>
+    </View>
+  </Modal>
+);
+
   
   
 
+const renderProfileModal = () => (
+  <Modal
+    visible={profileModalVisible}
+    transparent={true}
+    animationType="slide"
+  >
+    <View style={styles.modalContainer}>
+      <View style={styles.modalContent}>
+        {selectedProfile ? (
+          <>
+            <Text style={styles.modalTitle}>Profile Details</Text>
+            <Text style={styles.profileField}>Name: {selectedProfile.name || "N/A"}</Text>
+            <Text style={styles.profileField}>Age: {selectedProfile.age || "N/A"}</Text>
+            <Text style={styles.profileField}>Bio: {selectedProfile.bio || "N/A"}</Text>
+            {selectedProfile.facebook && (
+              <Text style={styles.profileField}>Facebook: {selectedProfile.facebook}</Text>
+            )}
+            {selectedProfile.linkedin && (
+              <Text style={styles.profileField}>LinkedIn: {selectedProfile.linkedin}</Text>
+            )}
+            {selectedProfile.instagram && (
+              <Text style={styles.profileField}>Instagram: {selectedProfile.instagram}</Text>
+            )}
+          </>
+        ) : (
+          <Text>Loading profile...</Text>
+        )}
+        <TouchableOpacity
+          style={styles.closeButton}
+          onPress={closeProfileModal}
+        >
+          <Text style={styles.closeButtonText}>Close</Text>
+        </TouchableOpacity>
+      </View>
+    </View>
+    
+  </Modal>
+);
 
 
 
@@ -1317,27 +1382,38 @@ const handleReject = async (email) => {
             <Text style={styles.modalField}>Type: {serviceType}</Text>
   
             <View style={styles.modalButtons}>
-              <TouchableOpacity
-                style={styles.modalButton}
-                onPress={() => {
-                  Alert.alert("Chat feature coming soon!");
-                  window.alert("Chat feature coming soon!");
-                }}
-              >
-                <Text style={styles.modalButtonText}>Open Chat</Text>
-              </TouchableOpacity>
+              {!isOwnService && (
+                <TouchableOpacity
+                  style={styles.modalButton}
+                  onPress={() => {
+                    Alert.alert("Chat feature coming soon!");
+                    window.alert("Chat feature coming soon!");
+                  }}
+                >
+                  <Text style={styles.modalButtonText}>Open Chat</Text>
+                </TouchableOpacity>
+              )}
               {isOwnService && (
                 <>
                   <TouchableOpacity
                     style={[styles.modalButton, { backgroundColor: "#f94449" }]}
                     onPress={() => handleDeleteService(selectedService.id)}
                   >
+                    
+                  <Image
+                    source={require("../../../assets/images/delete.png")}
+                    style={styles.icon}
+                  />
                     <Text style={styles.modalButtonText}>Delete</Text>
                   </TouchableOpacity>
                   <TouchableOpacity
                     style={styles.modalButton}
                     onPress={() => setEditModalVisible(true)}
-                  >
+                  >    
+                    <Image
+                      source={require("../../../assets/images/edit.png")}
+                      style={styles.icon}
+                    />
                     <Text style={styles.modalButtonText}>Edit</Text>
                   </TouchableOpacity>
                 </>
@@ -1350,28 +1426,27 @@ const handleReject = async (email) => {
               <Text style={styles.modalCloseButtonText}>Close</Text>
             </TouchableOpacity>
             <View>
-            {selectedService.service_from === "publisher" &&
-              selectedService.user_id === user.id && (
-                <TouchableOpacity
-                  style={styles.viewApplicantsButton}
-                  onPress={() => {
-                    setApplicantsModalVisible(true);
-                    fetchApplicants();
-                  }}
-                >
-                  <Text style={styles.viewApplicantsButtonText}>View Applicants</Text>
-                </TouchableOpacity>
-              )}
-
-            {renderApplicantsModal()}
-          </View>
-
+              {selectedService.service_from === "publisher" &&
+                selectedService.user_id === user.id && (
+                  <TouchableOpacity
+                    style={styles.viewApplicantsButton}
+                    onPress={() => {
+                      setApplicantsModalVisible(true);
+                      fetchApplicants();
+                    }}
+                  >
+                    <Text style={styles.viewApplicantsButtonText}>View Applicants</Text>
+                  </TouchableOpacity>
+                )}
+  
+              {renderApplicantsModal()}
+            </View>
           </View>
         </View>
       </Modal>
     );
   };
-  
+   
 
 
   // const renderEditModal = () => {
@@ -1853,47 +1928,53 @@ const handleReject = async (email) => {
           </Text>
         </TouchableOpacity>
       ))}
-
-    <TouchableOpacity
-    style={styles.addButton}
-    onPress={() => setAddModalVisible(true)} 
-  >
-    <Text style={styles.addButtonText}>Add a Service</Text>
-  </TouchableOpacity>
   </View>
     
   );
 
   return (
     <LocalizationProvider dateAdapter={AdapterDateFns}>
-    <View style={styles.container}>
-      {renderSearchBar()}
-      {filtersVisible && renderFilters()}
-      {renderTagBar()}
-      <ScrollView style={styles.scrollView}>
-        {loading ? (
-          <View style={styles.loadingContainer}>
-            <ActivityIndicator size="large" color="#007AFF" />
-            <Text>Loading services...</Text>
-          </View>
-        ) : (
-          filteredServices.map((service) => (
-          <ServiceCard
-          key={service.id}
-          service={service}
-          user={user}
-          openServiceModal={openServiceModal} 
-        /> ))
-        )}
-      </ScrollView>
-      {renderServiceModal()}
-      {renderEditModal()}
-      <AddServiceModal
-        visible={addModalVisible}
-        onClose={() => setAddModalVisible(false)}
-        fetchServices={fetchServices}
-      />
-    </View>
+      <View style={styles.container}>
+        {renderSearchBar()}
+        {filtersVisible && renderFilters()}
+        <View style={styles.tagBarContainer}>
+          {renderTagBar()}
+          <TouchableOpacity
+            style={styles.addButtonRight}
+            onPress={() => setAddModalVisible(true)}
+          >
+            <Image
+              source={require("../../../assets/images/add.png")}
+              style={styles.icon}
+            />
+            <Text style={styles.addButtonText}>Add a Service</Text>
+          </TouchableOpacity>
+        </View>
+        <ScrollView style={styles.scrollView}>
+          {loading ? (
+            <View style={styles.loadingContainer}>
+              <ActivityIndicator size="large" color="#007AFF" />
+              <Text>Loading services...</Text>
+            </View>
+          ) : (
+            filteredServices.map((service) => (
+              <ServiceCard
+                key={service.id}
+                service={service}
+                user={user}
+                openServiceModal={openServiceModal}
+              />
+            ))
+          )}
+        </ScrollView>
+        {renderServiceModal()}
+        {renderEditModal()}
+        <AddServiceModal
+          visible={addModalVisible}
+          onClose={() => setAddModalVisible(false)}
+          fetchServices={fetchServices}
+        />
+      </View>
     </LocalizationProvider>
   );
 };
@@ -1929,6 +2010,19 @@ const styles = StyleSheet.create({
     color: "red", 
     fontWeight: "bold",
   },
+
+  clickableEmail: {
+    color: "#007AFF", 
+    textDecorationLine: "underline",
+    marginBottom: 10,
+  },
+  
+  profileField: {
+    fontSize: 16,
+    marginBottom: 8,
+    color: "#333",
+  },
+  
 
   modalContainer: {
     flex: 1,
@@ -1993,14 +2087,24 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
 
-
-  addButton: {
-    marginVertical: 10,
-    padding: 10,
-    backgroundColor: "#007AFF",
-    borderRadius: 5,
+  tagBarContainer: {
+    flexDirection: "row",
+    justifyContent: "space-between",
     alignItems: "center",
+    marginBottom: 10, 
   },
+  
+  addButtonRight: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#007AFF",
+    paddingVertical: 10,
+    paddingHorizontal: 15,
+    borderRadius: 5,
+    alignSelf: "flex-start", 
+    marginLeft: 10,
+  },
+
   addButtonText: {
     color: "white",
     fontWeight: "bold",
@@ -2227,57 +2331,6 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
   },
 
-  dateButton: {
-    alignItems: "center",
-    justifyContent: "center",
-    padding: 10,
-    borderRadius: 5,
-    backgroundColor: "#e6e6e6",
-    marginVertical: 10,
-  },
-  dateIcon: {
-    width: 30,
-    height: 30,
-    tintColor: "#007AFF",
-  },
-  dateText: {
-    fontSize: 14,
-    color: "#333",
-    marginTop: 5,
-    textAlign: "center",
-  },
-
-  datePickerModal: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    backgroundColor: "rgba(0, 0, 0, 0.5)",
-  },
-  datePickerContent: {
-    width: "80%",
-    backgroundColor: "white",
-    padding: 20,
-    borderRadius: 10,
-    elevation: 5,
-  },
-  datePickerTitle: {
-    fontSize: 18,
-    fontWeight: "bold",
-    marginBottom: 10,
-    textAlign: "center",
-  },
-  closeDatePickerButton: {
-    backgroundColor: "#007AFF",
-    padding: 10,
-    borderRadius: 5,
-    marginTop: 20,
-    alignItems: "center",
-  },
-  closeDatePickerButtonText: {
-    color: "white",
-    fontWeight: "bold",
-    textAlign: "center",
-  },
 
   scrollContent: {
     flexGrow: 1,
