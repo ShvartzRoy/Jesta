@@ -1,5 +1,5 @@
 import React, { useContext, useEffect, useState } from 'react';
-import { View, Text, Image, StyleSheet, ActivityIndicator, ScrollView, TouchableOpacity } from 'react-native';
+import { View, Text, Image, StyleSheet, ActivityIndicator, ScrollView, TouchableOpacity, Linking } from 'react-native';
 import axios from 'axios';
 import { UserContext } from '../../contexts/authContext';
 import Menu from '../../components/profileComponents/menu'; // Import the Menu component
@@ -15,7 +15,14 @@ const ProfileScreen = () => {
     const fetchProfile = async () => {
       try {
         const response = await axios.get(`${process.env.EXPO_PUBLIC_HOST}/api/users/get_profile/${user?.id}`);
-        setProfile(response.data);
+        const profileData = response.data;
+
+        // Add full URL to the image field
+        if (profileData.image) {
+          profileData.image = `${process.env.EXPO_PUBLIC_HOST}${profileData.image}`;
+        }
+
+        setProfile(profileData);
       } catch (err) {
         setError('Failed to fetch profile.');
       } finally {
@@ -28,6 +35,17 @@ const ProfileScreen = () => {
     }
   }, [user]);
 
+  const openLink = async (url) => {
+    try {
+      const supported = await Linking.canOpenURL(url);
+      if (supported) {
+        await Linking.openURL(url);
+      }
+    } catch (err) {
+      // Handle error opening the URL
+    }
+  };
+
   if (loading) {
     return (
       <View style={styles.center}>
@@ -36,19 +54,22 @@ const ProfileScreen = () => {
       </View>
     );
   }
+  const toggelMenu = () => {
+    setIsMenuVisible(!isMenuVisible);
+  }
 
   if (error) {
     return (
       <View style={{ flex: 1 }}>
-        {/* Top Bar */}
-        <View style={styles.topBar}>
-          <TouchableOpacity onPress={() => setIsMenuVisible(true)} style={styles.menuButton}>
-            <Text style={styles.menuButtonText}>☰</Text>
-          </TouchableOpacity>
-        </View>
+        {/* Menu Button */}
+        <TouchableOpacity onPress={toggelMenu} style={styles.menuButton}>
+          <Text style={styles.menuButtonText}>☰</Text>
+        </TouchableOpacity>
+
         <View style={styles.center}>
           <Text style={styles.error}>{error}</Text>
         </View>
+
         {/* Menu */}
         {isMenuVisible && <Menu onClose={() => setIsMenuVisible(false)} />}
       </View>
@@ -57,34 +78,38 @@ const ProfileScreen = () => {
 
   return (
     <View style={{ flex: 1 }}>
-      {/* Top Bar */}
-      <View style={styles.topBar}>
-        <TouchableOpacity onPress={() => setIsMenuVisible(true)} style={styles.menuButton}>
-          <Text style={styles.menuButtonText}>☰</Text>
-        </TouchableOpacity>
-      </View>
+      {/* Menu Button */}
+      <TouchableOpacity onPress={toggelMenu} style={styles.menuButton}>
+        <Text style={styles.menuButtonText}>☰</Text>
+      </TouchableOpacity>
 
       {/* Profile Details */}
       <ScrollView contentContainerStyle={styles.container}>
-        <Image source={{ uri: profile?.image }} style={styles.image} />
-        <View style={styles.nameAndAgeContainer}> 
+        {profile?.image ? (
+          <Image source={{ uri: profile.image }} style={styles.image} />
+        ) : (
+          <View style={styles.placeholderImage}>
+            <Text style={styles.placeholderText}>No Image</Text>
+          </View>
+        )}
+        <View style={styles.nameAndAgeContainer}>
           <Text style={styles.name}>{profile?.name}</Text>
-          <Text style={styles.age}>({profile?.age})</Text>
+          <Text style={styles.age}>{profile?.age}</Text>
         </View>
         <Text style={styles.bio}>{profile?.bio}</Text>
         <View style={styles.socialLinks}>
           {profile?.facebook && (
-            <TouchableOpacity style={styles.linkContainer}>
+            <TouchableOpacity style={styles.linkContainer} onPress={() => openLink(profile.facebook)}>
               <Text style={styles.linkText}>Facebook</Text>
             </TouchableOpacity>
           )}
           {profile?.linkedin && (
-            <TouchableOpacity style={styles.linkContainer}>
+            <TouchableOpacity style={styles.linkContainer} onPress={() => openLink(profile.linkedin)}>
               <Text style={styles.linkText}>LinkedIn</Text>
             </TouchableOpacity>
           )}
           {profile?.instagram && (
-            <TouchableOpacity style={styles.linkContainer}>
+            <TouchableOpacity style={styles.linkContainer} onPress={() => openLink(profile.instagram)}>
               <Text style={styles.linkText}>Instagram</Text>
             </TouchableOpacity>
           )}
@@ -103,17 +128,19 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  topBar: {
-    flexDirection: 'row',
-    justifyContent: 'flex-end',
-    alignItems: 'center',
-    padding: 16,
-    backgroundColor: '#f8f8f8',
-    borderBottomWidth: 1,
-    borderBottomColor: '#ddd',
-  },
   menuButton: {
-    padding: 8,
+    position: 'absolute',
+    top: 16,
+    right: 16,
+    zIndex: 10,
+    backgroundColor: '#f8f8f8',
+    borderRadius: 30,
+    padding: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 5,
   },
   menuButtonText: {
     fontSize: 24,
@@ -123,30 +150,36 @@ const styles = StyleSheet.create({
     padding: 16,
     alignItems: 'center',
   },
-  profileInfo: {
-    flexDirection: 'row',
-    alignItems: 'center',
+  image: {
+    width: 150,
+    height: 150,
+    borderRadius: 100,
     marginBottom: 16,
   },
-  image: {
+  placeholderImage: {
     width: 100,
     height: 100,
     borderRadius: 50,
-    marginRight: 16,
+    backgroundColor: '#ddd',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 16,
   },
-  nameAndAgeContainer: { 
-    alignItems: 'center', 
+  placeholderText: {
+    color: '#888',
+  },
+  nameAndAgeContainer: {
+    alignItems: 'center',
     flexDirection: 'row',
   },
   name: {
     fontSize: 24,
     fontWeight: 'bold',
-    marginBottom: 4,
     marginRight: 8,
   },
   age: {
-    fontSize: 16,
-    color: '#888',
+    fontSize: 18,
+    color: 'rgba(36,36,38,0.8)',
   },
   bio: {
     fontSize: 16,
@@ -156,16 +189,23 @@ const styles = StyleSheet.create({
   },
   socialLinks: {
     flexDirection: 'row',
+    marginTop: 16,
+    justifyContent: 'center',
+    width: '100%',
   },
   linkContainer: {
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    marginHorizontal: 12,
+    backgroundColor: '#f4f4f4',
+    borderRadius: 30,
     borderWidth: 1,
-    borderColor: '#ccc',
-    borderRadius: 8,
-    padding: 8,
-    marginHorizontal: 8,
+    borderColor: '#ddd',
   },
   linkText: {
     color: '#007bff',
+    fontSize: 16,
+    fontWeight: '600',
   },
 });
 

@@ -1,6 +1,6 @@
 // screens/RegisterScreen.js
 import React, { useState, useContext} from "react";
-import { View, Text, TextInput, Button, StyleSheet, Alert } from "react-native";
+import { View, Text, TextInput, Button, StyleSheet, Alert, TouchableWithoutFeedback, Keyboard} from "react-native";
 import {Link, useRouter} from 'expo-router';
 import { UserContext } from "../contexts/authContext";
 import { ProfileContext } from "../contexts/profileContext";
@@ -68,26 +68,28 @@ export default function LoginScreen() {
   };
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Log in</Text>
-      <TextInput
-        style={styles.input}
-        placeholder="Email"
-        value={email}
-        onChangeText={setEmail}
-        keyboardType="email-address"
-      />
-      <TextInput
-        style={styles.input}
-        placeholder="Password"
-        value={password}
-        onChangeText={setPassword}
-        secureTextEntry
-      />
-      <Button title="Log in" onPress={handleLogin} />
-      <Link href= "/register">Register</Link>
+    <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
+      <View style={styles.container}>
+        <Text style={styles.title}>Log in</Text>
+        <TextInput
+          style={styles.input}
+          placeholder="Email"
+          value={email}
+          onChangeText={setEmail}
+          keyboardType="email-address"
+        />
+        <TextInput
+          style={styles.input}
+          placeholder="Password"
+          value={password}
+          onChangeText={setPassword}
+          secureTextEntry
+        />
+        <Button title="Log in" onPress={handleLogin} />
+        <Link href= "/register">Register</Link>
 
-    </View>
+      </View>
+    </TouchableWithoutFeedback>
   );
 }
 

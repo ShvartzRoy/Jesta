@@ -56,14 +56,14 @@ def check_image(image: UploadedFile = File(None)) -> bool:
     if not image.name.lower().endswith(('.png', '.jpg', '.jpeg')):
         raise HttpError(415, "Invalid image format: must be png, jpg, or jpeg")
     # max 2MB
-    if image.size > 2000000:
-        raise HttpError(413, "Image too large: max 2MB")
+    if image.size > 4000000:
+        raise HttpError(413, "Image too large: max 4MB")
     return True
 
 def check_resume(resume: UploadedFile = File(None)) -> bool:
     if not resume.name.lower().endswith('.pdf'):
         raise HttpError(415, "Invalid file format: must be pdf")
     # max 2MB
-    if resume.size > 2000000:
-        raise HttpError(413, "File too large: max 2MB")
+    if resume.size > 4000000:
+        raise HttpError(413, "File too large: max 4MB")
     return True
