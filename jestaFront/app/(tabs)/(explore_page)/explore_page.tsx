@@ -14,6 +14,11 @@ import {
   Modal,
 } from "react-native";
 import MultiSlider from "@ptomasroos/react-native-multi-slider";
+import { LocalizationProvider } from "@mui/x-date-pickers";
+//import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
+import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
+import { format } from 'date-fns';
+import { DateTimePicker } from "@mui/x-date-pickers";
 import { Picker } from "@react-native-picker/picker";
 import { UserContext } from "../../contexts/authContext";
 import axios from "axios";
@@ -26,12 +31,48 @@ interface Service {
   location: string;
   tags: string[];
   state: string;
+  applicants: number[];
   date_time_range: string[];
   estimated_duration: string;
   offered_payment: number;
   service_from: "provider" | "publisher";
   is_volunteering: boolean;
 }
+
+const israeliCities = [
+  "Tel Aviv",
+  "Jerusalem",
+  "Haifa",
+  "Beer Sheva",
+  "Netanya",
+  "Ashdod",
+  "Rishon LeZion",
+  "Petah Tikva",
+  "Eilat",
+  "Holon",
+  "Bat Yam",
+  "Rehovot",
+  "Hadera",
+  "Herzliya",
+  "Ramat Gan",
+  "Kfar Saba",
+  "Modiin",
+  "Givatayim",
+  "Raanana",
+];
+
+const predefinedTags = [
+  "babysitter",
+  "photographer",
+  "private tutor",
+  "hitchhike",
+  "handyman",
+  "dogwalker",
+  "dogsitter",
+  "mover",
+];
+
+
 
 const parseDuration = (duration) => {
   const regex = /^P(?:(\d+)D)?T?(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?$/;
@@ -59,44 +100,81 @@ const ServiceCard: React.FC<{ service: Service; user: any; openServiceModal: (se
   openServiceModal,
 }) => {
   const serviceType = service.service_from === "provider" ? "Offer" : "Request";
+  const [isApplied, setIsApplied] = useState(service.applicants.includes(user.id));
+  
+
 
  
-    const handleApply = async () => {
-      try {
-        console.log("Applying to service with ID:", service.id);
-    
-        const response = await axios.post(
-          `${process.env.EXPO_PUBLIC_HOST}/api/services/apply_to_service/${service.id}`,
-          {}, 
-          {
-            headers: {
-              Authorization: `Bearer ${user.token}`, 
-            },
-          }
-        );
-    
-        if (response.status === 200) {
-          Alert.alert("Success", response.data.message); 
-        } else {
-          Alert.alert("Error", "Something went wrong. Please try again.");
+  const handleApply = async () => {
+    try {
+      console.log("Applying to service with ID:", service.id);
+
+      const response = await axios.post(
+        `${process.env.EXPO_PUBLIC_HOST}/api/services/apply_to_service/${service.id}`,
+        {},
+        {
+          headers: {
+            Authorization: `Bearer ${user.token}`,
+          },
         }
-      } catch (error) {
-        console.error("Failed to apply to the service:", error.response?.data || error.message);
-    
-        const errorMessage =
-          error.response?.data?.message ||
-          "Failed to apply to the service. Please try again.";
-    
-        Alert.alert("Error", errorMessage);
+      );
+
+      if (response.status === 200) {
+        Alert.alert("Success", "You have applied successfully!");
+        window.alert("You have applied successfully!");
+        setIsApplied(true); 
+      } else {
+        Alert.alert("Error", "Something went wrong. Please try again.");
+        window.alert("Something went wrong. Please try again.");
+
       }
-    };
+    } catch (error) {
+      console.error("Failed to apply to the service:", error.response?.data || error.message);
+      Alert.alert("Error", "Failed to apply to the service. Please try again.");
+      window.alert("Failed to apply to the service. Please try again.");
+    }
+  };
+
+  const handleUnapply = async () => {
+    try {
+      console.log("Unapplying from service with ID:", service.id);
+
+      const response = await axios.post(
+        `${process.env.EXPO_PUBLIC_HOST}/api/services/remove_from_service/${service.id}`,
+        {},
+        {
+          headers: {
+            Authorization: `Bearer ${user.token}`,
+          },
+        }
+      );
+
+      if (response.status === 200) {
+        Alert.alert("Success", "You have unapplied successfully!");
+        window.alert("You have unapplied successfully!");
+        setIsApplied(false); 
+      } else {
+        Alert.alert("Error", "Something went wrong. Please try again.");
+        window.alert("Something went wrong. Please try again.");
+      }
+    } catch (error) {
+      console.error("Failed to unapply from the service:", error.response?.data || error.message);
+      Alert.alert("Error", "Failed to unapply from the service. Please try again.");
+      window.alert("Failed to unapply from the service. Please try again.");
+    }
+  };
     
 
  
-    const shouldShowApplyButton =
-    service.service_from === "publisher" && service.user_id && service.user_id !== user.id;
+  
 
-    
+    const shouldShowApplyButton =
+    !isApplied && service.service_from === "publisher" && service.user_id !== user.id && service.user_id;
+
+
+    const shouldShowUnapplyButton = 
+    isApplied && service.service_from === "publisher" && service.user_id !== user.id && service.user_id;
+  
 
     
 
@@ -143,13 +221,208 @@ const ServiceCard: React.FC<{ service: Service; user: any; openServiceModal: (se
 
       {shouldShowApplyButton && (
         <TouchableOpacity style={styles.applyButton} onPress={handleApply}>
-          <Text style={styles.applyButtonText}>Apply</Text>
+          <Text style={styles.applyButtonText}>{isApplied ? "Applied" : "Apply"}</Text>
+        </TouchableOpacity>
+      )}
+
+      {shouldShowUnapplyButton && (
+        <TouchableOpacity style={styles.uapplyButton} onPress={handleUnapply}>
+          <Text style={styles.uapplyButtonText}>Unapply</Text>
         </TouchableOpacity>
       )}
 
     </TouchableOpacity>
   );
 };
+
+const AddServiceModal = ({ visible, onClose, fetchServices }) => {
+  const { user } = useContext(UserContext);
+
+  const [title, setTitle] = useState("");
+  const [description, setDescription] = useState("");
+  const [tags, setTags] = useState([]);
+  const [location, setLocation] = useState("");
+  const [startTime, setStartTime] = useState(null);
+  const [endTime, setEndTime] = useState(null);
+  const [duration, setDuration] = useState({
+    minutes: 0,
+    hours: 0,
+    days: 0,
+    months: 0,
+    years: 0,
+  });
+  const [offeredPayment, setOfferedPayment] = useState(0);
+  const [serviceFrom, setServiceFrom] = useState("publisher");
+  const [isVolunteering, setIsVolunteering] = useState(false);
+
+  const formattedStartTime = startTime ? format(startTime, 'yyyy-MM-dd') : null;
+  const formattedEndTime = endTime ? format(endTime, 'yyyy-MM-dd') : null;
+  
+
+  const convertToISO8601 = () => {
+    const { years, months, days, hours, minutes } = duration;
+    return `P${years ? `${years}Y` : ""}${months ? `${months}M` : ""}${
+      days ? `${days}D` : ""
+    }T${hours ? `${hours}H` : ""}${minutes ? `${minutes}M` : ""}`;
+  };
+
+  const handleSubmit = async () => {
+    if (!title || !description || !tags.length || !location || !startTime || !endTime) {
+      Alert.alert("Error", "All fields are required!");
+      window.alert("All fields are required!");
+      return;
+    }
+
+    const payload = {
+      title,
+      description,
+      tags,
+      location,
+      date_time_range: [startTime.toISOString(), endTime.toISOString()],
+      estimated_duration: convertToISO8601(),
+      offered_payment: offeredPayment,
+      service_from: serviceFrom,
+      is_volunteering: isVolunteering,
+    };
+
+    try {
+      const response = await axios.post(
+        `${process.env.EXPO_PUBLIC_HOST}/api/services/create_service`,
+        payload,
+        {
+          headers: { Authorization: `Bearer ${user.token}` },
+        }
+      );
+      if (response.status === 200) {
+        Alert.alert("Success", "Service created successfully!");
+        window.alert("Service created successfully!");
+        fetchServices();
+        onClose();
+      }
+    } catch (error) {
+      console.error("Failed to create service:", error);
+      Alert.alert("Error", "Failed to create service. Please try again.");
+      window.alert("Failed to create service. Please try again.");
+    }
+  };
+
+  return (
+    <Modal visible={visible} animationType="slide" transparent={true}>
+      <View style={styles.modalContainer}>
+        <View style={styles.modalContent}>
+          <Text style={styles.modalTitle}>Add a Service</Text>
+          <TextInput
+            placeholder="Title"
+            value={title}
+            onChangeText={setTitle}
+            style={styles.input}
+          />
+          <TextInput
+            placeholder="Description"
+            value={description}
+            onChangeText={setDescription}
+            style={styles.input}
+          />
+          <Picker
+            selectedValue={tags}
+            onValueChange={(value) => setTags([...tags, value])}
+            style={styles.picker}
+          >
+            <Picker.Item label="Select Tags" value="" />
+            {predefinedTags.map((tag) => (
+              <Picker.Item key={tag} label={tag} value={tag} />
+            ))}
+          </Picker>
+          <Picker
+            selectedValue={location}
+            onValueChange={setLocation}
+            style={styles.picker}
+          >
+            <Picker.Item label="Select Location" value="" />
+            {israeliCities.map((city) => (
+              <Picker.Item key={city} label={city} value={city} />
+            ))}
+          </Picker>
+          <Text>Start Time:</Text>
+          <DateTimePicker
+            label="Start Time"
+            value={startTime}
+            onChange={(newValue) => setStartTime(newValue)}
+          />
+          <DateTimePicker
+            label="End Time"
+            value={endTime}
+            onChange={(newValue) => setEndTime(newValue)}
+          />
+          <View style={styles.durationInputs}>
+            <TextInput
+              placeholder="Minutes"
+              keyboardType="numeric"
+              onChangeText={(value) => setDuration({ ...duration, minutes: parseInt(value) })}
+              style={styles.inputSmall}
+            />
+            <TextInput
+              placeholder="Hours"
+              keyboardType="numeric"
+              onChangeText={(value) => setDuration({ ...duration, hours: parseInt(value) })}
+              style={styles.inputSmall}
+            />
+            <TextInput
+              placeholder="Days"
+              keyboardType="numeric"
+              onChangeText={(value) => setDuration({ ...duration, days: parseInt(value) })}
+              style={styles.inputSmall}
+            />
+            <TextInput
+              placeholder="Months"
+              keyboardType="numeric"
+              onChangeText={(value) => setDuration({ ...duration, months: parseInt(value) })}
+              style={styles.inputSmall}
+            />
+            <TextInput
+              placeholder="Years"
+              keyboardType="numeric"
+              onChangeText={(value) => setDuration({ ...duration, years: parseInt(value) })}
+              style={styles.inputSmall}
+            />
+          </View>
+          <TextInput
+            placeholder="Offered Payment"
+            keyboardType="numeric"
+            value={offeredPayment.toString()}
+            onChangeText={(value) => setOfferedPayment(parseInt(value))}
+            style={styles.input}
+          />
+          <Picker
+            selectedValue={serviceFrom}
+            onValueChange={setServiceFrom}
+            style={styles.picker}
+          >
+            <Picker.Item label="Request" value="publisher" />
+            <Picker.Item label="Offer" value="provider" />
+          </Picker>
+          <Picker
+            selectedValue={isVolunteering}
+            onValueChange={(value) => setIsVolunteering(value === "true")}
+            style={styles.picker}
+          >
+            <Picker.Item label="Not Volunteering" value="false" />
+            <Picker.Item label="Volunteering" value="true" />
+          </Picker>
+          <View style={styles.modalButtons}>
+            <TouchableOpacity onPress={handleSubmit} style={styles.modalButton}>
+              <Text style={styles.modalButtonText}>Submit</Text>
+            </TouchableOpacity>
+            <TouchableOpacity onPress={onClose} style={styles.modalButtonCancel}>
+              <Text style={styles.modalButtonText}>Cancel</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </View>
+    </Modal>
+  );
+};
+
 
 const Explore_Page = () => {
   const { user } = useContext(UserContext);
@@ -171,8 +444,123 @@ const Explore_Page = () => {
   const [modalVisible, setModalVisible] = useState(false);
   const [selectedService, setSelectedService] = useState<Service & { publisherOrProviderName?: string } | null>(null);
   const [showModal, setShowModal] = useState(false);
+  const [editModalVisible, setEditModalVisible] = useState(false);
+  const [editField, setEditField] = useState<string | null>(null);
+  const [editValue, setEditValue] = useState<string | null>(null);
+  const [applicantsModalVisible, setApplicantsModalVisible] = useState(false);
+  const [applicants, setApplicants] = useState([]);
+  const [addModalVisible, setAddModalVisible] = useState(false);
 
 
+
+
+  const fetchApplicants = async () => {
+    try {
+      const response = await axios.post(
+        `${process.env.EXPO_PUBLIC_HOST}/api/services/get_list_of_applicants_with_their_states/${selectedService.id}`,
+        {},
+        {
+          headers: { Authorization: `Bearer ${user.token}` },
+        }
+      );
+      if (response.status === 200) {
+        setApplicants(response.data.applicants || []);
+      } else {
+        Alert.alert("Error", "Failed to load applicants.");
+      }
+    } catch (error) {
+      console.error("Error fetching applicants:", error.response?.data || error.message);
+      Alert.alert("Error", "Unable to fetch applicants.");
+    }
+  };
+
+  const handleAccept = async (userId) => {
+    try {
+      const response = await axios.post(
+        `${process.env.EXPO_PUBLIC_HOST}/api/services/accept_applicant/${selectedService.id}/${userId}`,
+        {},
+        {
+          headers: { Authorization: `Bearer ${user.token}` },
+        }
+      );
+      if (response.status === 200) {
+        Alert.alert("Success", "Applicant accepted successfully.");
+        fetchApplicants(); 
+      }
+    } catch (error) {
+      console.error("Error accepting applicant:", error.response?.data || error.message);
+      Alert.alert("Error", "Failed to accept applicant.");
+    }
+  };
+
+  const handleReject = async (userId) => {
+    try {
+      const response = await axios.post(
+        `${process.env.EXPO_PUBLIC_HOST}/api/services/reject_applicant/${selectedService.id}/${userId}`,
+        {},
+        {
+          headers: { Authorization: `Bearer ${user.token}` },
+        }
+      );
+      if (response.status === 200) {
+        Alert.alert("Success", "Applicant rejected successfully.");
+        fetchApplicants(); 
+      }
+    } catch (error) {
+      console.error("Error rejecting applicant:", error.response?.data || error.message);
+      Alert.alert("Error", "Failed to reject applicant.");
+    }
+  };
+
+  const renderApplicantsModal = () => (
+    <Modal
+      visible={applicantsModalVisible}
+      transparent={true}
+      animationType="slide"
+    >
+      <View style={styles.modalContainer}>
+        <View style={styles.modalContent}>
+          <Text style={styles.modalTitle}>Applicants</Text>
+          <FlatList
+            data={applicants}
+            keyExtractor={(item) => item.user_id.toString()}
+            renderItem={({ item }) => (
+              <View style={styles.applicantItem}>
+                <Text style={styles.applicantText}>Email: {item.email}</Text>
+                <Text style={styles.applicantText}>Status: {item.status}</Text>
+                <View style={styles.applicantActions}>
+                  <TouchableOpacity
+                    style={styles.acceptButton}
+                    onPress={() => handleAccept(item.user_id)}
+                  >
+                    <Text style={styles.buttonText}>Accept</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={styles.rejectButton}
+                    onPress={() => handleReject(item.user_id)}
+                  >
+                    <Text style={styles.buttonText}>Reject</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            )}
+          />
+          <TouchableOpacity
+            style={styles.closeButton}
+            onPress={() => setApplicantsModalVisible(false)}
+          >
+            <Text style={styles.closeButtonText}>Close</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    </Modal>
+  );
+  
+
+
+
+
+  
 
   const openServiceModal = async (service: Service) => {
     try {
@@ -193,44 +581,20 @@ const Explore_Page = () => {
     } catch (error) {
       console.error("Failed to fetch owner's name:", error.response?.data || error.message);
       Alert.alert("Error", "Failed to fetch the owner's name.");
+      window.alert("Failed to fetch the owner's name.");
     }
+  };
+
+
+  const openEditModal = (field: string, value: string | number | null) => {
+    console.log("Opening edit modal for field:", field, "with value:", value); 
+    setEditField(field);
+    setEditValue(value);
+    setEditModalVisible(true);
   };
   
   
-
-  const israeliCities = [
-    "Tel Aviv",
-    "Jerusalem",
-    "Haifa",
-    "Beer Sheva",
-    "Netanya",
-    "Ashdod",
-    "Rishon LeZion",
-    "Petah Tikva",
-    "Eilat",
-    "Holon",
-    "Bat Yam",
-    "Rehovot",
-    "Hadera",
-    "Herzliya",
-    "Ramat Gan",
-    "Kfar Saba",
-    "Modiin",
-    "Givatayim",
-    "Raanana",
-  ];
-
-  const predefinedTags = [
-    "babysitter",
-    "photographer",
-    "private tutor",
-    "hitchhike",
-    "handyman",
-    "dogwalker",
-    "dogsitter",
-    "mover",
-  ];
-
+  
  
   
   const closeServiceModal = () => {
@@ -304,6 +668,7 @@ const Explore_Page = () => {
     } catch (error) {
       console.error("Failed to fetch services:", error);
       Alert.alert("Error", "Failed to load services. Please try again.");
+      window.alert("Failed to load services. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -325,12 +690,14 @@ const Explore_Page = () => {
       );
       if (response.status === 200) {
         Alert.alert("Success", "Service deleted successfully!");
+        window.alert("Service deleted successfully!");
         closeServiceModal();
         fetchServices(); 
       }
     } catch (error) {
       console.error("Failed to delete service:", error.response?.data || error.message);
       Alert.alert("Error", "Failed to delete service. Please try again.");
+      window.alert("Failed to delete service. Please try again.");
     }
   };
 
@@ -438,28 +805,31 @@ const Explore_Page = () => {
                 ? `Publisher's Name: ${selectedService.publisherOrProviderName}`
                 : `Provider's Name: ${selectedService.publisherOrProviderName}`}
             </Text>
-
-
             <Text style={styles.modalField}>State: {selectedService.state}</Text>
             <Text style={styles.modalField}>Type: {serviceType}</Text>
   
             <View style={styles.modalButtons}>
               <TouchableOpacity
                 style={styles.modalButton}
-                onPress={() => Alert.alert("Chat feature coming soon!")}
+                onPress={() => {
+                  Alert.alert("Chat feature coming soon!");
+                  window.alert("Chat feature coming soon!");
+                }}
               >
                 <Text style={styles.modalButtonText}>Open Chat</Text>
               </TouchableOpacity>
-  
               {isOwnService && (
                 <>
                   <TouchableOpacity
-                    style={[styles.modalButton, { backgroundColor: "red" }]}
+                    style={[styles.modalButton, { backgroundColor: "#f94449" }]}
                     onPress={() => handleDeleteService(selectedService.id)}
                   >
                     <Text style={styles.modalButtonText}>Delete</Text>
                   </TouchableOpacity>
-                  <TouchableOpacity style={styles.modalButton}>
+                  <TouchableOpacity
+                    style={styles.modalButton}
+                    onPress={() => setEditModalVisible(true)}
+                  >
                     <Text style={styles.modalButtonText}>Edit</Text>
                   </TouchableOpacity>
                 </>
@@ -471,11 +841,157 @@ const Explore_Page = () => {
             >
               <Text style={styles.modalCloseButtonText}>Close</Text>
             </TouchableOpacity>
+            <View>
+            {selectedService.service_from === "publisher" &&
+              selectedService.user_id === user.id && (
+                <TouchableOpacity
+                  style={styles.viewApplicantsButton}
+                  onPress={() => {
+                    setApplicantsModalVisible(true);
+                    fetchApplicants();
+                  }}
+                >
+                  <Text style={styles.viewApplicantsButtonText}>View Applicants</Text>
+                </TouchableOpacity>
+              )}
+
+            {renderApplicantsModal()}
+          </View>
+
           </View>
         </View>
       </Modal>
     );
   };
+  
+
+
+  const renderEditModal = () => {
+    if (!selectedService) return null;
+  
+    const handleSaveEdit = async () => {
+      if (!editField || editValue === null) {
+        Alert.alert("Error", "Please provide a value to update.");
+        window.alert("Please provide a value to update.");
+        return;
+      }
+    
+      try {
+        const endpointMap: { [key: string]: string } = {
+          title: "update_name",
+          description: "update_description",
+          location: "update_location",
+          date_time_range: "update_date_time_range",
+          estimated_duration: "update_estimated_duration",
+          offered_payment: "update_offered_payment",
+        };
+    
+        const endpoint = endpointMap[editField];
+        if (!endpoint) {
+          Alert.alert("Error", "Invalid field selected.");
+          window.alert("Invalid field selected.");
+          return;
+        }
+    
+        const requestBody =
+          editField === "date_time_range"
+            ? { new_data: editValue.split(",") } 
+            : { new_data: editValue };
+    
+        const response = await axios.post(
+          `${process.env.EXPO_PUBLIC_HOST}/api/services/${endpoint}/${selectedService?.id}`,
+          requestBody,
+          {
+            headers: { Authorization: `Bearer ${user.token}` },
+          }
+        );
+    
+        if (response.status === 200) {
+          Alert.alert("Success", `${editField.replace("_", " ")} updated successfully!`);
+          window.alert(`${editField.replace("_", " ")} updated successfully!`);
+    
+          setSelectedService((prev) => {
+            if (!prev) return null;
+            return { ...prev, [editField]: editValue };
+          });
+    
+          setServices((prevServices) =>
+            prevServices.map((service) =>
+              service.id === selectedService?.id
+                ? { ...service, [editField]: editValue }
+                : service
+            )
+          );
+    
+          setEditModalVisible(false); 
+        } else {
+          Alert.alert("Error", "Failed to update the service. Please try again.");
+          window.alert("Failed to update the service. Please try again.");
+        }
+      } catch (error) {
+        console.error("API Error:", error.response?.data || error.message);
+        Alert.alert("Error", "Failed to update the service. Please try again.");
+        window.alert("Failed to update the service. Please try again.");
+      }
+    };
+    
+    
+    return (
+      <Modal visible={editModalVisible} transparent={true} animationType="slide">
+        <View style={styles.modalContainer}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>Edit Service</Text>
+  
+            {editField ? (
+              <>
+                <Text style={styles.modalField}>Editing: {editField.replace("_", " ")}</Text>
+                <TextInput
+                  style={styles.input}
+                  placeholder={`Enter new ${editField.replace("_", " ")}`}
+                  value={editValue || ""}
+                  onChangeText={setEditValue}
+                />
+                <View style={styles.modalButtons}>
+                <TouchableOpacity style={styles.modalButton} onPress={handleSaveEdit}>
+                  <Text style={styles.modalButtonText}>Save</Text>
+                </TouchableOpacity>
+
+                  <TouchableOpacity
+                    style={[styles.modalButton, { backgroundColor: "#f94449" }]}
+                    onPress={() => setEditModalVisible(false)}
+                  >
+                    <Text style={styles.modalButtonText}>Discard</Text>
+                  </TouchableOpacity>
+                </View>
+              </>
+            ) : (
+              <>
+                <Text style={styles.modalField}>Select a field to edit:</Text>
+                {["name", "description", "location", "date_time_range", "estimated_duration", "offered_payment"].map(
+                  (field) => (
+                    <TouchableOpacity
+                      key={field}
+                      style={styles.modalButton}
+                      onPress={() => setEditField(field)}
+                    >
+                      <Text style={styles.modalButtonText}>{field.replace("_", " ")}</Text>
+                    </TouchableOpacity>
+                  )
+                )}
+                <TouchableOpacity
+                  style={[styles.modalButton, { backgroundColor: "#f94449" }]}
+                  onPress={() => setEditModalVisible(false)}
+                >
+                  <Text style={styles.modalButtonText}>Cancel</Text>
+                </TouchableOpacity>
+              </>
+            )}
+          </View>
+        </View>
+      </Modal>
+    );
+  };
+  
   
 
   const renderFilters = () => (
@@ -602,10 +1118,19 @@ const Explore_Page = () => {
           </Text>
         </TouchableOpacity>
       ))}
-    </View>
+
+    <TouchableOpacity
+    style={styles.addButton}
+    onPress={() => setAddModalVisible(true)} 
+  >
+    <Text style={styles.addButtonText}>Add a Service</Text>
+  </TouchableOpacity>
+  </View>
+    
   );
 
   return (
+    <LocalizationProvider dateAdapter={AdapterDateFns}>
     <View style={styles.container}>
       {renderSearchBar()}
       {filtersVisible && renderFilters()}
@@ -627,7 +1152,14 @@ const Explore_Page = () => {
         )}
       </ScrollView>
       {renderServiceModal()}
+      {renderEditModal()}
+      <AddServiceModal
+        visible={addModalVisible}
+        onClose={() => setAddModalVisible(false)}
+        fetchServices={fetchServices}
+      />
     </View>
+    </LocalizationProvider>
   );
 };
 
@@ -646,9 +1178,55 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
 
+  input: {
+    borderWidth: 1,
+    borderColor: "#ccc",
+    borderRadius: 5,
+    padding: 10,
+    marginBottom: 20,
+  },
+
+  addButton: {
+    marginVertical: 10,
+    padding: 10,
+    backgroundColor: "#007AFF",
+    borderRadius: 5,
+    alignItems: "center",
+  },
+  addButtonText: {
+    color: "white",
+    fontWeight: "bold",
+  },
+  modalButtonCancel: {
+    padding: 10,
+    backgroundColor: "#f94449",
+    borderRadius: 5,
+    alignItems: "center",
+  },
+  durationInputs: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+  },
+  inputSmall: {
+    borderWidth: 1,
+    borderColor: "#ccc",
+    borderRadius: 5,
+    padding: 5,
+    width: "18%",
+  },
+  
+
   applyButton: {
     marginTop: 10,
     backgroundColor: "#007AFF",
+    paddingVertical: 10,
+    paddingHorizontal: 15,
+    borderRadius: 5,
+    alignItems: "center",
+  },
+  uapplyButton: {
+    marginTop: 10,
+    backgroundColor: "#f94449",
     paddingVertical: 10,
     paddingHorizontal: 15,
     borderRadius: 5,
@@ -659,6 +1237,12 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     fontSize: 16,
   },
+  uapplyButtonText: {
+    color: "white",
+    fontWeight: "bold",
+    fontSize: 16,
+  },
+  
   
   selectedTag: {
     backgroundColor: "#007AFF",
@@ -806,21 +1390,77 @@ const styles = StyleSheet.create({
     marginTop: 20,
   },
   modalButton: {
-    backgroundColor: "#007AFF",
+    backgroundColor: "#A1CEFF",
     paddingVertical: 10,
     paddingHorizontal: 15,
     borderRadius: 5,
+    marginTop: 10,
+
   },
   modalButtonText: {
+    color: "black",
+    fontWeight: "bold",
+  },
+
+  applicantItem: {
+    marginBottom: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: "#ccc",
+    paddingBottom: 10,
+  },
+  applicantText: {
+    fontSize: 16,
+    marginBottom: 5,
+  },
+  applicantActions: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+  },
+  acceptButton: {
+    backgroundColor: "#4CAF50",
+    padding: 10,
+    borderRadius: 5,
+  },
+  rejectButton: {
+    backgroundColor: "#F44336",
+    padding: 10,
+    borderRadius: 5,
+  },
+
+  buttonText: {
+    color: "white",
+    fontWeight: "bold",
+    textAlign: "center",
+  },
+  closeButton: {
+    marginTop: 20,
+    backgroundColor: "#f94449",
+    padding: 10,
+    borderRadius: 5,
+  },
+  closeButtonText: {
+    color: "white",
+    fontWeight: "bold",
+    textAlign: "center",
+  },
+  viewApplicantsButton: {
+    backgroundColor: "#007AFF",
+    padding: 10,
+    borderRadius: 5,
+    alignItems: "center",
+    marginTop: 10,
+  },
+  viewApplicantsButtonText: {
     color: "white",
     fontWeight: "bold",
   },
+
   modalCloseButton: {
     marginTop: 15,
     alignSelf: "center",
   },
   modalCloseButtonText: {
-    color: "red",
+    color: "#f94449",
     fontSize: 16,
     fontWeight: "bold",
   },

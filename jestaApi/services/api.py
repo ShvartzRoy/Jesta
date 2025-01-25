@@ -90,37 +90,6 @@ def mark_service_completed(request, service_id: int):
     return sc.mark_service_completed(request, service_id)
 
 
-@router.post("/get_progress_status_of_service/{service_id}", response={200: dict})
-def get_progress_status_of_service(request, service_id: int):
-    return sc.get_progress_status_of_service(request, service_id)
-
-@router.post("/get_list_of_applicants_with_their_states/{service_id}", response={200: dict})
-def get_list_of_applicants_with_their_states(request, service_id: int):
-    return sc.get_list_of_applicants_with_their_states(request, service_id)
-
-
-@router.post("/get_list_of_all_user_jobs_with_status/{user_id}", response={200: list})
-def get_list_of_all_user_jobs_with_status(request, user_id: int):
-    return sc.get_list_of_all_user_jobs_with_status(request, user_id)
-
-@router.post("/get_list_of_all_user_free_services_with_status/{user_id}", response={200: list})
-def get_list_of_all_user_free_services_with_status(request, user_id: int):
-    return sc.get_list_of_all_user_free_services_with_status(request, user_id)
-
-@router.post("/get_list_of_all_user_volunteering_services_with_status/{user_id}", response={200: list})
-def get_list_of_all_user_volunteering_services_with_status(request, user_id: int):
-    return sc.get_list_of_all_user_volunteering_services_with_status(request, user_id)
-
-@router.post("/get_list_of_all_user_services_with_status/{user_id}", response={200: list})
-def get_list_of_all_user_services_with_status(request, user_id: int):
-    return sc.get_list_of_all_user_services_with_status(request, user_id)
-
-
-@router.post("/get_applicant_state/{service_id}", response={200: dict})
-def get_applicant_state(request, service_id: int):
-    return sc.get_applicant_state(request, service_id)
-
-
 
 
 @router.post("/cancel_service/{service_id}", response={200: dict})
@@ -177,6 +146,38 @@ def get_offered_user_services(request):
 def get_offered_other_user_services(request):
     services = sc.get_offered_other_user_services(request)
     return [ServiceSchema.from_model(service) for service in services]
+
+
+
+@router.get("/get_progress_status_of_service/{service_id}", response={200: dict})
+def get_progress_status_of_service(request, service_id: int):
+    return sc.get_progress_status_of_service(request, service_id)
+
+@router.get("/get_list_of_applicants_with_their_states/{service_id}", response={200: dict})
+def get_list_of_applicants_with_their_states(request, service_id: int):
+    return sc.get_list_of_applicants_with_their_states(request, service_id)
+
+
+@router.get("/get_list_of_all_user_jobs_with_status/{user_id}", response={200: list})
+def get_list_of_all_user_jobs_with_status(request, user_id: int):
+    return sc.get_list_of_all_user_jobs_with_status(request, user_id)
+
+@router.get("/get_list_of_all_user_free_services_with_status/{user_id}", response={200: list})
+def get_list_of_all_user_free_services_with_status(request, user_id: int):
+    return sc.get_list_of_all_user_free_services_with_status(request, user_id)
+
+@router.get("/get_list_of_all_user_volunteering_services_with_status/{user_id}", response={200: list})
+def get_list_of_all_user_volunteering_services_with_status(request, user_id: int):
+    return sc.get_list_of_all_user_volunteering_services_with_status(request, user_id)
+
+@router.get("/get_list_of_all_user_services_with_status/{user_id}", response={200: list})
+def get_list_of_all_user_services_with_status(request, user_id: int):
+    return sc.get_list_of_all_user_services_with_status(request, user_id)
+
+
+@router.get("/get_applicant_state/{service_id}", response={200: dict})
+def get_applicant_state(request, service_id: int):
+    return sc.get_applicant_state(request, service_id)
 
 
 @router.get("/save_service/{service_id}", response={200: dict})
