@@ -121,6 +121,8 @@ def get_applicant_state(request, service_id: int):
     return sc.get_applicant_state(request, service_id)
 
 
+
+
 @router.post("/cancel_service/{service_id}", response={200: dict})
 def cancel_service(request, service_id: int):
     return sc.cancel_service(request, service_id)
@@ -149,6 +151,11 @@ def validate_users_worked_together(request, user_id: int, participant_id: int):
 def get_service(request, service_id: int):
     service = sc.get_service(service_id)
     return ServiceSchema.from_model(service)
+
+
+@router.get("/get_owner_name/{service_id}", response={200: dict})
+def get_owner_name(request, service_id: int):
+    return sc.get_owner_name(service_id)
 
 
 @router.get("/get_requested_user_services", response={200: list[ServiceSchema]})

@@ -302,7 +302,11 @@ class ServiceController:
                 return {"state": applicant["applicant_state"]}
         raise HttpError(400, f"User '{user.id}' has not applied to this service!")
         
-                
+    def get_owner_name(self, service_id: int) -> dict:
+        service = get_object_or_404(Service, id=service_id)
+        owner = service.user  
+        return {"name": owner.profile.name if hasattr(owner, "profile") and owner.profile.name else "Unknown"}
+        
 
     def update_service_state(self, request, service_id: int, new_state: str) -> dict:
         allowed_states = ["pending", "accepted", "inProgress", "completed"]
