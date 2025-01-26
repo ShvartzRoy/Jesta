@@ -1,5 +1,5 @@
 from ninja import Router
-from .schemas import SpecialistSchema, SpecialistCreateSchema
+from .schemas import SpecialistSchema, SpecialistCreateSchema, SpecialistUpdateSchema
 from .specialistsController import SpecialistController
 
 router = Router(tags=["Specialists"])
@@ -11,9 +11,8 @@ def create_specialist(request, payload: SpecialistCreateSchema):
     return sc.create_specialist(request, payload)
 
 
-
-@router.put("/update_specialist", response={200: SpecialistSchema, 404: dict})
-def update_specialist(request, payload: SpecialistCreateSchema):
+@router.post("/update_specialist", response={200: SpecialistSchema, 404: dict})
+def update_specialist(request, payload: SpecialistUpdateSchema):  # Use SpecialistUpdateSchema
     return sc.update_specialist(request, payload)
 
 

@@ -1,25 +1,22 @@
-import React, { useContext, useEffect, useState } from 'react';
-import { View, Text, Image, StyleSheet, ActivityIndicator, ScrollView, TouchableOpacity, Linking, Alert } from 'react-native';
-import { router } from 'expo-router';
+import React, { useEffect, useState } from 'react';
+import { View, Text, Image, StyleSheet, ActivityIndicator, ScrollView, Linking, TouchableOpacity } from 'react-native';
+import { useLocalSearchParams, router } from 'expo-router';
 import axios from 'axios';
-import { UserContext } from '../../contexts/authContext';
-import Menu from '../../components/profileComponents/menu';
 import Ionicons from '@expo/vector-icons/Ionicons';
-import SpecialistCard from '../../components/profileComponents/specialistCard';
+import SpecialistShowCard from '../components/serviceComponents/specialistShowCard'; // Import the SpecialistShowCard component
 
-const ProfileScreen = () => {
-  const { user } = useContext(UserContext);
+const ViewProfileScreen = () => {
+  const { userId } = useLocalSearchParams();
   const [profile, setProfile] = useState(null);
   const [specialists, setSpecialists] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [isMenuVisible, setIsMenuVisible] = useState(false);
 
   useEffect(() => {
     const fetchProfileAndSpecialists = async () => {
       try {
         // Fetch profile
-        const profileResponse = await axios.get(`${process.env.EXPO_PUBLIC_HOST}/api/users/get_profile/${user?.id}`);
+        const profileResponse = await axios.get(`${process.env.EXPO_PUBLIC_HOST}/api/users/get_profile/${userId}`);
         const profileData = profileResponse.data;
 
         if (profileData.image) {
@@ -27,47 +24,28 @@ const ProfileScreen = () => {
         }
 
         setProfile(profileData);
-        try{
-          // Fetch specialists
-          const specialistsResponse = await axios.get(`${process.env.EXPO_PUBLIC_HOST}/api/specialists/get_specialist/${user?.id}/`);
-          console.log('specialistsResponse', specialistsResponse.data);
 
-          // Process the specialist object
-          if (specialistsResponse.data && typeof specialistsResponse.data === 'object' && !Array.isArray(specialistsResponse.data)) {
-            setSpecialists([specialistsResponse.data]);
-          } else {
-            setSpecialists([]);
-          }
-        } catch(err) {
+        // Fetch specialists
+        const specialistsResponse = await axios.get(`${process.env.EXPO_PUBLIC_HOST}/api/specialists/get_specialist/${userId}/`);
+        console.log('specialistsResponse', specialistsResponse.data);
+
+        // Process the specialist object
+        if (specialistsResponse.data && typeof specialistsResponse.data === 'object' && !Array.isArray(specialistsResponse.data)) {
+          setSpecialists([specialistsResponse.data]);
+        } else {
           setSpecialists([]);
         }
       } catch (err) {
-        setError('Failed to fetch profile or specialists.');
+        setError('Failed to fetch profile. Please try again later.');
       } finally {
         setLoading(false);
       }
     };
 
-    if (user?.id) {
+    if (userId) {
       fetchProfileAndSpecialists();
     }
-  }, [user]);
-
-  const handleDeleteSpecialist = async () => {
-    try {
-      // Send the delete request to the API (no parameters needed)
-      await axios.delete(`${process.env.EXPO_PUBLIC_HOST}/api/specialists/delete_specialist`);
-
-      // Clear the specialists list after deletion
-      setSpecialists([]);
-
-      // Show a success message
-      Alert.alert('Success', 'Specialist deleted successfully.');
-    } catch (err) {
-      // Show an error message if the deletion fails
-      Alert.alert('Error', 'Failed to delete specialist.');
-    }
-  };
+  }, [userId]);
 
   const openLink = async (url) => {
     try {
@@ -89,47 +67,26 @@ const ProfileScreen = () => {
     );
   }
 
-  const toggelMenu = () => {
-    setIsMenuVisible(!isMenuVisible);
-  };
-
   if (error) {
     return (
-      <View style={{ flex: 1 }}>
-        {/* Menu Button */}
-        <TouchableOpacity onPress={toggelMenu} style={styles.menuButton}>
-          <Text style={styles.menuButtonText}>☰</Text>
+      <View style={styles.center}>
+        <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+          <Ionicons name="arrow-back" size={24} color="#007bff" />
         </TouchableOpacity>
-
-        <View style={styles.center}>
-          <Text style={styles.error}>{error}</Text>
-        </View>
-
-        {/* Menu */}
-        {isMenuVisible && <Menu onClose={() => setIsMenuVisible(false)} />}
+        <Text style={styles.error}>{error}</Text>
       </View>
     );
   }
 
   return (
     <View style={{ flex: 1 }}>
-      {/* Menu Button */}
-      <TouchableOpacity onPress={toggelMenu} style={styles.menuButton}>
-        <Text style={styles.menuButtonText}>☰</Text>
+      {/* Back Button */}
+      <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+        <Ionicons name="arrow-back" size={24} color="#007bff" />
       </TouchableOpacity>
 
-      {/* Plus Button (Conditional Rendering) */}
-      {specialists.length === 0 && (
-        <TouchableOpacity
-          onPress={() => router.push('/create_specialist')}
-          style={styles.plusButton}
-        >
-          <Ionicons name="add" size={24} color="#007bff" />
-        </TouchableOpacity>
-      )}
-
-      {/* Profile Details */}
       <ScrollView contentContainerStyle={styles.container}>
+        {/* Profile Image */}
         {profile?.image ? (
           <Image source={{ uri: profile.image }} style={styles.image} />
         ) : (
@@ -137,11 +94,17 @@ const ProfileScreen = () => {
             <Text style={styles.placeholderText}>No Image</Text>
           </View>
         )}
+
+        {/* Name and Age */}
         <View style={styles.nameAndAgeContainer}>
           <Text style={styles.name}>{profile?.name}</Text>
           <Text style={styles.age}>{profile?.age}</Text>
         </View>
+
+        {/* Bio */}
         <Text style={styles.bio}>{profile?.bio}</Text>
+
+        {/* Social Links */}
         <View style={styles.socialLinks}>
           {profile?.facebook && (
             <TouchableOpacity style={styles.linkContainer} onPress={() => openLink(profile.facebook)}>
@@ -161,22 +124,15 @@ const ProfileScreen = () => {
         </View>
 
         {/* Display Specialists */}
-        <Text style={styles.sectionTitle}>My Specialty</Text>
+        <Text style={styles.sectionTitle}>Specialty</Text>
         {specialists.length > 0 ? (
           specialists.map((specialist) => (
-            <SpecialistCard
-              key={specialist.id}
-              specialist={specialist}
-              onDelete={handleDeleteSpecialist}
-            />
+            <SpecialistShowCard key={specialist.id} specialist={specialist} />
           ))
         ) : (
           <Text style={styles.noSpecialistsText}>No specialists found.</Text>
         )}
       </ScrollView>
-
-      {/* Menu */}
-      {isMenuVisible && <Menu onClose={() => setIsMenuVisible(false)} />}
     </View>
   );
 };
@@ -187,39 +143,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  menuButton: {
-    position: 'absolute',
-    top: 16,
-    right: 16,
-    zIndex: 10,
-    backgroundColor: '#f8f8f8',
-    borderRadius: 30,
-    padding: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 5,
-  },
-  plusButton: {
-    position: 'absolute',
-    top: 16,
-    left: 16,
-    zIndex: 10,
-    backgroundColor: '#f8f8f8',
-    borderRadius: 30,
-    padding: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 5,
-  },
-  menuButtonText: {
-    fontSize: 24,
-    fontWeight: 'bold',
-  },
   container: {
+    paddingTop: 80, // Add padding to avoid overlap with the back button
     padding: 16,
     alignItems: 'center',
   },
@@ -300,6 +225,24 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginTop: 16,
   },
+  backButton: {
+    position: 'absolute',
+    top: 100, // Adjusted to avoid overlap with system UI
+    left: 16,
+    zIndex: 10,
+    backgroundColor: '#f8f8f8',
+    borderRadius: 30,
+    padding: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 5,
+  },
+  error: {
+    color: 'red',
+    fontSize: 16,
+  },
 });
 
-export default ProfileScreen;
+export default ViewProfileScreen;
