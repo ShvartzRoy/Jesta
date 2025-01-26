@@ -1,4 +1,4 @@
-import React, { useContext, useState } from 'react';
+import React, { useContext, useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -9,17 +9,21 @@ import {
   TouchableWithoutFeedback,
   Keyboard,
   ActivityIndicator,
+  KeyboardAvoidingView,
+  ScrollView,
+  Platform,
 } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import * as DocumentPicker from 'expo-document-picker';
-import { useRouter } from 'expo-router';
 import axios from 'axios';
+import { Ionicons } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
 import { UserContext } from '../contexts/authContext';
 
 const Set_profile = () => {
   const { user } = useContext(UserContext);
   const router = useRouter();
-  // State variables for form inputs
+
   const [name, setName] = useState('');
   const [bio, setBio] = useState('');
   const [age, setAge] = useState('');
@@ -30,9 +34,10 @@ const Set_profile = () => {
   const [resume, setResume] = useState(null);
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
-  const [isError, setError] = useState([false,'']);
+  const [isError, setError] = useState([false, '']);
+  const [focusedField, setFocusedField] = useState(null);
 
-// Handle image upload
+  // Handle image upload
   const handleImageUpload = async () => {
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
@@ -78,23 +83,26 @@ const Set_profile = () => {
         console.log("Document picking was canceled.");
       }
     } catch (err) {
-      //console.error('Error picking document:', err);
+      console.error('Error picking document:', err);
     }
   };
 
+
+
+
+  // Handle form submission
   const handleSubmit = async () => {
     setLoading(true);
     setSuccess(false);
-    setError([false,''])
-    const formData = new FormData();
+    setError([false, '']);
 
-    // Wrap all fields in a 'payload' key
-      formData.append(
+    const formData = new FormData();
+    formData.append(
       'payload',
       JSON.stringify({
         name,
         bio,
-        age: age ? parseInt(age) : null, // Ensure age is sent as a number
+        age: age ? parseInt(age) : null,
         facebook,
         linkedin,
         instagram,
@@ -120,6 +128,7 @@ const Set_profile = () => {
       });
     }
 
+
     try {
       const response = await axios.post(`${process.env.EXPO_PUBLIC_HOST}/api/users/edit_profile`, formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
@@ -134,96 +143,176 @@ const Set_profile = () => {
     }
   };
 
+  // Fetch user profile
+  useEffect(() => {
+    const fetchProfile = async () => {
+      if (user.id) {
+        setLoading(true);
+        try {
+          const response = await axios.get(`${process.env.EXPO_PUBLIC_HOST}/api/users/get_profile/${user.id}`, {
+            headers: { 'Content-Type': 'application/json' },
+          });
+
+          setName(response.data.name);
+          setBio(response.data.bio);
+          setAge(response.data.age?.toString());
+          setFacebook(response.data.facebook);
+          setLinkedin(response.data.linkedin);
+          setInstagram(response.data.instagram);
+        } catch (error) {
+          //console.error('Error fetching profile:', error);
+        } finally {
+          setLoading(false);
+        }
+      }
+    };
+
+    fetchProfile();
+  }, [user.id]);
 
   return (
-    <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
-      <View style={styles.container}>
-        <Text style={styles.header}>Edit Profile</Text>
-        <TextInput
-          style={styles.input}
-          placeholder="Name*"
-          value={name}
-          onChangeText={setName}
-        />
-        <TextInput
-          style={styles.input}
-          placeholder="Bio"
-          value={bio}
-          onChangeText={setBio}
-          multiline
-        />
-        <TextInput
-          style={styles.input}
-          placeholder="Age* (must be at least 15)"
-          value={age}
-          onChangeText={setAge}
-          keyboardType="numeric"
-        />
-        <TextInput
-          style={styles.input}
-          placeholder="Facebook Profile"
-          value={facebook}
-          onChangeText={setFacebook}
-        />
-        <TextInput
-          style={styles.input}
-          placeholder="LinkedIn Profile"
-          value={linkedin}
-          onChangeText={setLinkedin}
-        />
-        <TextInput
-          style={styles.input}
-          placeholder="Instagram Profile"
-          value={instagram}
-          onChangeText={setInstagram}
-        />
+    <KeyboardAvoidingView
+      style={{ flex: 1 }}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+    >
+      <ScrollView contentContainerStyle={{ flexGrow: 1 }}>
+        <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+          <View style={styles.container}>
+            {success && (
+              <TouchableOpacity style={styles.topRightButton} onPress={() => router.replace('/explore_page')}>
+                <Text style={styles.topRightButtonText}>Advance</Text>
+                <Ionicons name="arrow-forward-outline" style={styles.topRightButtonText} size={24} color="blue" />
+              </TouchableOpacity>
+            )}
+            <Text style={styles.header}>Edit Profile</Text>
 
-        <TouchableOpacity onPress={handleImageUpload} style={styles.button}>
-          <Text style={styles.buttonText}>
-            {image ? `Image: ${image.fileName}` : 'Upload Profile Image'}
-          </Text>
-        </TouchableOpacity>
+            {/* Name Input */}
+            {/* Name Input */}
+            <Text style={styles.inputTitle}>Name *</Text>
+            <TextInput
+              style={[
+                styles.input,
+                focusedField === 'name' && styles.focusedInput,
+              ]}
+              placeholder={name || 'Enter your name'}
+              value={name}
+              onFocus={() => setFocusedField('name')}
+              onBlur={() => setFocusedField(null)}
+              onChangeText={setName}
+            />
 
-        <TouchableOpacity onPress={handleResumeUpload} style={styles.button}>
-          <Text style={styles.buttonText}>
-            {resume ? `Resume: ${resume.name}` : 'Upload Resume (PDF)'}
-          </Text>
-        </TouchableOpacity>
+            {/* Bio Input */}
+            <Text style={styles.inputTitle}>Bio</Text>
+            <TextInput
+              style={[
+                styles.input,
+                focusedField === 'bio' && styles.focusedInput,
+                { height: 70 }, // Multiline styling
+              ]}
+              placeholder={bio || 'Enter your bio'}
+              value={bio}
+              onFocus={() => setFocusedField('bio')}
+              onBlur={() => setFocusedField(null)}
+              onChangeText={setBio}
+              multiline
+            />
 
-        {loading ? (
-          <ActivityIndicator size="large" color="#0000ff" />
-        ) : (
-          <Button title="Save Changes" onPress={handleSubmit} />
-        )}
-        {isError[0] && (
-          <Text style={styles.errorMessage}>
-            {`${isError[1]["detail"]}`}
-          </Text>
-        )}
+            {/* Age Input */}
+            <Text style={styles.inputTitle}>Age *</Text>
+            <TextInput
+              style={[
+                styles.input,
+                focusedField === 'age' && styles.focusedInput,
+              ]}
+              placeholder={age || 'Enter your age'}
+              value={age}
+              onFocus={() => setFocusedField('age')}
+              onBlur={() => setFocusedField(null)}
+              onChangeText={setAge}
+              keyboardType="numeric"
+            />
 
-        {success && <Text style={styles.successMessage}>Profile updated successfully!</Text>}
-        {success &&
-        <TouchableOpacity style={styles.homepageBtn} onPress={() => router.replace('/explore_page')}>
-          <Text style={styles.buttonText}>Go To Homepage</Text>
-        </TouchableOpacity>}
-      </View>
-    </TouchableWithoutFeedback>
+            {/* Facebook Input */}
+            <Text style={styles.inputTitle}>Facebook Profile</Text>
+            <TextInput
+              style={[
+                styles.input,
+                focusedField === 'facebook' && styles.focusedInput,
+              ]}
+              placeholder={facebook || 'Enter your Facebook profile link'}
+              value={facebook}
+              onFocus={() => setFocusedField('facebook')}
+              onBlur={() => setFocusedField(null)}
+              onChangeText={setFacebook}
+            />
+
+            {/* LinkedIn Input */}
+            <Text style={styles.inputTitle}>LinkedIn Profile</Text>
+            <TextInput
+              style={[
+                styles.input,
+                focusedField === 'linkedin' && styles.focusedInput,
+              ]}
+              placeholder={linkedin || 'Enter your LinkedIn profile link'}
+              value={linkedin}
+              onFocus={() => setFocusedField('linkedin')}
+              onBlur={() => setFocusedField(null)}
+              onChangeText={setLinkedin}
+            />
+
+            {/* Instagram Input */}
+            <Text style={styles.inputTitle}>Instagram Profile</Text>
+            <TextInput
+              style={[
+                styles.input,
+                focusedField === 'instagram' && styles.focusedInput,
+              ]}
+              placeholder={instagram || 'Enter your Instagram profile link'}
+              value={instagram}
+              onFocus={() => setFocusedField('instagram')}
+              onBlur={() => setFocusedField(null)}
+              onChangeText={setInstagram}
+            />
+
+
+            <TouchableOpacity onPress={handleImageUpload} style={styles.button}>
+              <Text style={styles.buttonText}>
+                {image ? `Image: ${image.fileName}` : 'Upload Profile Image'}
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity onPress={handleResumeUpload} style={styles.button}>
+              <Text style={styles.buttonText}>
+                {resume ? `Resume: ${resume.name}` : 'Upload Resume (PDF)'}
+              </Text>
+            </TouchableOpacity>
+
+            {loading ? (
+              <ActivityIndicator size="large" color="#0000ff" />
+            ) : (
+              <Button title="Save Changes" onPress={handleSubmit} />
+            )}
+            {isError[0] && (
+              <Text style={styles.errorMessage}>
+                {isError[1].detail || isError[1]}
+              </Text>
+            )}
+            {success && (
+              <Text style={styles.successMessage}>
+                Profile updated successfully!
+              </Text>
+            )}
+          </View>
+        </TouchableWithoutFeedback>
+      </ScrollView>
+    </KeyboardAvoidingView>
   );
 };
 
 const styles = StyleSheet.create({
-  container: {
-
-    flex: 1,
-    paddingTop: 100, 
-    paddingHorizontal: 16,
-    backgroundColor: '#fff',
-  },
-  header: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    marginBottom: 16,
-  },
+  container: { flex: 1, marginTop: 60 ,  padding: 16, backgroundColor: '#fff' },
+  header: { fontSize: 24, fontWeight: 'bold', marginBottom: 16 },
+  inputTitle: { fontSize: 14, fontWeight: '600', marginBottom: 4 },
   input: {
     borderWidth: 1,
     borderColor: '#ccc',
@@ -231,12 +320,15 @@ const styles = StyleSheet.create({
     padding: 12,
     marginBottom: 12,
   },
-  required_field: {
-    borderWidth: 1,
-    borderColor: '#ccc',
-    borderRadius: 8,
-    padding: 12,
-    marginBottom: 12,
+  focusedInput: {
+    borderColor: '#007bff',
+    borderWidth: 2,
+    backgroundColor: '#f9f9ff',
+    shadowColor: '#007bff',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 4, // For Android
   },
   button: {
     backgroundColor: '#007bff',
@@ -245,17 +337,7 @@ const styles = StyleSheet.create({
     marginBottom: 12,
     alignItems: 'center',
   },
-  homepageBtn: {
-    backgroundColor: '#007bff',
-    padding: 12,
-    borderRadius: 8,
-    marginBottom: 12,
-    alignItems: 'center',
-  },
-  buttonText: {
-    color: '#fff',
-    fontWeight: 'bold',
-  },
+  buttonText: { color: '#fff', fontWeight: 'bold' },
   successMessage: {
     color: 'green',
     marginTop: 16,
@@ -267,6 +349,29 @@ const styles = StyleSheet.create({
     marginTop: 16,
     textAlign: 'center',
     fontSize: 16,
+  },
+  nextButton: {
+    backgroundColor: 'rgba(142,142,147,0.2)',
+    paddingVertical: 10,
+    borderRadius: 100,
+    width: 40,
+    height: 40,
+    marginTop: 30,
+    marginBottom: 16,
+    alignItems: 'center',
+  },
+  topRightButton: {
+    position: 'absolute',
+    top: 16,
+    right: 16,
+    backgroundColor: 'rgba(48,209,88,1)',
+    padding: 8,
+    borderRadius: 15,
+    alignItems: 'center',
+  },
+  topRightButtonText: {
+    color: '#fff',
+    fontWeight: 'bold',
   },
 });
 
