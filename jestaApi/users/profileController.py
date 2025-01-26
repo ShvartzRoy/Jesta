@@ -20,9 +20,8 @@ class profileController:
                 profile.name = payload.name
             if payload.bio is not None:
                 profile.bio = payload.bio
-            if payload.age is not None:
-                check_age(payload.age)
-                profile.age = payload.age
+            check_age(payload.age)
+            profile.age = payload.age
             # Handle image upload
             if image is not None:
                 check_image(image)

@@ -1,7 +1,6 @@
 from django.db import models
 from django.conf import settings
-from tags.models import Tag
-
+from tags.models import SpecialistTag  # Import the SpecialistTag model
 
 class Specialist(models.Model):
     user = models.OneToOneField(
@@ -10,14 +9,11 @@ class Specialist(models.Model):
         related_name="specialist_profile"
     )
     
-    
-    service_tag = models.OneToOneField(
-        Tag,
-        on_delete=models.CASCADE,
-        unique=True,
+    # Many-to-many relationship with SpecialistTag
+    service_tags = models.ManyToManyField(
+        SpecialistTag,
         related_name="specialists"
     )
-    
     
     description = models.TextField(blank=True, null=True)
     portfolio_link = models.URLField(blank=True, null=True)
@@ -26,4 +22,6 @@ class Specialist(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
-        return f"{self.user.email} - {self.service_tag.name}"
+        # Display the user's email and the names of their specialist tags
+        tag_names = ", ".join([tag.name for tag in self.service_tags.all()])
+        return f"{self.user.email} - {tag_names}"

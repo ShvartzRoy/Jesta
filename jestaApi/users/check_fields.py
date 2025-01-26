@@ -5,11 +5,11 @@ from ninja.errors import *
 def password_check(passwd):
     SpecialSym =['$', '@', '#', '%']
     if len(passwd) < 6:
-        raise HttpError(400, "length should be at least 6")
+        raise HttpError(400, "Password length should be at least 6")
         
          
     if len(passwd) > 20:
-        raise HttpError(400, "length should be not be greater than 20")
+        raise HttpError(400, "Password length should be not be greater than 20")
         
     # when we are serious about password security
 
@@ -46,6 +46,10 @@ def check_name(name: str) -> bool:
     return True
 
 def check_age(age: int) -> bool:
+    if age is None:
+        raise HttpError(400, "Please enter your age")
+    if age < 3:
+        raise HttpError(400, "Learn how to read first! then use jesta")
     if age < 15:
         raise HttpError(400, "You must be at least 15 in order to use Jesta")
     if age > 130:
@@ -56,14 +60,14 @@ def check_image(image: UploadedFile = File(None)) -> bool:
     if not image.name.lower().endswith(('.png', '.jpg', '.jpeg')):
         raise HttpError(415, "Invalid image format: must be png, jpg, or jpeg")
     # max 2MB
-    if image.size > 2000000:
-        raise HttpError(413, "Image too large: max 2MB")
+    if image.size > 4000000:
+        raise HttpError(413, "Image too large: max 4MB")
     return True
 
 def check_resume(resume: UploadedFile = File(None)) -> bool:
     if not resume.name.lower().endswith('.pdf'):
         raise HttpError(415, "Invalid file format: must be pdf")
     # max 2MB
-    if resume.size > 2000000:
-        raise HttpError(413, "File too large: max 2MB")
+    if resume.size > 4000000:
+        raise HttpError(413, "File too large: max 4MB")
     return True
