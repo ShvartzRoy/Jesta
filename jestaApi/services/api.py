@@ -1,3 +1,4 @@
+from email.utils import unquote
 from typing import List, Optional
 from ninja import Router
 from ninja.errors import HttpError
@@ -30,6 +31,7 @@ def delete_service(request, service_id: int):
 
 @router.post("/update_name/{service_id}", response={200: bool})
 def update_name(request, service_id: int, new_data: str):
+    
     service = sc.get_service(service_id)
     return sc.update_name(service, new_data)
 
@@ -90,35 +92,6 @@ def mark_service_completed(request, service_id: int):
     return sc.mark_service_completed(request, service_id)
 
 
-@router.post("/get_progress_status_of_service/{service_id}", response={200: dict})
-def get_progress_status_of_service(request, service_id: int):
-    return sc.get_progress_status_of_service(request, service_id)
-
-@router.post("/get_list_of_applicants_with_their_states/{service_id}", response={200: dict})
-def get_list_of_applicants_with_their_states(request, service_id: int):
-    return sc.get_list_of_applicants_with_their_states(request, service_id)
-
-
-@router.post("/get_list_of_all_user_jobs_with_status/{user_id}", response={200: list})
-def get_list_of_all_user_jobs_with_status(request, user_id: int):
-    return sc.get_list_of_all_user_jobs_with_status(request, user_id)
-
-@router.post("/get_list_of_all_user_free_services_with_status/{user_id}", response={200: list})
-def get_list_of_all_user_free_services_with_status(request, user_id: int):
-    return sc.get_list_of_all_user_free_services_with_status(request, user_id)
-
-@router.post("/get_list_of_all_user_volunteering_services_with_status/{user_id}", response={200: list})
-def get_list_of_all_user_volunteering_services_with_status(request, user_id: int):
-    return sc.get_list_of_all_user_volunteering_services_with_status(request, user_id)
-
-@router.post("/get_list_of_all_user_services_with_status/{user_id}", response={200: list})
-def get_list_of_all_user_services_with_status(request, user_id: int):
-    return sc.get_list_of_all_user_services_with_status(request, user_id)
-
-
-@router.post("/get_applicant_state/{service_id}", response={200: dict})
-def get_applicant_state(request, service_id: int):
-    return sc.get_applicant_state(request, service_id)
 
 
 @router.post("/cancel_service/{service_id}", response={200: dict})
@@ -151,15 +124,71 @@ def get_service(request, service_id: int):
     return ServiceSchema.from_model(service)
 
 
-@router.get("/get_requested_services", response={200: list[ServiceSchema]})
-def get_requested_services(request):
-    services = sc.get_requested_services()
+@router.get("/get_owner_name/{service_id}", response={200: dict})
+def get_owner_name(request, service_id: int):
+    return sc.get_owner_name(service_id)
+
+
+@router.get("/get_requested_user_services", response={200: list[ServiceSchema]})
+def get_requested_user_services(request):
+    services = sc.get_requested_user_services(request)
     return [ServiceSchema.from_model(service) for service in services]
 
-@router.get("/get_offered_services", response={200: list[ServiceSchema]})
-def get_offered_services(request):
-    services = sc.get_offered_services()
+@router.get("/get_requested_other_user_services", response={200: list[ServiceSchema]})
+def get_requested_other_user_services(request):
+    services = sc.get_requested_other_user_services(request)
     return [ServiceSchema.from_model(service) for service in services]
+
+@router.get("/get_offered_user_services", response={200: list[ServiceSchema]})
+def get_offered_user_services(request):
+    services = sc.get_offered_user_services(request)
+    return [ServiceSchema.from_model(service) for service in services]
+
+@router.get("/get_offered_other_user_services", response={200: list[ServiceSchema]})
+def get_offered_other_user_services(request):
+    services = sc.get_offered_other_user_services(request)
+    return [ServiceSchema.from_model(service) for service in services]
+
+
+
+@router.get("/get_progress_status_of_service/{service_id}", response={200: dict})
+def get_progress_status_of_service(request, service_id: int):
+    return sc.get_progress_status_of_service(request, service_id)
+
+@router.get("/get_list_of_applicants_with_their_states/{service_id}", response={200: dict})
+def get_list_of_applicants_with_their_states(request, service_id: int):
+    return sc.get_list_of_applicants_with_their_states(request, service_id)
+
+
+
+
+@router.get("/get_user_id_by_email/{email}", response={200: dict})
+def get_user_id_by_email(request, email: str):
+    decoded_email = unquote(email)
+    return sc.get_user_id_by_email(request, decoded_email)
+
+
+
+@router.get("/get_list_of_all_user_jobs_with_status/{user_id}", response={200: list})
+def get_list_of_all_user_jobs_with_status(request, user_id: int):
+    return sc.get_list_of_all_user_jobs_with_status(request, user_id)
+
+@router.get("/get_list_of_all_user_free_services_with_status/{user_id}", response={200: list})
+def get_list_of_all_user_free_services_with_status(request, user_id: int):
+    return sc.get_list_of_all_user_free_services_with_status(request, user_id)
+
+@router.get("/get_list_of_all_user_volunteering_services_with_status/{user_id}", response={200: list})
+def get_list_of_all_user_volunteering_services_with_status(request, user_id: int):
+    return sc.get_list_of_all_user_volunteering_services_with_status(request, user_id)
+
+@router.get("/get_list_of_all_user_services_with_status/{user_id}", response={200: list})
+def get_list_of_all_user_services_with_status(request, user_id: int):
+    return sc.get_list_of_all_user_services_with_status(request, user_id)
+
+
+@router.get("/get_applicant_state/{service_id}", response={200: dict})
+def get_applicant_state(request, service_id: int):
+    return sc.get_applicant_state(request, service_id)
 
 
 @router.get("/save_service/{service_id}", response={200: dict})
@@ -189,6 +218,11 @@ def get_all_services(request):
 @router.get("/get_services_by_tag/{tag_name}", response={200: list[ServiceSchema]})
 def get_services_by_tag(request, tag_name: str):
     services = sc.get_services_by_tag(tag_name)
+    return [ServiceSchema.from_model(service) for service in services]
+
+@router.get("/get_services_by_title/{name}", response={200: list[ServiceSchema]})
+def get_services_by_title(request, name: str):
+    services = sc.get_services_by_title(name)
     return [ServiceSchema.from_model(service) for service in services]
 
 @router.get("/get_services_by_location/{location}", response={200: list[ServiceSchema]})

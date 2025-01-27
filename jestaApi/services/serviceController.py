@@ -162,11 +162,15 @@ class ServiceController:
         if service.user == request.user:
             raise HttpError(400, "You cannot apply to your own service!")
         
-        if request.user in service.applicants:
+        if {"user_id":request.user, "applicant_state": "pending"} in service.applicants:
             raise HttpError(400, "You have already applied to this service!")
         
         if service.state != "pending" and service.state != "accepted":
             raise HttpError(400, "Service is not available for application!")
+        
+        service.applicants = [
+        applicant for applicant in service.applicants 
+        if not (applicant["user_id"] == request.user.id and applicant["applicant_state"] == "rejected")]
         
         service.applicants.append({"user_id": request.user.id, "applicant_state": "pending"})
         service.save()
@@ -262,6 +266,12 @@ class ServiceController:
             
         return res
     
+    def get_user_id_by_email(self, request, email: str) -> int: 
+        user = get_user_model().objects.get(email=email)
+        return {"user_id": user.id}
+       
+    
+    
     def get_list_of_all_user_jobs_with_status(self, request, user_id) -> list:
         services = JobService.objects.filter(user=user_id)
         res = []
@@ -302,7 +312,11 @@ class ServiceController:
                 return {"state": applicant["applicant_state"]}
         raise HttpError(400, f"User '{user.id}' has not applied to this service!")
         
-                
+    def get_owner_name(self, service_id: int) -> dict:
+        service = get_object_or_404(Service, id=service_id)
+        owner = service.user  
+        return {"name": owner.profile.name if hasattr(owner, "profile") and owner.profile.name else "Unknown"}
+        
 
     def update_service_state(self, request, service_id: int, new_state: str) -> dict:
         allowed_states = ["pending", "accepted", "inProgress", "completed"]
@@ -333,7 +347,11 @@ class ServiceController:
             if applicant["user_id"] == user_id:
                 if applicant["applicant_state"] == "rejected":
                     raise HttpError(400, "Applicant is already rejected!")
-                applicant["applicant_state"] = "rejected"
+                new_user_id = applicant["user_id"]
+                new_applicant_state = "rejected"
+                applicants.remove(applicant)
+                applicants.append({"user_id": new_user_id, "applicant_state": new_applicant_state})
+ 
                 break
         else:
             raise HttpError(400, f"User '{user_id}' has not applied to this service!")
@@ -350,7 +368,11 @@ class ServiceController:
             if applicant["user_id"] == user_id:
                 if applicant["applicant_state"] == "accepted":
                     raise HttpError(400, "Applicant is already accepted!")
-                applicant["applicant_state"] = "accepted"
+                
+                new_user_id = applicant["user_id"]
+                new_applicant_state = "accepted"
+                applicants.remove(applicant)
+                applicants.append({"user_id": new_user_id, "applicant_state": new_applicant_state})
                 break
         else:
             raise HttpError(400, f"User '{user_id}' has not applied to this service!")
@@ -368,13 +390,22 @@ class ServiceController:
     def get_service(self, service_id: int) -> Service:
         return get_object_or_404(Service, id=service_id)
     
-    def get_requested_services(self):
-        return Service.objects.filter(service_from="publisher")
+    def get_requested_user_services(self, request) -> list[Service]:
+        return Service.objects.filter(user=request.user, service_from="publisher")
+        
 
-    def get_offered_services(self):
-        return Service.objects.filter(service_from="provider")
+    def get_requested_other_user_services(self , request) -> list[Service]:
+        return Service.objects.filter(service_from="publisher").exclude(user=request.user)
+
     
+    def get_offered_user_services(self, request) -> list[Service]:
+        return Service.objects.filter(user=request.user, service_from="provider")
 
+    
+    def get_offered_other_user_services(self, request) -> list[Service]:
+        return Service.objects.filter(service_from="provider").exclude(user=request.user)
+    
+    
    
     def save_service(self, request, service_id: int) -> dict:
         user = request.user
@@ -414,6 +445,9 @@ class ServiceController:
     def get_services_by_tag(self, tag_name: str) -> list[Service]:
         tag = get_object_or_404(Tag, name=tag_name)
         return Service.objects.filter(tags=tag)
+    
+    def get_services_by_title(self, title: str) -> list[Service]:
+        return Service.objects.filter(title__icontains=title)
 
     def get_services_by_location(self, location: str) -> list[Service]:
         return Service.objects.filter(location__icontains=location)
