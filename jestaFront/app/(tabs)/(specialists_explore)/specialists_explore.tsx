@@ -54,7 +54,7 @@ export default function SpecialistsExplore() {
       setCategories(categoriesWithTags);
       setOtherTags(uncategorizedTags);
     } catch (error) {
-      console.error("Error fetching categories or tags:", error);
+      //console.error("Error fetching categories or tags:", error);
       setError("Failed to fetch data. Please try again later.");
     } finally {
       setLoading(false);
