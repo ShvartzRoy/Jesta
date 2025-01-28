@@ -30,7 +30,7 @@ const TagResultsScreen = () => {
         const userResponse = await axios.get(`${process.env.EXPO_PUBLIC_HOST}/api/users/user`);
         setCurrentUserId(userResponse.data.id); // Set the logged-in user's ID
       } catch (err) {
-        console.error('Failed to fetch user data:', err);
+        //console.error('Failed to fetch user data:', err);
       }
     };
 

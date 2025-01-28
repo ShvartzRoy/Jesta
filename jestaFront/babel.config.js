@@ -5,5 +5,13 @@ module.exports = function (api) {
       ["babel-preset-expo", { jsxImportSource: "nativewind" }],
       "nativewind/babel",
     ],
+    plugins: [
+      [
+        "@babel/plugin-transform-runtime",
+        {
+          useESModules: true,  // Force ES Modules usage in Babel
+        },
+      ],
+    ],
   };
 };
