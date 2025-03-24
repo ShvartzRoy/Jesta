@@ -1,0 +1,273 @@
+import React, { useState } from 'react';
+import { Modal, View, Text, TextInput, TouchableOpacity, StyleSheet, Alert } from 'react-native';
+import DateTimePicker from '@react-native-community/datetimepicker';
+import axios from 'axios';
+
+interface EditServiceModalProps {
+  visible: boolean;
+  onClose: () => void;
+  service: any;
+  user: any;
+  onSave: (updatedService: any) => void;
+}
+
+export default function EditServiceModal({
+  visible,
+  onClose,
+  service,
+  user,
+  onSave,
+}: EditServiceModalProps) {
+  const [title, setTitle] = useState(service.title);
+  const [description, setDescription] = useState(service.description);
+  const [location, setLocation] = useState(service.location);
+  const [offeredPayment, setOfferedPayment] = useState(service.offered_payment.toString());
+  const [tags, setTags] = useState(service.tags.join(', '));
+  const [startDate, setStartDate] = useState(new Date(service.date_time_range[0]));
+  const [endDate, setEndDate] = useState(new Date(service.date_time_range[1]));
+  const [showStartPicker, setShowStartPicker] = useState(false);
+  const [showEndPicker, setShowEndPicker] = useState(false);
+  const [durationDays, setDurationDays] = useState('');
+  const [durationHours, setDurationHours] = useState('');
+
+  const formatDate = (date: Date) => date.toISOString().split('T')[0];
+
+  const convertToISO8601 = () => {
+    const days = parseInt(durationDays) || 0;
+    const hours = parseInt(durationHours) || 0;
+    return `P${days}DT${hours}H00M00S`;
+  };
+
+  const handleSave = async () => {
+    try {
+      const id = service.id;
+      const headers = { Authorization: `Bearer ${user.token}` };
+
+      const postWithQueryParam = async (endpoint: string, data: any) => {
+        return await axios.post(
+          `${process.env.EXPO_PUBLIC_HOST}/api/services/${endpoint}/${id}?new_data=${encodeURIComponent(data)}`,
+          {},
+          { headers }
+        );
+      };
+
+      //1. Title
+      if (title !== service.title) {
+        await postWithQueryParam("update_name", title);
+      }
+
+      //2. Description
+      if (description !== service.description) {
+        await postWithQueryParam("update_description", description);
+      }
+
+      //3. Location
+      if (location !== service.location) {
+        await postWithQueryParam("update_location", location);
+      }
+
+      //4. Tags
+      const cleanedTags = tags
+        .split(',')
+        .map((t) => t.trim())
+        .filter((tag) => tag.length > 0);
+
+      console.log('Sending tags update:', cleanedTags);
+
+      if (JSON.stringify(cleanedTags) !== JSON.stringify(service.tags)) {
+        await axios.post(
+            `${process.env.EXPO_PUBLIC_HOST}/api/services/update_tags/${id}`,
+            cleanedTags,
+            {
+              headers: {
+                Authorization: `Bearer ${user.token}`,
+                'Content-Type': 'application/json',
+              },
+            }
+          );
+          
+      }
+
+      //5. Date Range
+      const formattedDateRange = [formatDate(startDate), formatDate(endDate)];
+      console.log('Sending date_time_range update:', formattedDateRange);
+
+      if (
+        formattedDateRange[0] !== service.date_time_range[0] ||
+        formattedDateRange[1] !== service.date_time_range[1]
+      ) {
+        await axios.post(
+            `${process.env.EXPO_PUBLIC_HOST}/api/services/update_date_time_range/${id}`,
+            formattedDateRange,
+            {
+              headers: {
+                Authorization: `Bearer ${user.token}`,
+                'Content-Type': 'application/json',
+              },
+            }
+          );
+          
+      }
+
+      //6. Duration
+      if (durationDays || durationHours) {
+        const isoDuration = convertToISO8601();
+        await postWithQueryParam("update_estimated_duration", isoDuration);
+      }
+
+      //7. Payment
+      const payment = parseFloat(offeredPayment);
+      if (payment !== service.offered_payment) {
+        await postWithQueryParam("update_offered_payment", payment);
+      }
+
+      Alert.alert('Success', 'Service updated!');
+      const updatedService = {
+        ...service,
+        title,
+        description,
+        location,
+        tags: cleanedTags,
+        date_time_range: formattedDateRange,
+        estimated_duration: convertToISO8601(),
+        offered_payment: payment,
+      };
+      onSave(updatedService);
+      onClose();
+    } catch (error: any) {
+      console.error('Error updating service:', error.response?.data || error.message);
+      Alert.alert('Error', 'Failed to update service. Please try again.');
+    }
+  };
+
+  return (
+    <Modal visible={visible} animationType="slide" transparent>
+      <View style={styles.overlay}>
+        <View style={styles.modal}>
+          <Text style={styles.header}>Edit Service</Text>
+
+          <TextInput placeholder="Title" value={title} onChangeText={setTitle} style={styles.input} />
+          <TextInput placeholder="Description" value={description} onChangeText={setDescription} style={styles.input} />
+          <TextInput placeholder="Location" value={location} onChangeText={setLocation} style={styles.input} />
+          <TextInput placeholder="Offered Payment" value={offeredPayment} onChangeText={setOfferedPayment} keyboardType="numeric" style={styles.input} />
+
+          <TextInput
+            placeholder="Tags (comma separated)"
+            value={tags}
+            onChangeText={setTags}
+            style={styles.input}
+          />
+
+          <Text style={{ marginTop: 10 }}>Start Date: {formatDate(startDate)}</Text>
+          <TouchableOpacity onPress={() => setShowStartPicker(true)} style={styles.dateButton}>
+            <Text>Select Start Date</Text>
+          </TouchableOpacity>
+          {showStartPicker && (
+            <DateTimePicker
+              value={startDate}
+              mode="date"
+              display="default"
+              onChange={(event, selectedDate) => {
+                setShowStartPicker(false);
+                if (selectedDate) setStartDate(selectedDate);
+              }}
+            />
+          )}
+
+          <Text style={{ marginTop: 10 }}>End Date: {formatDate(endDate)}</Text>
+          <TouchableOpacity onPress={() => setShowEndPicker(true)} style={styles.dateButton}>
+            <Text>Select End Date</Text>
+          </TouchableOpacity>
+          {showEndPicker && (
+            <DateTimePicker
+              value={endDate}
+              mode="date"
+              display="default"
+              onChange={(event, selectedDate) => {
+                setShowEndPicker(false);
+                if (selectedDate) setEndDate(selectedDate);
+              }}
+            />
+          )}
+
+          <TextInput
+            placeholder="Duration Days"
+            value={durationDays}
+            onChangeText={setDurationDays}
+            keyboardType="numeric"
+            style={styles.input}
+          />
+          <TextInput
+            placeholder="Duration Hours"
+            value={durationHours}
+            onChangeText={setDurationHours}
+            keyboardType="numeric"
+            style={styles.input}
+          />
+
+          <View style={styles.buttonRow}>
+            <TouchableOpacity onPress={handleSave} style={styles.addButton}>
+              <Text style={{ color: 'white' }}>Save</Text>
+            </TouchableOpacity>
+            <TouchableOpacity onPress={onClose} style={styles.cancelButton}>
+              <Text style={{ color: 'white' }}>Cancel</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </View>
+    </Modal>
+  );
+}
+
+const styles = StyleSheet.create({
+  overlay: {
+    flex: 1,
+    backgroundColor: '#00000099',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modal: {
+    backgroundColor: 'white',
+    padding: 20,
+    width: '90%',
+    borderRadius: 10,
+  },
+  header: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginBottom: 10,
+  },
+  input: {
+    borderWidth: 1,
+    borderColor: '#ccc',
+    padding: 8,
+    marginVertical: 5,
+    borderRadius: 5,
+  },
+  buttonRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: 15,
+  },
+  addButton: {
+    backgroundColor: '#007AFF',
+    padding: 10,
+    borderRadius: 5,
+    width: '45%',
+    alignItems: 'center',
+  },
+  cancelButton: {
+    backgroundColor: '#d9534f',
+    padding: 10,
+    borderRadius: 5,
+    width: '45%',
+    alignItems: 'center',
+  },
+  dateButton: {
+    backgroundColor: '#e8e8e8',
+    padding: 8,
+    borderRadius: 5,
+    marginTop: 5,
+    alignItems: 'center',
+  },
+});

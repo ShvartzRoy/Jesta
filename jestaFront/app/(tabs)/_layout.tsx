@@ -20,21 +20,20 @@ export default function TabsLayout() {
       }}
     >
       <Tabs.Screen
-        name="(explore_page)/explore_page"
-        options={{
-          headerTitle: 'Explore', // Title displayed in the header
-          tabBarIcon: ({ color, focused }) => (
-            <Ionicons
-              name="briefcase-outline"
-              color={color}
-              size={focused ? 28 : 24} // Increase size when focused
-              style={{
-                transform: [{ scale: focused ? 1.1 : 1.1 }], // Slight zoom on press
-              }}
-            />
-          ),
-        }}
+  name="(test)/test_test"
+  options={{
+    headerTitle: 'Explore',
+    tabBarIcon: ({ color, focused }) => (
+      <Ionicons
+        name="briefcase-outline"
+        color={color}
+        size={focused ? 28 : 24}
+        style={{ transform: [{ scale: focused ? 1.1 : 1.1 }] }}
       />
+    ),
+  }}
+/>
+
       <Tabs.Screen
         name="(specialists_explore)/specialists_explore"
         options={{
