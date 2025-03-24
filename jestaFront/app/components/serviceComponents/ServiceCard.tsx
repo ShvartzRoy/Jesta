@@ -39,10 +39,10 @@ const parseDuration = (duration: string) => {
   return result.length > 0 ? result.join(', ') : '0 minutes';
 };
 
-//Format DateTime nicely
+//format DateTime nicely
 const formatDateTime = (dateTimeStr: string) => {
   const date = new Date(dateTimeStr);
-  if (isNaN(date.getTime())) return dateTimeStr; //Invalid date
+  if (isNaN(date.getTime())) return dateTimeStr;
   return `${date.toLocaleDateString()} ${date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
 };
 
@@ -88,15 +88,13 @@ export default function ServiceCard({
       const response = await axios.delete(
         `${process.env.EXPO_PUBLIC_HOST}/api/services/delete_service/${service.id}`,
         {
-          headers: {
-            Authorization: `Bearer ${user.token}`,
-          },
+          headers: { Authorization: `Bearer ${user.token}` },
         }
       );
 
       if (response.status === 200) {
         Alert.alert('Success', 'Service deleted!');
-        onDeleteService(service.id); // Notify parent
+        onDeleteService(service.id);
       } else {
         Alert.alert('Error', 'Failed to delete service');
       }
@@ -106,16 +104,14 @@ export default function ServiceCard({
     }
   };
 
-  //APPLY BUTTON
+  //APPLY
   const handleApply = async () => {
     try {
       const response = await axios.post(
         `${process.env.EXPO_PUBLIC_HOST}/api/services/apply_to_service/${service.id}`,
         {},
         {
-          headers: {
-            Authorization: `Bearer ${user.token}`,
-          },
+          headers: { Authorization: `Bearer ${user.token}` },
         }
       );
 
@@ -127,10 +123,38 @@ export default function ServiceCard({
         Alert.alert('Error', 'Something went wrong. Please try again.');
       }
     } catch (error) {
-      console.error('Failed to apply to the service:', error);
-      Alert.alert('Error', 'Failed to apply to the service. Please try again.');
+      console.error('Failed to apply:', error);
+      Alert.alert('Error', 'Failed to apply. Please try again.');
     }
   };
+
+  //UNAPPLY
+    const handleUnapply = async () => {
+        try {
+          const response = await axios.post(
+            `${process.env.EXPO_PUBLIC_HOST}/api/services/remove_from_service/${service.id}`,
+            {},
+            {
+              headers: {
+                Authorization: `Bearer ${user.token}`,
+              },
+            }
+          );
+      
+          if (response.status === 200) {
+            Alert.alert('Success', 'You have unapplied successfully!');
+            setIsApplied(false); //reset state
+            setApplicantState(null); //reset applicant state
+            
+          } else {
+            Alert.alert('Error', 'Something went wrong. Please try again.');
+          }
+        } catch (error) {
+          console.error('Failed to unapply:', error);
+          Alert.alert('Error', 'Failed to unapply. Please try again.');
+        }
+      };
+      
 
   const renderApplicantStatus = () => {
     if (!isApplied) return null;
@@ -156,17 +180,22 @@ export default function ServiceCard({
     );
   };
 
+  //CONDITIONS:
+  const userApplicant = service.applicants.find(applicant => applicant.user_id === user.id);
+  const shouldShowApplyButton =
+    (userApplicant?.applicant_state === 'rejected' || !userApplicant) &&
+    service.user_id !== user.id &&
+    !isApplied &&
+    service.service_from === 'publisher';
+
+  const shouldShowUnapplyButton =
+    (userApplicant?.applicant_state === 'pending' || userApplicant?.applicant_state === 'accepted') &&
+    service.user_id !== user.id &&
+    isApplied &&
+    service.service_from === 'publisher';
+
   return (
-    <View
-      style={{
-        backgroundColor: 'white',
-        padding: 15,
-        marginBottom: 10,
-        borderRadius: 10,
-        borderWidth: 1,
-        borderColor: '#001f3f',
-      }}
-    >
+    <View style={{ backgroundColor: 'white', padding: 15, marginBottom: 10, borderRadius: 10, borderWidth: 1, borderColor: '#001f3f' }}>
       <TouchableOpacity onPress={() => openServiceModal(service)}>
         <Text style={{ fontSize: 20, fontWeight: 'bold' }}>{service.title}</Text>
         <Text>{service.description}</Text>
@@ -186,80 +215,92 @@ export default function ServiceCard({
         {renderApplicantStatus()}
       </TouchableOpacity>
 
-      <View style={{ flexDirection: 'row', flexWrap: 'wrap', marginTop: 10 }}>
-
-
-
+      {/*Tags*/}
       {service.tags && service.tags.filter(tag => tag.trim() !== '').length > 0 && (
-  <View style={{ flexDirection: 'row', flexWrap: 'wrap', marginTop: 8 }}>
-    {service.tags
-      .filter(tag => tag.trim() !== '')
-      .map((tag: string, index: number) => (
-        <View
-          key={index}
-          style={{
-            backgroundColor: '#007AFF',
-            borderRadius: 15,
-            paddingHorizontal: 10,
-            paddingVertical: 5,
-            marginRight: 5,
-            marginBottom: 5,
-          }}
-        >
-          <Text style={{ color: 'white' }}>{tag}</Text>
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap', marginTop: 8 }}>
+          {service.tags
+            .filter(tag => tag.trim() !== '')
+            .map((tag: string, index: number) => (
+              <View
+                key={index}
+                style={{
+                  backgroundColor: '#007AFF',
+                  borderRadius: 15,
+                  paddingHorizontal: 10,
+                  paddingVertical: 5,
+                  marginRight: 5,
+                  marginBottom: 5,
+                }}
+              >
+                <Text style={{ color: 'white' }}>{tag}</Text>
+              </View>
+            ))}
         </View>
-      ))}
-  </View>
-)}
+      )}
 
-
-
-
-
-    </View>
-
-
-      {/*Apply Button */}
-      {service.user_id !== user.id && !isApplied && (
+      {/*Apply Button*/}
+        {service.user_id !== user.id && applicantState !== 'rejected' && !isApplied && (
         <TouchableOpacity
-          style={{
+            style={{
             marginTop: 10,
             backgroundColor: '#007AFF',
             padding: 10,
             borderRadius: 5,
             alignItems: 'center',
-          }}
-          onPress={handleApply}
+            }}
+            onPress={handleApply}
         >
-          <Text style={{ color: 'white', fontWeight: 'bold' }}>Apply</Text>
+            <Text style={{ color: 'white', fontWeight: 'bold' }}>Apply</Text>
         </TouchableOpacity>
-      )}
+        )}
 
-      {/*View Applicants Button */}
-      {service.applicants.length > 0 && (
-        <>
-          <TouchableOpacity
+        {/*Unapply Button*/}
+        {service.user_id !== user.id && isApplied && applicantState !== 'rejected' && (
+        <TouchableOpacity
             style={{
-              marginTop: 10,
-              backgroundColor: '#28a745',
-              padding: 10,
-              borderRadius: 5,
-              alignItems: 'center',
+            marginTop: 10,
+            backgroundColor: '#FFA500',
+            padding: 10,
+            borderRadius: 5,
+            alignItems: 'center',
+            }}
+            onPress={handleUnapply}
+        >
+            <Text style={{ color: 'white', fontWeight: 'bold' }}>Unapply</Text>
+        </TouchableOpacity>
+        )}
+
+      
+
+
+      {/*View Applicants Button*/}
+        {service.user_id === user.id && service.applicants.length > 0 && (
+        <>
+            <TouchableOpacity
+            style={{
+                marginTop: 10,
+                backgroundColor: '#28a745',
+                padding: 10,
+                borderRadius: 5,
+                alignItems: 'center',
             }}
             onPress={() => setApplicantsVisible(true)}
-          >
+            >
             <Text style={{ color: 'white', fontWeight: 'bold' }}>View Applicants</Text>
-          </TouchableOpacity>
+            </TouchableOpacity>
 
-          <ApplicantsModal
+            {/*Updated ApplicantsModal Integration*/}
+            <ApplicantsModal
             visible={applicantsVisible}
             onClose={() => setApplicantsVisible(false)}
             applicants={service.applicants}
-          />
+            serviceId={service.id}
+            user={user}
+            />
         </>
-      )}
+        )}
 
-      {/*Edit & Delete Buttons */}
+      {/*Edit & Delete*/}
       {service.user_id === user.id && (
         <>
           <TouchableOpacity

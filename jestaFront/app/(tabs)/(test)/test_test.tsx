@@ -8,6 +8,8 @@ import FiltersBar from '../../components/serviceComponents/FiltersBar';
 import SearchBar from '../../components/serviceComponents/SearchBar';
 import TagBar from '../../components/serviceComponents/TagBar';
 import AddServiceModal from '../../components/serviceComponents/AddServiceModal';
+import ApplicantsModal from '../../components/serviceComponents/ApplicantsModal';
+import EditServiceModal from '../../components/serviceComponents/EditServiceModal';
 
 interface Service {
   id: number;
@@ -24,6 +26,7 @@ interface Service {
   service_from: 'provider' | 'publisher';
   is_volunteering: boolean;
 }
+
 
 export default function ExplorePage() {
   const { user } = useContext(UserContext);
@@ -61,38 +64,40 @@ export default function ExplorePage() {
     "mover",
   ];
 
-  //Fetch services
   useEffect(() => {
-    const fetchServices = async () => {
-      try {
-        const response = await axios.get(`${process.env.EXPO_PUBLIC_HOST}/api/services/get_all_services`, {
-          headers: {
-            Authorization: `Bearer ${user.token}`,
-          },
-        });
-
-        console.log('Fetched services:', response.data);
-
-        if (response.status === 200 && response.data) {
-          setServices(response.data);
-          setFilteredServices(response.data);
-        } else {
-          Alert.alert('Error', 'Failed to fetch services');
-          setServices([]);
-          setFilteredServices([]);
-        }
-      } catch (error) {
-        console.error('Error fetching services:', error);
-        Alert.alert('Error', 'Could not load services');
-        setServices([]);
-        setFilteredServices([]);
-      } finally {
-        setLoading(false);
-      }
-    };
-
     fetchServices();
   }, []);
+  
+
+  //Fetch services
+  const fetchServices = async () => {
+    try {
+      const response = await axios.get(`${process.env.EXPO_PUBLIC_HOST}/api/services/get_all_services`, {
+        headers: {
+          Authorization: `Bearer ${user.token}`,
+        },
+      });
+  
+      console.log('Fetched services:', response.data);
+  
+      if (response.status === 200 && response.data) {
+        setServices(response.data);
+        setFilteredServices(response.data);
+      } else {
+        Alert.alert('Error', 'Failed to fetch services');
+        setServices([]);
+        setFilteredServices([]);
+      }
+    } catch (error) {
+      console.error('Error fetching services:', error);
+      Alert.alert('Error', 'Could not load services');
+      setServices([]);
+      setFilteredServices([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+  
 
   //Apply filters & sorting
   const applyFilters = () => {
@@ -208,6 +213,42 @@ export default function ExplorePage() {
     setServices((prev) => prev.filter((s) => s.id !== deletedId));
   };
 
+
+  const handleAcceptApplicant = async (serviceId: number, applicantEmail: string) => {
+    try {
+      const response = await axios.post(
+        `${process.env.EXPO_PUBLIC_HOST}/api/services/accept_applicant/${serviceId}/${encodeURIComponent(applicantEmail)}`,
+        {},
+        { headers: { Authorization: `Bearer ${user.token}` } }
+      );
+      if (response.status === 200) {
+        Alert.alert("Success", "Applicant accepted!");
+        fetchServices();
+      }
+    } catch (error) {
+      console.error("Accept error:", error);
+      Alert.alert("Error", "Failed to accept applicant.");
+    }
+  };
+
+  const handleRejectApplicant = async (serviceId: number, applicantEmail: string) => {
+    try {
+      const response = await axios.post(
+        `${process.env.EXPO_PUBLIC_HOST}/api/services/reject_applicant/${serviceId}/${encodeURIComponent(applicantEmail)}`,
+        {},
+        { headers: { Authorization: `Bearer ${user.token}` } }
+      );
+      if (response.status === 200) {
+        Alert.alert("Success", "Applicant rejected!");
+        fetchServices();
+      }
+    } catch (error) {
+      console.error("Reject error:", error);
+      Alert.alert("Error", "Failed to reject applicant.");
+    }
+  };
+  
+
   const openServiceModal = (service: Service) => {
     console.log('Open Service:', service.id);
   };
@@ -216,7 +257,7 @@ export default function ExplorePage() {
     <View style={{ flex: 1, padding: 10 }}>
       <ScrollView>
 
-        {/*Show/Hide Filters */}
+        {/*Show/Hide Filters*/}
         <TouchableOpacity
           style={{
             backgroundColor: '#007AFF',
@@ -265,7 +306,7 @@ export default function ExplorePage() {
               setSelectedTags={setSelectedTags}
             />
 
-            {/*Reset Filters */}
+            {/*Reset Filters*/}
             <TouchableOpacity
               style={{
                 backgroundColor: '#dc3545',
@@ -281,7 +322,7 @@ export default function ExplorePage() {
           </>
         )}
 
-        {/*Add Service */}
+        {/*Add Service*/}
         <TouchableOpacity
           style={{
             backgroundColor: '#007AFF',
@@ -304,15 +345,17 @@ export default function ExplorePage() {
         {/*Services*/}
         {loading ? (
           <ActivityIndicator size="large" color="#007AFF" />
-        ) : filteredServices && filteredServices.length > 0 ? (
+        ) : filteredServices.length > 0 ? (
           filteredServices.map((service) => (
             <ServiceCard
               key={service.id}
               service={service}
               user={user}
-              openServiceModal={openServiceModal}
+              openServiceModal={() => {}}
               onUpdateService={handleUpdateService}
               onDeleteService={handleDeleteService}
+              onAcceptApplicant={handleAcceptApplicant}
+              onRejectApplicant={handleRejectApplicant}
             />
           ))
         ) : (
