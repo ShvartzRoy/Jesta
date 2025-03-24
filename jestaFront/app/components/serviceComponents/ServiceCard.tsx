@@ -186,6 +186,39 @@ export default function ServiceCard({
         {renderApplicantStatus()}
       </TouchableOpacity>
 
+      <View style={{ flexDirection: 'row', flexWrap: 'wrap', marginTop: 10 }}>
+
+
+
+      {service.tags && service.tags.filter(tag => tag.trim() !== '').length > 0 && (
+  <View style={{ flexDirection: 'row', flexWrap: 'wrap', marginTop: 8 }}>
+    {service.tags
+      .filter(tag => tag.trim() !== '')
+      .map((tag: string, index: number) => (
+        <View
+          key={index}
+          style={{
+            backgroundColor: '#007AFF',
+            borderRadius: 15,
+            paddingHorizontal: 10,
+            paddingVertical: 5,
+            marginRight: 5,
+            marginBottom: 5,
+          }}
+        >
+          <Text style={{ color: 'white' }}>{tag}</Text>
+        </View>
+      ))}
+  </View>
+)}
+
+
+
+
+
+    </View>
+
+
       {/*Apply Button */}
       {service.user_id !== user.id && !isApplied && (
         <TouchableOpacity

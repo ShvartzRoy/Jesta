@@ -44,10 +44,12 @@ export default function ExplorePage() {
   const [sortOption, setSortOption] = useState('price_low_high');
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
 
-  //Add Service Modal
   const [addServiceVisible, setAddServiceVisible] = useState(false);
+  const [showFilters, setShowFilters] = useState(false);
 
-  //Predefined tags
+  const [resetTrigger, setResetTrigger] = useState(false);
+
+
   const predefinedTags = [
     "babysitter",
     "photographer",
@@ -59,7 +61,7 @@ export default function ExplorePage() {
     "mover",
   ];
 
-  //Fetch services from API
+  //Fetch services
   useEffect(() => {
     const fetchServices = async () => {
       try {
@@ -73,7 +75,7 @@ export default function ExplorePage() {
 
         if (response.status === 200 && response.data) {
           setServices(response.data);
-          setFilteredServices(response.data); //Initially show all
+          setFilteredServices(response.data);
         } else {
           Alert.alert('Error', 'Failed to fetch services');
           setServices([]);
@@ -92,13 +94,13 @@ export default function ExplorePage() {
     fetchServices();
   }, []);
 
-  //Apply ALL Filters & Sorting
+  //Apply filters & sorting
   const applyFilters = () => {
     let result = [...services];
 
     if (selectedTags.length > 0) {
       result = result.filter(service =>
-        service.tags.some(tag => selectedTags.includes(tag))
+        service.tags.some(tag => selectedTags.some(selected => tag.toLowerCase() === selected.toLowerCase()))
       );
     }
 
@@ -107,19 +109,10 @@ export default function ExplorePage() {
       result = result.filter(service => service.title.toLowerCase().includes(search));
     }
 
-    if (!filterRequests) {
-      result = result.filter(service => service.service_from !== 'publisher');
-    }
-    if (!filterOffers) {
-      result = result.filter(service => service.service_from !== 'provider');
-    }
-
-    if (!filterMine) {
-      result = result.filter(service => service.user_id !== user.id);
-    }
-    if (!filterOthers) {
-      result = result.filter(service => service.user_id === user.id);
-    }
+    if (!filterRequests) result = result.filter(service => service.service_from !== 'publisher');
+    if (!filterOffers) result = result.filter(service => service.service_from !== 'provider');
+    if (!filterMine) result = result.filter(service => service.user_id !== user.id);
+    if (!filterOthers) result = result.filter(service => service.user_id === user.id);
 
     if (location.trim() !== '') {
       result = result.filter(service =>
@@ -141,6 +134,8 @@ export default function ExplorePage() {
       result.sort((a, b) => b.offered_payment - a.offered_payment);
     } else if (sortOption === 'duration_short_long') {
       result.sort((a, b) => a.estimated_duration.localeCompare(b.estimated_duration));
+    } else if (sortOption === 'duration_long_short') {
+      result.sort((a, b) => b.estimated_duration.localeCompare(a.estimated_duration));
     }
 
     setFilteredServices(result);
@@ -149,6 +144,21 @@ export default function ExplorePage() {
   useEffect(() => {
     applyFilters();
   }, [services, selectedTags, searchValue, filterRequests, filterOffers, filterMine, filterOthers, location, duration, priceRange, sortOption]);
+
+  const resetFilters = () => {
+    setPriceRange([0, 1000]);
+    setLocation('');
+    setDuration('');
+    setFilterRequests(true);
+    setFilterOffers(true);
+    setFilterMine(true);
+    setFilterOthers(true);
+    setSearchValue('');
+    setSortOption('price_low_high');
+    setSelectedTags([]);
+    setResetTrigger(prev => !prev); 
+
+  };
 
   const handleAddService = async (serviceData: any) => {
     try {
@@ -163,9 +173,9 @@ export default function ExplorePage() {
         service_from: serviceData.service_from,
         is_volunteering: serviceData.is_volunteering,
       };
-  
+
       console.log("Sending payload:", payload);
-  
+
       const response = await axios.post(
         `${process.env.EXPO_PUBLIC_HOST}/api/services/create_service`,
         payload,
@@ -173,7 +183,7 @@ export default function ExplorePage() {
           headers: { Authorization: `Bearer ${user.token}` },
         }
       );
-  
+
       if (response.status === 200 || response.status === 201) {
         Alert.alert("Success", "Service created successfully!");
         const newService = response.data;
@@ -187,7 +197,6 @@ export default function ExplorePage() {
       Alert.alert("Error", "Failed to create service. Please try again.");
     }
   };
-  
 
   const handleUpdateService = (updatedService: Service) => {
     setServices((prev) =>
@@ -195,11 +204,9 @@ export default function ExplorePage() {
     );
   };
 
-
   const handleDeleteService = (deletedId: number) => {
     setServices((prev) => prev.filter((s) => s.id !== deletedId));
   };
-  
 
   const openServiceModal = (service: Service) => {
     console.log('Open Service:', service.id);
@@ -208,36 +215,73 @@ export default function ExplorePage() {
   return (
     <View style={{ flex: 1, padding: 10 }}>
       <ScrollView>
-        <SearchBar
-          searchValue={searchValue}
-          setSearchValue={setSearchValue}
-          sortOption={sortOption}
-          setSortOption={setSortOption}
-        />
 
-        <FiltersBar
-          priceRange={priceRange}
-          setPriceRange={setPriceRange}
-          location={location}
-          setLocation={setLocation}
-          duration={duration}
-          setDuration={setDuration}
-          filterRequests={filterRequests}
-          setFilterRequests={setFilterRequests}
-          filterOffers={filterOffers}
-          setFilterOffers={setFilterOffers}
-          filterMine={filterMine}
-          setFilterMine={setFilterMine}
-          filterOthers={filterOthers}
-          setFilterOthers={setFilterOthers}
-        />
+        {/*Show/Hide Filters */}
+        <TouchableOpacity
+          style={{
+            backgroundColor: '#007AFF',
+            padding: 10,
+            marginBottom: 10,
+            borderRadius: 8,
+            alignItems: 'center',
+          }}
+          onPress={() => setShowFilters(!showFilters)}
+        >
+          <Text style={{ color: 'white', fontWeight: 'bold' }}>
+            {showFilters ? 'Hide Filters' : 'Show Filters'}
+          </Text>
+        </TouchableOpacity>
 
-        <TagBar
-          predefinedTags={predefinedTags}
-          selectedTags={selectedTags}
-          setSelectedTags={setSelectedTags}
-        />
+        {showFilters && (
+          <>
+            <SearchBar
+              searchValue={searchValue}
+              setSearchValue={setSearchValue}
+              sortOption={sortOption}
+              setSortOption={setSortOption}
+            />
 
+            <FiltersBar
+              priceRange={priceRange}
+              setPriceRange={setPriceRange}
+              location={location}
+              setLocation={setLocation}
+              duration={duration}
+              setDuration={setDuration}
+              filterRequests={filterRequests}
+              setFilterRequests={setFilterRequests}
+              filterOffers={filterOffers}
+              setFilterOffers={setFilterOffers}
+              filterMine={filterMine}
+              setFilterMine={setFilterMine}
+              filterOthers={filterOthers}
+              setFilterOthers={setFilterOthers}
+              resetTrigger={resetTrigger} 
+            />
+
+            <TagBar
+              predefinedTags={predefinedTags}
+              selectedTags={selectedTags}
+              setSelectedTags={setSelectedTags}
+            />
+
+            {/*Reset Filters */}
+            <TouchableOpacity
+              style={{
+                backgroundColor: '#dc3545',
+                padding: 10,
+                marginVertical: 5,
+                borderRadius: 8,
+                alignItems: 'center',
+              }}
+              onPress={resetFilters}
+            >
+              <Text style={{ color: 'white', fontWeight: 'bold' }}>Reset Filters</Text>
+            </TouchableOpacity>
+          </>
+        )}
+
+        {/*Add Service */}
         <TouchableOpacity
           style={{
             backgroundColor: '#007AFF',
@@ -257,6 +301,7 @@ export default function ExplorePage() {
           onAddService={handleAddService}
         />
 
+        {/*Services*/}
         {loading ? (
           <ActivityIndicator size="large" color="#007AFF" />
         ) : filteredServices && filteredServices.length > 0 ? (
@@ -268,7 +313,6 @@ export default function ExplorePage() {
               openServiceModal={openServiceModal}
               onUpdateService={handleUpdateService}
               onDeleteService={handleDeleteService}
-
             />
           ))
         ) : (

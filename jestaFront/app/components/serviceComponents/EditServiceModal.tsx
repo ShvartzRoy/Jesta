@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Modal, View, Text, TextInput, TouchableOpacity, StyleSheet, Alert } from 'react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import axios from 'axios';
@@ -18,24 +18,45 @@ export default function EditServiceModal({
   user,
   onSave,
 }: EditServiceModalProps) {
-  const [title, setTitle] = useState(service.title);
-  const [description, setDescription] = useState(service.description);
-  const [location, setLocation] = useState(service.location);
-  const [offeredPayment, setOfferedPayment] = useState(service.offered_payment.toString());
-  const [tags, setTags] = useState(service.tags.join(', '));
-  const [startDate, setStartDate] = useState(new Date(service.date_time_range[0]));
-  const [endDate, setEndDate] = useState(new Date(service.date_time_range[1]));
+  const [title, setTitle] = useState('');
+  const [description, setDescription] = useState('');
+  const [location, setLocation] = useState('');
+  const [offeredPayment, setOfferedPayment] = useState('');
+  const [tags, setTags] = useState('');
+  const [startDate, setStartDate] = useState(new Date());
+  const [endDate, setEndDate] = useState(new Date());
   const [showStartPicker, setShowStartPicker] = useState(false);
   const [showEndPicker, setShowEndPicker] = useState(false);
   const [durationDays, setDurationDays] = useState('');
   const [durationHours, setDurationHours] = useState('');
 
-  const formatDate = (date: Date) => date.toISOString().split('T')[0];
+  //Reset fields when modal opens
+  useEffect(() => {
+    if (visible && service) {
+      setTitle(service.title);
+      setDescription(service.description);
+      setLocation(service.location);
+      setOfferedPayment(service.offered_payment.toString());
+      setTags(service.tags.join(', '));
+      setStartDate(new Date(service.date_time_range[0]));
+      setEndDate(new Date(service.date_time_range[1]));
+      setDurationDays('');
+      setDurationHours('');
+    }
+  }, [visible, service]);
+
+  const formatDateTime = (date: Date) => {
+    return `${date.toLocaleDateString()} ${date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
+  };
 
   const convertToISO8601 = () => {
     const days = parseInt(durationDays) || 0;
     const hours = parseInt(durationHours) || 0;
     return `P${days}DT${hours}H00M00S`;
+  };
+
+  const handleClose = () => {
+    onClose(); 
   };
 
   const handleSave = async () => {
@@ -76,20 +97,19 @@ export default function EditServiceModal({
 
       if (JSON.stringify(cleanedTags) !== JSON.stringify(service.tags)) {
         await axios.post(
-            `${process.env.EXPO_PUBLIC_HOST}/api/services/update_tags/${id}`,
-            cleanedTags,
-            {
-              headers: {
-                Authorization: `Bearer ${user.token}`,
-                'Content-Type': 'application/json',
-              },
-            }
-          );
-          
+          `${process.env.EXPO_PUBLIC_HOST}/api/services/update_tags/${id}`,
+          cleanedTags,
+          {
+            headers: {
+              Authorization: `Bearer ${user.token}`,
+              'Content-Type': 'application/json',
+            },
+          }
+        );
       }
 
       //5. Date Range
-      const formattedDateRange = [formatDate(startDate), formatDate(endDate)];
+      const formattedDateRange = [startDate.toISOString(), endDate.toISOString()];
       console.log('Sending date_time_range update:', formattedDateRange);
 
       if (
@@ -97,16 +117,15 @@ export default function EditServiceModal({
         formattedDateRange[1] !== service.date_time_range[1]
       ) {
         await axios.post(
-            `${process.env.EXPO_PUBLIC_HOST}/api/services/update_date_time_range/${id}`,
-            formattedDateRange,
-            {
-              headers: {
-                Authorization: `Bearer ${user.token}`,
-                'Content-Type': 'application/json',
-              },
-            }
-          );
-          
+          `${process.env.EXPO_PUBLIC_HOST}/api/services/update_date_time_range/${id}`,
+          formattedDateRange,
+          {
+            headers: {
+              Authorization: `Bearer ${user.token}`,
+              'Content-Type': 'application/json',
+            },
+          }
+        );
       }
 
       //6. Duration
@@ -133,7 +152,7 @@ export default function EditServiceModal({
         offered_payment: payment,
       };
       onSave(updatedService);
-      onClose();
+      handleClose();
     } catch (error: any) {
       console.error('Error updating service:', error.response?.data || error.message);
       Alert.alert('Error', 'Failed to update service. Please try again.');
@@ -141,31 +160,32 @@ export default function EditServiceModal({
   };
 
   return (
-    <Modal visible={visible} animationType="slide" transparent>
+    <Modal visible={visible} animationType="slide" transparent onRequestClose={handleClose}>
       <View style={styles.overlay}>
         <View style={styles.modal}>
           <Text style={styles.header}>Edit Service</Text>
 
-          <TextInput placeholder="Title" value={title} onChangeText={setTitle} style={styles.input} />
-          <TextInput placeholder="Description" value={description} onChangeText={setDescription} style={styles.input} />
-          <TextInput placeholder="Location" value={location} onChangeText={setLocation} style={styles.input} />
-          <TextInput placeholder="Offered Payment" value={offeredPayment} onChangeText={setOfferedPayment} keyboardType="numeric" style={styles.input} />
+          <TextInput placeholder="Title" placeholderTextColor="black" value={title} onChangeText={setTitle} style={styles.input} />
+          <TextInput placeholder="Description" placeholderTextColor="black" value={description} onChangeText={setDescription} style={styles.input} />
+          <TextInput placeholder="Location" placeholderTextColor="black" value={location} onChangeText={setLocation} style={styles.input} />
+          <TextInput placeholder="Offered Payment" placeholderTextColor="black" value={offeredPayment} onChangeText={setOfferedPayment} keyboardType="numeric" style={styles.input} />
 
           <TextInput
-            placeholder="Tags (comma separated)"
+            placeholder="Tags"
+            placeholderTextColor="black"
             value={tags}
             onChangeText={setTags}
             style={styles.input}
           />
 
-          <Text style={{ marginTop: 10 }}>Start Date: {formatDate(startDate)}</Text>
+          <Text style={{ marginTop: 10 }}>Start: {formatDateTime(startDate)}</Text>
           <TouchableOpacity onPress={() => setShowStartPicker(true)} style={styles.dateButton}>
-            <Text>Select Start Date</Text>
+            <Text>Select Start Date & Time</Text>
           </TouchableOpacity>
           {showStartPicker && (
             <DateTimePicker
               value={startDate}
-              mode="date"
+              mode="datetime"
               display="default"
               onChange={(event, selectedDate) => {
                 setShowStartPicker(false);
@@ -174,14 +194,14 @@ export default function EditServiceModal({
             />
           )}
 
-          <Text style={{ marginTop: 10 }}>End Date: {formatDate(endDate)}</Text>
+          <Text style={{ marginTop: 10 }}>End: {formatDateTime(endDate)}</Text>
           <TouchableOpacity onPress={() => setShowEndPicker(true)} style={styles.dateButton}>
-            <Text>Select End Date</Text>
+            <Text>Select End Date & Time</Text>
           </TouchableOpacity>
           {showEndPicker && (
             <DateTimePicker
               value={endDate}
-              mode="date"
+              mode="datetime"
               display="default"
               onChange={(event, selectedDate) => {
                 setShowEndPicker(false);
@@ -192,6 +212,7 @@ export default function EditServiceModal({
 
           <TextInput
             placeholder="Duration Days"
+            placeholderTextColor="black"
             value={durationDays}
             onChangeText={setDurationDays}
             keyboardType="numeric"
@@ -199,6 +220,7 @@ export default function EditServiceModal({
           />
           <TextInput
             placeholder="Duration Hours"
+            placeholderTextColor="black"
             value={durationHours}
             onChangeText={setDurationHours}
             keyboardType="numeric"
@@ -209,7 +231,7 @@ export default function EditServiceModal({
             <TouchableOpacity onPress={handleSave} style={styles.addButton}>
               <Text style={{ color: 'white' }}>Save</Text>
             </TouchableOpacity>
-            <TouchableOpacity onPress={onClose} style={styles.cancelButton}>
+            <TouchableOpacity onPress={handleClose} style={styles.cancelButton}>
               <Text style={{ color: 'white' }}>Cancel</Text>
             </TouchableOpacity>
           </View>

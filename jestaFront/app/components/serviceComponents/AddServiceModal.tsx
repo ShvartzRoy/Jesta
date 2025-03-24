@@ -27,19 +27,47 @@ export default function AddServiceModal({
   const [durationHours, setDurationHours] = useState('');
   const [serviceFrom, setServiceFrom] = useState<'provider' | 'publisher'>('publisher');
 
-  const formatDate = (date: Date) => {
-    return date.toISOString().split('T')[0]; //YYYY-MM-DD
-  };
+  const formatDateTime = (date: Date) =>
+    `${date.toLocaleDateString()} ${date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
 
   const convertToISO8601 = () => {
     const days = parseInt(durationDays) || 0;
     const hours = parseInt(durationHours) || 0;
-    return `P${days}DT${hours}H00M00S`; //P2DT3H00M00S
+    return `P${days}DT${hours}H00M00S`;
+  };
+
+  const resetFields = () => {
+    setTitle('');
+    setDescription('');
+    setLocation('');
+    setOfferedPayment('');
+    setIsVolunteering(false);
+    setTags('');
+    setDurationDays('');
+    setDurationHours('');
+    setStartDate(new Date());
+    setEndDate(new Date());
+    setServiceFrom('publisher');
+  };
+
+  const handleClose = () => {
+    resetFields();
+    onClose();
   };
 
   const handleAdd = () => {
-    if (!title || !description || !location || !offeredPayment || tags.trim() === '') {
+    if (!title || !description || !location) {
       Alert.alert('Error', 'Please fill in all required fields');
+      return;
+    }
+
+    if (startDate > endDate) {
+      Alert.alert('Error', 'End date cannot be before start date!');
+      return;
+    }
+
+    if (offeredPayment.trim() === '' || isNaN(parseFloat(offeredPayment))) {
+      Alert.alert('Error', 'Please enter a valid payment (even 0)');
       return;
     }
 
@@ -57,8 +85,8 @@ export default function AddServiceModal({
       title,
       description,
       location,
-      tags: tags.split(',').map((tag) => tag.trim()),
-      date_time_range: [formatDate(startDate), formatDate(endDate)],
+      tags: tags.split(',').map((tag) => tag.trim()).filter((tag) => tag !== ''),
+      date_time_range: [startDate.toISOString(), endDate.toISOString()],
       estimated_duration: convertToISO8601(),
       offered_payment: parseFloat(offeredPayment),
       service_from: serviceFrom,
@@ -66,34 +94,20 @@ export default function AddServiceModal({
     };
 
     console.log('Submitting:', payload);
-
     onAddService(payload);
-
-    //Reset fields
-    setTitle('');
-    setDescription('');
-    setLocation('');
-    setOfferedPayment('');
-    setIsVolunteering(false);
-    setTags('');
-    setDurationDays('');
-    setDurationHours('');
-    setStartDate(new Date());
-    setEndDate(new Date());
-    setServiceFrom('publisher');
-    onClose();
+    handleClose();
   };
 
   return (
-    <Modal visible={visible} animationType="slide" transparent>
+    <Modal visible={visible} animationType="slide" transparent onRequestClose={handleClose}>
       <View style={styles.overlay}>
         <View style={styles.modal}>
           <Text style={styles.header}>Add New Service</Text>
 
-          <TextInput placeholder="Title" value={title} onChangeText={setTitle} style={styles.input} />
-          <TextInput placeholder="Description" value={description} onChangeText={setDescription} style={styles.input} />
-          <TextInput placeholder="Location" value={location} onChangeText={setLocation} style={styles.input} />
-          <TextInput placeholder="Offered Payment" value={offeredPayment} onChangeText={setOfferedPayment} keyboardType="numeric" style={styles.input} />
+          <TextInput placeholder="Title" placeholderTextColor="black" value={title} onChangeText={setTitle} style={styles.input} />
+          <TextInput placeholder="Description" placeholderTextColor="black" value={description} onChangeText={setDescription} style={styles.input} />
+          <TextInput placeholder="Location" placeholderTextColor="black" value={location} onChangeText={setLocation} style={styles.input} />
+          <TextInput placeholder="Offered Payment" placeholderTextColor="black" value={offeredPayment} onChangeText={setOfferedPayment} keyboardType="numeric" style={styles.input} />
 
           <View style={styles.switchRow}>
             <Text>Volunteering</Text>
@@ -101,20 +115,21 @@ export default function AddServiceModal({
           </View>
 
           <TextInput
-            placeholder="Tags (comma separated)"
+            placeholder="Tags" //(comma separated)
+            placeholderTextColor="black"
             value={tags}
             onChangeText={setTags}
             style={styles.input}
           />
 
-          <Text style={{ marginTop: 10 }}>Start Date: {formatDate(startDate)}</Text>
+          <Text style={{ marginTop: 10 }}>Start: {formatDateTime(startDate)}</Text>
           <TouchableOpacity onPress={() => setShowStartPicker(true)} style={styles.dateButton}>
-            <Text>Select Start Date</Text>
+            <Text>Select Start Date & Time</Text>
           </TouchableOpacity>
           {showStartPicker && (
             <DateTimePicker
               value={startDate}
-              mode="date"
+              mode="datetime"
               display="default"
               onChange={(event, selectedDate) => {
                 setShowStartPicker(false);
@@ -123,14 +138,14 @@ export default function AddServiceModal({
             />
           )}
 
-          <Text style={{ marginTop: 10 }}>End Date: {formatDate(endDate)}</Text>
+          <Text style={{ marginTop: 10 }}>End: {formatDateTime(endDate)}</Text>
           <TouchableOpacity onPress={() => setShowEndPicker(true)} style={styles.dateButton}>
-            <Text>Select End Date</Text>
+            <Text>Select End Date & Time</Text>
           </TouchableOpacity>
           {showEndPicker && (
             <DateTimePicker
               value={endDate}
-              mode="date"
+              mode="datetime"
               display="default"
               onChange={(event, selectedDate) => {
                 setShowEndPicker(false);
@@ -141,6 +156,7 @@ export default function AddServiceModal({
 
           <TextInput
             placeholder="Duration Days"
+            placeholderTextColor="black"
             value={durationDays}
             onChangeText={setDurationDays}
             keyboardType="numeric"
@@ -148,6 +164,7 @@ export default function AddServiceModal({
           />
           <TextInput
             placeholder="Duration Hours"
+            placeholderTextColor="black"
             value={durationHours}
             onChangeText={setDurationHours}
             keyboardType="numeric"
@@ -166,7 +183,7 @@ export default function AddServiceModal({
             <TouchableOpacity onPress={handleAdd} style={styles.addButton}>
               <Text style={{ color: 'white' }}>Add</Text>
             </TouchableOpacity>
-            <TouchableOpacity onPress={onClose} style={styles.cancelButton}>
+            <TouchableOpacity onPress={handleClose} style={styles.cancelButton}>
               <Text style={{ color: 'white' }}>Cancel</Text>
             </TouchableOpacity>
           </View>

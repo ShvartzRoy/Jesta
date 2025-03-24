@@ -18,25 +18,26 @@ export default function SearchBar({
   return (
     <View style={styles.container}>
       <TextInput
-        placeholder="Search services..."
+        placeholder="Search a service" 
+        placeholderTextColor="black"  
         value={searchValue}
         onChangeText={setSearchValue}
         style={styles.input}
-        
+     
       />
 
       <Text style={styles.label}>Sort By:</Text>
       <Picker
         selectedValue={sortOption}
-        onValueChange={setSortOption}
+        onValueChange={(itemValue) => setSortOption(itemValue)}
         style={styles.picker}
       >
-        <Picker.Item label="Price (Low to High)" value="price_low_high" />
-        <Picker.Item label="Price (High to Low)" value="price_high_low" />
-        <Picker.Item label="Duration (Short to Long)" value="duration_short_long" />
-        <Picker.Item label="Duration (Long to Short)" value="duration_long_short" />
-        
+        <Picker.Item label="Price (Low to High)" value="price_low_high" color="black" />
+        <Picker.Item label="Price (High to Low)" value="price_high_low" color="black" />
+        <Picker.Item label="Duration (Short to Long)" value="duration_short_long" color="black" />
+        <Picker.Item label="Duration (Long to Short)" value="duration_long_short" color="black" />
       </Picker>
+
     </View>
   );
 }

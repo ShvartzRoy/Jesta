@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, Switch, TextInput, StyleSheet } from 'react-native';
 
 interface FiltersBarProps {
@@ -16,6 +16,7 @@ interface FiltersBarProps {
   setFilterMine: (val: boolean) => void;
   filterOthers: boolean;
   setFilterOthers: (val: boolean) => void;
+  resetTrigger: boolean;
 }
 
 export default function FiltersBar({
@@ -33,22 +34,50 @@ export default function FiltersBar({
   setFilterMine,
   filterOthers,
   setFilterOthers,
+  resetTrigger,
 }: FiltersBarProps) {
+  const [minPriceInput, setMinPriceInput] = useState('');
+  const [maxPriceInput, setMaxPriceInput] = useState('');
+
+  //sync price inputs when parent resets
+  useEffect(() => {
+    setMinPriceInput('');
+    setMaxPriceInput('');
+  }, [resetTrigger]);
+
+  const handleMinPriceChange = (val: string) => {
+    setMinPriceInput(val);
+    const num = Number(val);
+    if (!isNaN(num)) {
+      setPriceRange([num, priceRange[1]]);
+    }
+  };
+
+  const handleMaxPriceChange = (val: string) => {
+    setMaxPriceInput(val);
+    const num = Number(val);
+    if (!isNaN(num)) {
+      setPriceRange([priceRange[0], num]);
+    }
+  };
+
   return (
     <View style={{ marginBottom: 20 }}>
       <Text style={styles.label}>Price Range: {priceRange[0]}₪ - {priceRange[1]}₪</Text>
-      {/* to replace with a slider later */}
+
       <TextInput
         placeholder="Min Price"
         keyboardType="numeric"
         style={styles.input}
-        onChangeText={(val) => setPriceRange([Number(val), priceRange[1]])}
+        value={minPriceInput}
+        onChangeText={handleMinPriceChange}
       />
       <TextInput
         placeholder="Max Price"
         keyboardType="numeric"
         style={styles.input}
-        onChangeText={(val) => setPriceRange([priceRange[0], Number(val)])}
+        value={maxPriceInput}
+        onChangeText={handleMaxPriceChange}
       />
 
       <Text style={styles.label}>Location:</Text>
