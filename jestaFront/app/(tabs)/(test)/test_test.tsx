@@ -337,7 +337,7 @@ export default function ExplorePage() {
           {services
             .filter(s => savedServiceIds.includes(s.id))
             .map(service => (
-              <ServiceCard
+              <ServiceCardLina
                 key={service.id}
                 service={service}
                 user={user}
@@ -450,7 +450,7 @@ export default function ExplorePage() {
             <ActivityIndicator size="large" color="#007AFF" />
           ) : filteredServices.length > 0 ? (
             filteredServices.map((service) => (
-              <ServiceCard
+              <ServiceCardLina
                 key={service.id}
                 service={service}
                 user={user}

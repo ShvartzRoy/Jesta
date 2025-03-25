@@ -2,7 +2,9 @@ import React, { useState } from 'react';
 import { Modal, View, Text, TextInput, TouchableOpacity, StyleSheet, Switch, Alert } from 'react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import TagBar from './TagBar';
-//import Autocomplete from 'react-native-autocomplete-input';
+import Autocomplete from 'react-native-autocomplete-input';
+import { Keyboard } from 'react-native';
+
 
 
 interface AddServiceModalProps {
@@ -10,6 +12,15 @@ interface AddServiceModalProps {
   onClose: () => void;
   onAddService: (serviceData: any) => void;
 }
+
+
+const cities = [
+  "Ashdod", "Ashkelon", "Bat Yam", "Beer Sheva", "Bnei Brak", "Eilat", "Haifa",
+  "Herzliya", "Holon", "Jerusalem", "Kfar Saba", "Netanya", "Nazareth", 
+  "Petah Tikva", "Ramat Gan", "Rehovot", "Rishon LeZion", "Tel Aviv", "Tiberias", "Yokneam"
+].sort((a, b) => a.localeCompare(b));
+
+
 
 const predefinedTags = [
   "babysitter",
@@ -29,7 +40,12 @@ export default function AddServiceModal({
 }: AddServiceModalProps) {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
+
+
   const [location, setLocation] = useState('');
+  const [locationQuery, setLocationQuery] = useState('');
+
+
   const [offeredPayment, setOfferedPayment] = useState('');
   const [isVolunteering, setIsVolunteering] = useState(false);
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
@@ -54,6 +70,7 @@ export default function AddServiceModal({
     setTitle('');
     setDescription('');
     setLocation('');
+    setLocationQuery('');
     setOfferedPayment('');
     setIsVolunteering(false);
     setSelectedTags([]);
@@ -120,7 +137,50 @@ export default function AddServiceModal({
 
           <TextInput placeholder="Title" placeholderTextColor="black" value={title} onChangeText={setTitle} style={styles.input} />
           <TextInput placeholder="Description" placeholderTextColor="black" value={description} onChangeText={setDescription} style={styles.input} />
-          <TextInput placeholder="Location" placeholderTextColor="black" value={location} onChangeText={setLocation} style={styles.input} />
+
+
+          <Text style={{ marginTop: 10 }}>Location:</Text>
+          <Autocomplete
+          data={
+            locationQuery.length > 0
+              ? cities.filter(city =>
+                  city.toLowerCase().startsWith(locationQuery.toLowerCase())
+                )
+              : []
+          }
+          value={locationQuery || location} 
+          onChangeText={(text) => {
+            setLocationQuery(text); 
+            setLocation('');         
+          }}
+          flatListProps={{
+            keyExtractor: (_, idx) => idx.toString(),
+            renderItem: ({ item }) => (
+              <TouchableOpacity
+                onPress={() => {
+                  setLocation(item);
+                  setLocationQuery(''); 
+                  Keyboard.dismiss();
+                }}
+              >
+                <Text style={styles.itemText}>{item}</Text>
+              </TouchableOpacity>
+            ),
+          }}
+          inputContainerStyle={styles.input}
+          containerStyle={{ marginBottom: 10, zIndex: 1 }}
+          listContainerStyle={{
+            backgroundColor: '#fff',
+            borderRadius: 5,
+            borderWidth: 1,
+            borderColor: '#ccc',
+          }}
+          placeholder="Select City"
+        />
+
+
+
+
           <TextInput placeholder="Offered Payment" placeholderTextColor="black" value={offeredPayment} onChangeText={setOfferedPayment} keyboardType="numeric" style={styles.input} />
 
           <View style={styles.switchRow}>
@@ -224,6 +284,13 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     marginBottom: 10,
   },
+
+  itemText: {
+    padding: 10,
+    fontSize: 16,
+  },
+
+  
   input: {
     borderWidth: 1,
     borderColor: '#ccc',
