@@ -3,6 +3,8 @@ import { View, Text, TouchableOpacity, Alert } from 'react-native';
 import axios from 'axios';
 import ApplicantsModal from './ApplicantsModal';
 import EditServiceModal from './EditServiceModal';
+import { Ionicons } from '@expo/vector-icons'; 
+
 
 interface Service {
   id: number;
@@ -52,12 +54,16 @@ export default function ServiceCard({
   openServiceModal,
   onUpdateService,
   onDeleteService,
+  isSaved,
+  toggleSave
 }: {
   service: Service;
   user: any;
   openServiceModal: (service: Service) => void;
   onUpdateService?: (updatedService: Service) => void;
   onDeleteService: (id: number) => void;
+  isSaved: boolean;
+  toggleSave: (serviceId: number) => void;
 }) {
   const serviceType = service.service_from === 'provider' ? 'Offer' : 'Request';
   const [isApplied, setIsApplied] = useState(
@@ -195,7 +201,7 @@ export default function ServiceCard({
     service.service_from === 'publisher';
 
   return (
-    <View style={{ backgroundColor: 'white', padding: 15, marginBottom: 10, borderRadius: 10, borderWidth: 1, borderColor: '#001f3f' }}>
+    <View style={{ backgroundColor: 'white', padding: 15, marginBottom: 10, borderRadius: 10, borderWidth: 1, borderColor: '#001f3f', position: 'relative'  }}>
       <TouchableOpacity onPress={() => openServiceModal(service)}>
         <Text style={{ fontSize: 20, fontWeight: 'bold' }}>{service.title}</Text>
         <Text>{service.description}</Text>
@@ -213,6 +219,15 @@ export default function ServiceCard({
             : 'Free'}
         </Text>
         {renderApplicantStatus()}
+      </TouchableOpacity>
+
+
+       {/*Heart Icon*/}
+      <TouchableOpacity
+        style={{ position: 'absolute', top: 10, right: 10 }}
+        onPress={() => toggleSave(service.id)}
+      >
+        <Ionicons name={isSaved ? "heart" : "heart-outline"} size={24} color={isSaved ? 'red' : 'gray'} />
       </TouchableOpacity>
 
       {/*Tags*/}

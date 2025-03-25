@@ -19,7 +19,7 @@ const Index = () => {
           router.replace('/set_profile');
         }
         else{
-          router.replace('/explore_page');
+          router.replace('/profile');
         }
       } else {
         router.replace('/register');

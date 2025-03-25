@@ -1,12 +1,26 @@
 import React, { useState } from 'react';
 import { Modal, View, Text, TextInput, TouchableOpacity, StyleSheet, Switch, Alert } from 'react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
+import TagBar from './TagBar';
+//import Autocomplete from 'react-native-autocomplete-input';
+
 
 interface AddServiceModalProps {
   visible: boolean;
   onClose: () => void;
   onAddService: (serviceData: any) => void;
 }
+
+const predefinedTags = [
+  "babysitter",
+  "photographer",
+  "private tutor",
+  "hitchhike",
+  "handyman",
+  "dogwalker",
+  "dogsitter",
+  "mover",
+];
 
 export default function AddServiceModal({
   visible,
@@ -18,7 +32,7 @@ export default function AddServiceModal({
   const [location, setLocation] = useState('');
   const [offeredPayment, setOfferedPayment] = useState('');
   const [isVolunteering, setIsVolunteering] = useState(false);
-  const [tags, setTags] = useState('');
+  const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [startDate, setStartDate] = useState(new Date());
   const [endDate, setEndDate] = useState(new Date());
   const [showStartPicker, setShowStartPicker] = useState(false);
@@ -42,7 +56,7 @@ export default function AddServiceModal({
     setLocation('');
     setOfferedPayment('');
     setIsVolunteering(false);
-    setTags('');
+    setSelectedTags([]);
     setDurationDays('');
     setDurationHours('');
     setStartDate(new Date());
@@ -85,7 +99,7 @@ export default function AddServiceModal({
       title,
       description,
       location,
-      tags: tags.split(',').map((tag) => tag.trim()).filter((tag) => tag !== ''),
+      tags: selectedTags,
       date_time_range: [startDate.toISOString(), endDate.toISOString()],
       estimated_duration: convertToISO8601(),
       offered_payment: parseFloat(offeredPayment),
@@ -114,13 +128,12 @@ export default function AddServiceModal({
             <Switch value={isVolunteering} onValueChange={setIsVolunteering} />
           </View>
 
-          <TextInput
-            placeholder="Tags" //(comma separated)
-            placeholderTextColor="black"
-            value={tags}
-            onChangeText={setTags}
-            style={styles.input}
+          <TagBar
+            predefinedTags={predefinedTags}
+            selectedTags={selectedTags}
+            setSelectedTags={setSelectedTags}
           />
+
 
           <Text style={{ marginTop: 10 }}>Start: {formatDateTime(startDate)}</Text>
           <TouchableOpacity onPress={() => setShowStartPicker(true)} style={styles.dateButton}>

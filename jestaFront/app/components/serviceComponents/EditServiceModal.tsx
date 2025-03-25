@@ -2,6 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { Modal, View, Text, TextInput, TouchableOpacity, StyleSheet, Alert } from 'react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import axios from 'axios';
+import TagBar from './TagBar';
+//import Autocomplete from 'react-native-autocomplete-input';
+
 
 interface EditServiceModalProps {
   visible: boolean;
@@ -10,6 +13,17 @@ interface EditServiceModalProps {
   user: any;
   onSave: (updatedService: any) => void;
 }
+
+const predefinedTags = [
+  "babysitter",
+  "photographer",
+  "private tutor",
+  "hitchhike",
+  "handyman",
+  "dogwalker",
+  "dogsitter",
+  "mover",
+];
 
 export default function EditServiceModal({
   visible,
@@ -22,7 +36,7 @@ export default function EditServiceModal({
   const [description, setDescription] = useState('');
   const [location, setLocation] = useState('');
   const [offeredPayment, setOfferedPayment] = useState('');
-  const [tags, setTags] = useState('');
+  const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [startDate, setStartDate] = useState(new Date());
   const [endDate, setEndDate] = useState(new Date());
   const [showStartPicker, setShowStartPicker] = useState(false);
@@ -37,7 +51,7 @@ export default function EditServiceModal({
       setDescription(service.description);
       setLocation(service.location);
       setOfferedPayment(service.offered_payment.toString());
-      setTags(service.tags.join(', '));
+      setSelectedTags(service.tags);
       setStartDate(new Date(service.date_time_range[0]));
       setEndDate(new Date(service.date_time_range[1]));
       setDurationDays('');
@@ -56,6 +70,7 @@ export default function EditServiceModal({
   };
 
   const handleClose = () => {
+    setSelectedTags([]);
     onClose(); 
   };
 
@@ -88,17 +103,11 @@ export default function EditServiceModal({
       }
 
       //4. Tags
-      const cleanedTags = tags
-        .split(',')
-        .map((t) => t.trim())
-        .filter((tag) => tag.length > 0);
-
-      console.log('Sending tags update:', cleanedTags);
-
-      if (JSON.stringify(cleanedTags) !== JSON.stringify(service.tags)) {
+      if (JSON.stringify(selectedTags) !== JSON.stringify(service.tags)) {
+        console.log('Sending tags update:', selectedTags);
         await axios.post(
           `${process.env.EXPO_PUBLIC_HOST}/api/services/update_tags/${id}`,
-          cleanedTags,
+          selectedTags,
           {
             headers: {
               Authorization: `Bearer ${user.token}`,
@@ -107,6 +116,7 @@ export default function EditServiceModal({
           }
         );
       }
+      
 
       //5. Date Range
       const formattedDateRange = [startDate.toISOString(), endDate.toISOString()];
@@ -146,7 +156,7 @@ export default function EditServiceModal({
         title,
         description,
         location,
-        tags: cleanedTags,
+        tags: selectedTags,
         date_time_range: formattedDateRange,
         estimated_duration: convertToISO8601(),
         offered_payment: payment,
@@ -170,13 +180,12 @@ export default function EditServiceModal({
           <TextInput placeholder="Location" placeholderTextColor="black" value={location} onChangeText={setLocation} style={styles.input} />
           <TextInput placeholder="Offered Payment" placeholderTextColor="black" value={offeredPayment} onChangeText={setOfferedPayment} keyboardType="numeric" style={styles.input} />
 
-          <TextInput
-            placeholder="Tags"
-            placeholderTextColor="black"
-            value={tags}
-            onChangeText={setTags}
-            style={styles.input}
+          <TagBar
+            predefinedTags={predefinedTags}
+            selectedTags={selectedTags}
+            setSelectedTags={setSelectedTags}
           />
+
 
           <Text style={{ marginTop: 10 }}>Start: {formatDateTime(startDate)}</Text>
           <TouchableOpacity onPress={() => setShowStartPicker(true)} style={styles.dateButton}>

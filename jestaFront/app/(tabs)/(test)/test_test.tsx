@@ -1,6 +1,7 @@
 import React, { useContext, useState, useEffect } from 'react';
 import { View, ScrollView, Text, TouchableOpacity, Alert, ActivityIndicator } from 'react-native';
 import axios from 'axios';
+import { Ionicons } from '@expo/vector-icons';
 
 import { UserContext } from '../../contexts/authContext';
 import ServiceCard from '../../components/serviceComponents/ServiceCard';
@@ -29,6 +30,7 @@ interface Service {
 
 
 export default function ExplorePage() {
+
   const { user } = useContext(UserContext);
 
   const [services, setServices] = useState<Service[]>([]);
@@ -36,13 +38,18 @@ export default function ExplorePage() {
   const [loading, setLoading] = useState(true);
 
   //Filters & search
-  const [priceRange, setPriceRange] = useState<[number, number]>([0, 1000]);
+  const [priceRange, setPriceRange] = useState([0, 1000]);
   const [location, setLocation] = useState('');
+
+  const [durationDays, setDurationDays] = useState('');
+  const [durationHours, setDurationHours] = useState('');
+  const [durationMinutes, setDurationMinutes] = useState('');
+  
   const [duration, setDuration] = useState('');
+
+
   const [filterRequests, setFilterRequests] = useState(true);
-  const [filterOffers, setFilterOffers] = useState(true);
-  const [filterMine, setFilterMine] = useState(true);
-  const [filterOthers, setFilterOthers] = useState(true);
+  const [filterMine, setFilterMine] = useState(false);
   const [searchValue, setSearchValue] = useState('');
   const [sortOption, setSortOption] = useState('price_low_high');
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
@@ -51,6 +58,11 @@ export default function ExplorePage() {
   const [showFilters, setShowFilters] = useState(false);
 
   const [resetTrigger, setResetTrigger] = useState(false);
+
+
+  const [showSavedServices, setShowSavedServices] = useState(false);
+  const [savedServiceIds, setSavedServiceIds] = useState<number[]>([]); 
+  
 
 
   const predefinedTags = [
@@ -97,8 +109,35 @@ export default function ExplorePage() {
       setLoading(false);
     }
   };
+
+
+  const toggleSaveService = async (serviceId: number) => {
+    try {
+      const isCurrentlySaved = savedServiceIds.includes(serviceId);
+      const endpoint = isCurrentlySaved ? 'unsave_service' : 'save_service';
+  
+      const response = await axios.get(
+        `${process.env.EXPO_PUBLIC_HOST}/api/services/${endpoint}/${serviceId}`,
+        { headers: { Authorization: `Bearer ${user.token}` } }
+      );
+  
+      if (response.status === 200) {
+        if (isCurrentlySaved) {
+          setSavedServiceIds((prev) => prev.filter(id => id !== serviceId));
+        } else {
+          setSavedServiceIds((prev) => [...prev, serviceId]);
+        }
+        Alert.alert("Success", response.data.message);
+      }
+    } catch (error) {
+      console.error("Error toggling save:", error.message);
+      Alert.alert("Error", "Failed to toggle save.");
+    }
+  };
   
 
+ 
+  
   //Apply filters & sorting
   const applyFilters = () => {
     let result = [...services];
@@ -114,54 +153,73 @@ export default function ExplorePage() {
       result = result.filter(service => service.title.toLowerCase().includes(search));
     }
 
+    //Requests/Offers
     if (!filterRequests) result = result.filter(service => service.service_from !== 'publisher');
-    if (!filterOffers) result = result.filter(service => service.service_from !== 'provider');
+    else result = result.filter(service => service.service_from === 'publisher');
+
+    //Mine/Others
     if (!filterMine) result = result.filter(service => service.user_id !== user.id);
-    if (!filterOthers) result = result.filter(service => service.user_id === user.id);
+    else result = result.filter(service => service.user_id === user.id);
 
+    //Location
     if (location.trim() !== '') {
-      result = result.filter(service =>
-        service.location.toLowerCase().includes(location.toLowerCase())
-      );
+      result = result.filter(service => service.location.toLowerCase().includes(location.toLowerCase()));
     }
 
+    const parseDurationToMinutes = (durationStr: string) => {
+      const regex = /P(\d+)DT(\d+)H(\d+)M/;
+      const match = durationStr.match(regex);
+      if (!match) return 0;
+      const days = parseInt(match[1]);
+      const hours = parseInt(match[2]);
+      const minutes = parseInt(match[3]);
+      return days * 24 * 60 + hours * 60 + minutes;
+    };
+    
     if (duration.trim() !== '') {
-      result = result.filter(service => service.estimated_duration.includes(duration));
+      const targetMinutes = parseDurationToMinutes(duration);
+      result = result.filter(service => {
+        const serviceMinutes = parseDurationToMinutes(service.estimated_duration);
+        return serviceMinutes === targetMinutes;
+      });
     }
+    
+    
+    
+    
 
-    result = result.filter(service =>
-      service.offered_payment >= priceRange[0] && service.offered_payment <= priceRange[1]
-    );
+    
 
-    if (sortOption === 'price_low_high') {
-      result.sort((a, b) => a.offered_payment - b.offered_payment);
-    } else if (sortOption === 'price_high_low') {
-      result.sort((a, b) => b.offered_payment - a.offered_payment);
-    } else if (sortOption === 'duration_short_long') {
-      result.sort((a, b) => a.estimated_duration.localeCompare(b.estimated_duration));
-    } else if (sortOption === 'duration_long_short') {
-      result.sort((a, b) => b.estimated_duration.localeCompare(a.estimated_duration));
-    }
+     //Price
+    result = result.filter(service => service.offered_payment >= priceRange[0] && service.offered_payment <= priceRange[1]);
+    if (sortOption === 'price_low_high') result.sort((a, b) => a.offered_payment - b.offered_payment);
+    else if (sortOption === 'price_high_low') result.sort((a, b) => b.offered_payment - a.offered_payment);
+    else if (sortOption === 'duration_short_long') result.sort((a, b) => a.estimated_duration.localeCompare(b.estimated_duration));
+    else if (sortOption === 'duration_long_short') result.sort((a, b) => b.estimated_duration.localeCompare(a.estimated_duration));
+
+
 
     setFilteredServices(result);
   };
 
   useEffect(() => {
     applyFilters();
-  }, [services, selectedTags, searchValue, filterRequests, filterOffers, filterMine, filterOthers, location, duration, priceRange, sortOption]);
+  }, [services, selectedTags, searchValue, filterRequests, filterMine, location, duration, priceRange, sortOption]);
 
   const resetFilters = () => {
     setPriceRange([0, 1000]);
     setLocation('');
-    setDuration('');
     setFilterRequests(true);
-    setFilterOffers(true);
     setFilterMine(true);
-    setFilterOthers(true);
     setSearchValue('');
     setSortOption('price_low_high');
     setSelectedTags([]);
     setResetTrigger(prev => !prev); 
+    setDuration('');
+    setDurationDays('');
+    setDurationHours('');
+    setDurationMinutes('');
+
 
   };
 
@@ -255,113 +313,163 @@ export default function ExplorePage() {
 
   return (
     <View style={{ flex: 1, padding: 10 }}>
-      <ScrollView>
-
-        {/*Show/Hide Filters*/}
-        <TouchableOpacity
-          style={{
-            backgroundColor: '#007AFF',
-            padding: 10,
-            marginBottom: 10,
-            borderRadius: 8,
-            alignItems: 'center',
-          }}
-          onPress={() => setShowFilters(!showFilters)}
-        >
-          <Text style={{ color: 'white', fontWeight: 'bold' }}>
-            {showFilters ? 'Hide Filters' : 'Show Filters'}
-          </Text>
-        </TouchableOpacity>
-
-        {showFilters && (
-          <>
-            <SearchBar
-              searchValue={searchValue}
-              setSearchValue={setSearchValue}
-              sortOption={sortOption}
-              setSortOption={setSortOption}
-            />
-
-            <FiltersBar
-              priceRange={priceRange}
-              setPriceRange={setPriceRange}
-              location={location}
-              setLocation={setLocation}
-              duration={duration}
-              setDuration={setDuration}
-              filterRequests={filterRequests}
-              setFilterRequests={setFilterRequests}
-              filterOffers={filterOffers}
-              setFilterOffers={setFilterOffers}
-              filterMine={filterMine}
-              setFilterMine={setFilterMine}
-              filterOthers={filterOthers}
-              setFilterOthers={setFilterOthers}
-              resetTrigger={resetTrigger} 
-            />
-
-            <TagBar
-              predefinedTags={predefinedTags}
-              selectedTags={selectedTags}
-              setSelectedTags={setSelectedTags}
-            />
-
-            {/*Reset Filters*/}
-            <TouchableOpacity
-              style={{
-                backgroundColor: '#dc3545',
-                padding: 10,
-                marginVertical: 5,
-                borderRadius: 8,
-                alignItems: 'center',
-              }}
-              onPress={resetFilters}
+  
+      {showSavedServices ? (
+        <ScrollView>
+          {/*Top Bar for Saved Services */}
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 , marginTop: 10 }}>
+            
+            {/*Back Arrow */}
+            <TouchableOpacity 
+              onPress={() => setShowSavedServices(false)} 
+              style={{ position: 'absolute', left: 0 }}
             >
-              <Text style={{ color: 'white', fontWeight: 'bold' }}>Reset Filters</Text>
+              <Ionicons name="arrow-back" size={45} color="#007AFF" />
             </TouchableOpacity>
-          </>
-        )}
 
-        {/*Add Service*/}
-        <TouchableOpacity
-          style={{
-            backgroundColor: '#007AFF',
-            padding: 12,
-            marginVertical: 10,
-            borderRadius: 8,
-            alignItems: 'center',
-          }}
-          onPress={() => setAddServiceVisible(true)}
-        >
-          <Text style={{ color: 'white', fontWeight: 'bold' }}>Add New Service</Text>
-        </TouchableOpacity>
+            {/*Centered Title */}
+            <View style={{ flex: 1, alignItems: 'center' , marginBottom: 10 }}>
+              <Text style={{ fontWeight: 'bold', fontSize: 24 }}>Saved Services</Text>
+            </View>
+          </View>
+  
+          {/*Saved Services List */}
+          {services
+            .filter(s => savedServiceIds.includes(s.id))
+            .map(service => (
+              <ServiceCard
+                key={service.id}
+                service={service}
+                user={user}
+                openServiceModal={() => {}}
+                onUpdateService={handleUpdateService}
+                onDeleteService={handleDeleteService}
+                onAcceptApplicant={handleAcceptApplicant}
+                onRejectApplicant={handleRejectApplicant}
+                isSaved={savedServiceIds.includes(service.id)}
+                toggleSave={toggleSaveService}
+              />
+            ))
+          }
+  
+          {/*No Saved Services Message */}
+          {savedServiceIds.length === 0 && (
+            <Text style={{ textAlign: 'center', marginTop: 20 }}>
+              No saved services yet
+            </Text>
+          )}
+        </ScrollView>
+      ) : (
+        <ScrollView>
+      {/*Top Row Icons */}
+        <View style={{ flexDirection: 'row', justifyContent: 'space-around', alignItems: 'center', marginBottom: 15 }}>
 
-        <AddServiceModal
-          visible={addServiceVisible}
-          onClose={() => setAddServiceVisible(false)}
-          onAddService={handleAddService}
-        />
+      {/*Saved Services */}
+      <TouchableOpacity onPress={() => setShowSavedServices(true)}>
+        <Ionicons name="bookmark" size={40} color="#f0a500" />
+      </TouchableOpacity>
 
-        {/*Services*/}
-        {loading ? (
-          <ActivityIndicator size="large" color="#007AFF" />
-        ) : filteredServices.length > 0 ? (
-          filteredServices.map((service) => (
-            <ServiceCard
-              key={service.id}
-              service={service}
-              user={user}
-              openServiceModal={() => {}}
-              onUpdateService={handleUpdateService}
-              onDeleteService={handleDeleteService}
-              onAcceptApplicant={handleAcceptApplicant}
-              onRejectApplicant={handleRejectApplicant}
-            />
-          ))
-        ) : (
-          <Text style={{ textAlign: 'center', marginTop: 20 }}>No services available.</Text>
-        )}
-      </ScrollView>
+      {/*Show/Hide Filters */}
+      <TouchableOpacity onPress={() => setShowFilters(!showFilters)}>
+        <Ionicons name="search" size={40} color="#007AFF" />
+      </TouchableOpacity>
+
+      {/*Add New Service */}
+      <TouchableOpacity onPress={() => setAddServiceVisible(true)}>
+        <Ionicons name="add-circle" size={40} color="#28a745" />
+      </TouchableOpacity>
+
+      </View>
+  
+     
+  
+          {/*Filters Section*/}
+          {showFilters && (
+            <>
+              <SearchBar
+                searchValue={searchValue}
+                setSearchValue={setSearchValue}
+                sortOption={sortOption}
+                setSortOption={setSortOption}
+              />
+  
+              <FiltersBar
+                priceRange={priceRange}
+                setPriceRange={setPriceRange}
+                location={location}
+                setLocation={setLocation}
+                duration={duration}
+                setDuration={setDuration}
+
+                durationDays={durationDays}
+                setDurationDays={setDurationDays}
+                durationHours={durationHours}
+                setDurationHours={setDurationHours}
+                durationMinutes={durationMinutes}
+                setDurationMinutes={setDurationMinutes}
+                filterRequests={filterRequests}
+                setFilterRequests={setFilterRequests}
+                filterMine={filterMine}
+                setFilterMine={setFilterMine}
+                resetTrigger={resetTrigger}
+              />
+  
+              <TagBar
+                predefinedTags={predefinedTags}
+                selectedTags={selectedTags}
+                setSelectedTags={setSelectedTags}
+              />
+  
+              {/*Reset Filters*/}
+              <TouchableOpacity
+                style={{
+                  backgroundColor: '#dc3545',
+                  padding: 10,
+                  marginVertical: 5,
+                  borderRadius: 8,
+                  alignItems: 'center',
+                }}
+                onPress={resetFilters}
+              >
+                <Text style={{ color: 'white', fontWeight: 'bold' }}>Reset Filters</Text>
+              </TouchableOpacity>
+            </>
+          )}
+  
+         
+  
+              {/*Add Service Modal*/}
+          <AddServiceModal
+            visible={addServiceVisible}
+            onClose={() => setAddServiceVisible(false)}
+            onAddService={handleAddService}
+          />
+  
+          {/*Services List*/}
+          {loading ? (
+            <ActivityIndicator size="large" color="#007AFF" />
+          ) : filteredServices.length > 0 ? (
+            filteredServices.map((service) => (
+              <ServiceCard
+                key={service.id}
+                service={service}
+                user={user}
+                openServiceModal={() => {}}
+                onUpdateService={handleUpdateService}
+                onDeleteService={handleDeleteService}
+                onAcceptApplicant={handleAcceptApplicant}
+                onRejectApplicant={handleRejectApplicant}
+                isSaved={savedServiceIds.includes(service.id)}
+                toggleSave={toggleSaveService}
+              />
+            ))
+          ) : (
+            <Text style={{ textAlign: 'center', marginTop: 20 }}>No services available.</Text>
+          )}
+  
+        </ScrollView>
+      )}
+  
     </View>
   );
-}
+}  
