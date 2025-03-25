@@ -4,7 +4,7 @@ import axios from 'axios';
 import { Ionicons } from '@expo/vector-icons';
 
 import { UserContext } from '../../contexts/authContext';
-import ServiceCard from '../../components/serviceComponents/ServiceCard';
+import ServiceCardLina from '../../components/serviceComponents/ServiceCardLina';
 import FiltersBar from '../../components/serviceComponents/FiltersBar';
 import SearchBar from '../../components/serviceComponents/SearchBar';
 import TagBar from '../../components/serviceComponents/TagBar';
