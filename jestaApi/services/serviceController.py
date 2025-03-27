@@ -10,11 +10,45 @@ from tags.models import Tag
 from ninja.errors import HttpError
 from dateutil.parser import isoparse
 from datetime import timedelta
+from users.models import CustomUser
+import requests
+
 
 
 class ServiceController:
     
-    
+    def send_notification(self, user_or_id, title, body, data={}):       
+        if isinstance(user_or_id, int):
+            try:
+                user = CustomUser.objects.get(id=user_or_id)
+            except CustomUser.DoesNotExist:
+                print(f"No user found with ID {user_or_id}")
+                return
+        else:
+            user = user_or_id
+
+        if not isinstance(user.expo_push_tokens, list) or len(user.expo_push_tokens) == 0:
+            print(f"No tokens for user {user.id}")
+            return
+
+        for token_data in user.expo_push_tokens:
+            token = token_data.get("token")
+            if not token:
+                print(f"Malformed token data: {token_data}")
+                continue
+
+            print(f"Sending notification to: {token}")
+            message = {
+                "to": token,
+                "sound": "default",
+                "title": title,
+                "body": body,
+                "data": data,
+            }
+            response = requests.post("https://exp.host/--/api/v2/push/send", json=message)
+            print("Expo Response:", response.status_code, response.text)
+
+        
     def create_service(self, request, payload):
         if isinstance(payload.estimated_duration, str):
             try:
@@ -174,6 +208,18 @@ class ServiceController:
         
         service.applicants.append({"user_id": request.user.id, "applicant_state": "pending"})
         service.save()
+        
+        self.send_notification(
+            service.user,
+            "New Application!",
+            f"{request.user.username} applied to your service '{service.title}'.",
+            data={"type": "new_applicant", "service_id": service.id}
+        )
+        
+        
+
+
+        
         return {"message": "Application successful!"}
     
    
@@ -358,6 +404,19 @@ class ServiceController:
 
         service.applicants = applicants
         service.save()
+        
+       
+        applicant_user = CustomUser.objects.get(id=user_id)
+        
+        user = CustomUser.objects.get(id=user_id)
+
+        self.send_notification(
+            user,  
+            "Application Rejected",
+            f"Your application to '{service.title}' has been rejected."
+        )
+
+
         return {"message": f"Applicant '{user_id}' rejected from service '{service.title}'."}
     
     def accept_applicant(self, request, service_id: int, user_id: int) -> dict:
@@ -379,6 +438,19 @@ class ServiceController:
 
         service.applicants = applicants
         service.save()
+        
+        applicant_user = CustomUser.objects.get(id=user_id)
+        
+        
+        user = CustomUser.objects.get(id=user_id)
+
+        self.send_notification(
+            user, 
+            "Application Accepted",
+            f"Your application to '{service.title}' has been accepted."
+        )
+
+    
         return {"message": f"Applicant '{user_id}' accepted to service '{service.title}'."}
 
 

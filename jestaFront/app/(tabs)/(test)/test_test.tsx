@@ -77,8 +77,13 @@ export default function ExplorePage() {
   ];
 
   useEffect(() => {
-    fetchServices();
+    const interval = setInterval(() => {
+      fetchServices();
+    }, 5000); //refresh every 10 seconds
+  
+    return () => clearInterval(interval); // clean up
   }, []);
+  
   
 
   //Fetch services
@@ -281,7 +286,7 @@ export default function ExplorePage() {
       );
       if (response.status === 200) {
         Alert.alert("Success", "Applicant accepted!");
-        fetchServices();
+        await fetchServices();
       }
     } catch (error) {
       console.error("Accept error:", error);
@@ -298,7 +303,7 @@ export default function ExplorePage() {
       );
       if (response.status === 200) {
         Alert.alert("Success", "Applicant rejected!");
-        fetchServices();
+        await fetchServices();
       }
     } catch (error) {
       console.error("Reject error:", error);
@@ -348,6 +353,7 @@ export default function ExplorePage() {
                 onRejectApplicant={handleRejectApplicant}
                 isSaved={savedServiceIds.includes(service.id)}
                 toggleSave={toggleSaveService}
+                fetchServices={fetchServices}
               />
             ))
           }
@@ -461,6 +467,7 @@ export default function ExplorePage() {
                 onRejectApplicant={handleRejectApplicant}
                 isSaved={savedServiceIds.includes(service.id)}
                 toggleSave={toggleSaveService}
+                fetchServices={fetchServices}
               />
             ))
           ) : (

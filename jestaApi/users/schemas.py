@@ -17,13 +17,18 @@ class SavedServiceSchema(BaseModel):
     state: str
     title: str
 
+class PushTokenSchema(Schema):
+    token: str
+    device_id: str
 
 class UserSchema(ModelSchema):
     saved_services: list[SavedServiceSchema]
+    expo_push_tokens: list[dict]
     
     class Meta:
         model = CustomUser
-        fields = ["id","email", "saved_services"]
+        fields = ["id", "email", "saved_services", "expo_push_tokens"]
+
         
 
 class Error(Schema):

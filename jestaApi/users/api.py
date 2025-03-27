@@ -8,6 +8,9 @@ from .profileController import profileController
 from ninja import File
 from ninja.files import UploadedFile
 
+from .models import CustomUser
+from .schemas import PushTokenSchema
+
 
 router = Router(tags=["user"])
 uc = userController()
@@ -61,6 +64,12 @@ def update_password(request, old_password: str, new_password: str):
 @router.get("/get_saved_services", response=list)
 def get_saved_services(request):
     return uc.get_saved_services(request)
+
+
+@router.post("/save_push_token", response={200: Msg, 401: Error})
+def save_push_token(request, payload: PushTokenSchema):
+    return userController().save_push_token(request, payload)
+
 
 '''
 @router.post("/share_saved_services_listing", response={200: dict, 400: dict})

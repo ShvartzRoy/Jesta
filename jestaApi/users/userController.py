@@ -11,22 +11,69 @@ from .check_fields import *
 from django.contrib.auth.hashers import check_password
 # from django.core.mail import send_mail
 # from django.conf import settings
+import requests
+
+
+def send_push_notification_to_user(user, title, body, data={}):
+    if not isinstance(user.expo_push_tokens, list):
+        print("expo_push_tokens is not a list!")
+        return
+
+    for token in user.expo_push_tokens:
+            print(f"Sending notification to: {token}")
+            message = {
+                "to": token,
+                "sound": "default",
+                "title": title,
+                "body": body,
+                "data": data,
+            }
+            response = requests.post("https://exp.host/--/api/v2/push/send", json=message)
+            print("Expo Response:", response.status_code, response.text)
+
 
 
 
 class userController:
-
     
     def login(self, request, payload: LogInSchema) -> UserSchema:
         user = authenticate(request, username=payload.email, password=payload.password)
+        
         if user is not None:
             login(request, user)
+            
+            
+        if user.is_authenticated:
+            send_push_notification_to_user(user, "Hello again!", "You are logged in.")
+            return user
+        
             return user
         raise AuthenticationError("Invalid credentials")
-    
+        
+        
+        
+       
 
 
     def logout(self, request) -> any:
+        
+        user = request.user
+        token = request.headers.get('Expo-Push-Token')
+        device_id = request.headers.get('Device-Id')
+
+        if token and device_id:
+            original_len = len(user.expo_push_tokens)
+            user.expo_push_tokens = [
+                t for t in user.expo_push_tokens if not (
+                    t['token'] == token and t['device'] == device_id
+                )
+            ]
+            user.save()
+            print(f"Removed token {token} for device {device_id}, removed {original_len - len(user.expo_push_tokens)}")
+        else:
+            print("No valid token or device ID provided.")
+
+
         logout(request)
         return {"msg": "Logged out"}
 
@@ -107,6 +154,24 @@ class userController:
             raise HttpError(401, "Unauthorized")
         return user.saved_services
    
+   
+   
+    def save_push_token(self, request, payload: PushTokenSchema) -> dict:
+        if not request.user.is_authenticated:
+            raise HttpError(401, "Unauthorized")
+
+        token_data = {"token": payload.token, "device": payload.device_id}
+
+        if token_data not in request.user.expo_push_tokens:
+            request.user.expo_push_tokens.append(token_data)
+            request.user.save()
+            print(f"Saved token for device {payload.device_id}: {payload.token}")
+        else:
+            print(f"Token already exists for device {payload.device_id}")
+
+        return {"msg": "Push token saved successfully"}
+
+
    
     '''
     #later make sharing possible, like open different platforms to share the saved servicess

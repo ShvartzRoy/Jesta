@@ -6,6 +6,7 @@ import EditServiceModal from './EditServiceModal';
 import { Ionicons } from '@expo/vector-icons'; 
 
 
+
 interface Service {
   id: number;
   user_id: number;
@@ -55,7 +56,8 @@ export default function ServiceCard({
   onUpdateService,
   onDeleteService,
   isSaved,
-  toggleSave
+  toggleSave,
+  fetchServices,
 }: {
   service: Service;
   user: any;
@@ -64,6 +66,8 @@ export default function ServiceCard({
   onDeleteService: (id: number) => void;
   isSaved: boolean;
   toggleSave: (serviceId: number) => void;
+  fetchServices: () => Promise<void>;
+  
 }) {
   const serviceType = service.service_from === 'provider' ? 'Offer' : 'Request';
   const [isApplied, setIsApplied] = useState(
@@ -125,6 +129,7 @@ export default function ServiceCard({
         Alert.alert('Success', 'You have applied successfully!');
         setIsApplied(true);
         setApplicantState('pending');
+        await fetchServices();
       } else {
         Alert.alert('Error', 'Something went wrong. Please try again.');
       }
@@ -151,6 +156,7 @@ export default function ServiceCard({
             Alert.alert('Success', 'You have unapplied successfully!');
             setIsApplied(false); //reset state
             setApplicantState(null); //reset applicant state
+            await fetchServices();
             
           } else {
             Alert.alert('Error', 'Something went wrong. Please try again.');

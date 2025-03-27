@@ -14,9 +14,25 @@ from .models import JobService, Service
 from django.shortcuts import get_object_or_404
 from json import loads 
 
+from services.schemas import NotificationPayload
+
+
 
 router = Router(tags=["Services"])
 sc = ServiceController()
+
+
+
+@router.post("/send_notification", response={200: dict})
+def send_notification(request, payload: NotificationPayload):
+    return sc.send_notification(
+        user_id=payload.user_id,
+        title=payload.title,
+        body=payload.body,
+        data=payload.data
+    )
+
+
 
 #create (publish) a service
 @router.post("/create_service", response=ServiceSchema)

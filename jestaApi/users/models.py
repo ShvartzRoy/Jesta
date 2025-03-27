@@ -11,6 +11,10 @@ class CustomUser(AbstractUser):
     REQUIRED_FIELDS = ['username']
     
     saved_services = models.JSONField(default=list, blank=True)
+    expo_push_tokens = models.JSONField(default=list, blank=True)
+
+
+
 
     def __str__(self):
         return self.email

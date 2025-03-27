@@ -6,12 +6,12 @@ import { useRouter } from 'expo-router';
 
 const Menu = ({ onClose }) => {
   const { setUser } = useContext(UserContext);
+  const { logoutUser } = useContext(UserContext);
   const router = useRouter();
 
   const handleLogout = async () => {
     try {
-      await axios.post(`${process.env.EXPO_PUBLIC_HOST}/api/users/logout`); // Adjust the endpoint if necessary
-      setUser({ loggedIn: false, id: null }); // Clear user context
+      await logoutUser(); 
       router.replace('/register');
     } catch (error) {
       Alert.alert('Logout Failed', 'An error occurred while logging out. Please try again.');
