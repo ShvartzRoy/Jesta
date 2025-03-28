@@ -49,6 +49,7 @@ INSTALLED_APPS = [
     'chat',
     'services',
     'users',
+    'notifications',
     'reviews',
     'specialists',
     'tags',

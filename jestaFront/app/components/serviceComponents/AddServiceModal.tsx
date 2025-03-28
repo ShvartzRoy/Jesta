@@ -1,11 +1,10 @@
 import React, { useState } from 'react';
-import { Modal, View, Text, TextInput, TouchableOpacity, StyleSheet, Switch, Alert } from 'react-native';
+import {
+  Modal, View, Text, TextInput, TouchableOpacity, StyleSheet,
+  Switch, Alert, KeyboardAvoidingView, Platform, ScrollView, Keyboard
+} from 'react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import TagBar from './TagBar';
-import Autocomplete from 'react-native-autocomplete-input';
-import { Keyboard } from 'react-native';
-
-
 
 interface AddServiceModalProps {
   visible: boolean;
@@ -13,38 +12,23 @@ interface AddServiceModalProps {
   onAddService: (serviceData: any) => void;
 }
 
-
 const cities = [
   "Ashdod", "Ashkelon", "Bat Yam", "Beer Sheva", "Bnei Brak", "Eilat", "Haifa",
-  "Herzliya", "Holon", "Jerusalem", "Kfar Saba", "Netanya", "Nazareth", 
+  "Herzliya", "Holon", "Jerusalem", "Kfar Saba", "Netanya", "Nazareth",
   "Petah Tikva", "Ramat Gan", "Rehovot", "Rishon LeZion", "Tel Aviv", "Tiberias", "Yokneam"
-].sort((a, b) => a.localeCompare(b));
-
-
+].sort();
 
 const predefinedTags = [
-  "babysitter",
-  "photographer",
-  "private tutor",
-  "hitchhike",
-  "handyman",
-  "dogwalker",
-  "dogsitter",
-  "mover",
+  "babysitter", "photographer", "private tutor", "hitchhike",
+  "handyman", "dogwalker", "dogsitter", "mover"
 ];
 
-export default function AddServiceModal({
-  visible,
-  onClose,
-  onAddService,
-}: AddServiceModalProps) {
+export default function AddServiceModal({ visible, onClose, onAddService }: AddServiceModalProps) {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
-
-
   const [location, setLocation] = useState('');
   const [locationQuery, setLocationQuery] = useState('');
-
+  const [showDropdown, setShowDropdown] = useState(false);
 
   const [offeredPayment, setOfferedPayment] = useState('');
   const [isVolunteering, setIsVolunteering] = useState(false);
@@ -65,6 +49,10 @@ export default function AddServiceModal({
     const hours = parseInt(durationHours) || 0;
     return `P${days}DT${hours}H00M00S`;
   };
+
+  const filteredCities = locationQuery
+    ? cities.filter(c => c.toLowerCase().startsWith(locationQuery.toLowerCase()))
+    : [];
 
   const resetFields = () => {
     setTitle('');
@@ -91,27 +79,33 @@ export default function AddServiceModal({
       Alert.alert('Error', 'Please fill in all required fields');
       return;
     }
-
+  
     if (startDate > endDate) {
       Alert.alert('Error', 'End date cannot be before start date!');
       return;
     }
-
-    if (offeredPayment.trim() === '' || isNaN(parseFloat(offeredPayment))) {
+  
+    //If volunteering and no payment entered, default it to "0"
+    let paymentValue = offeredPayment.trim();
+    if (isVolunteering && paymentValue === '') {
+      paymentValue = '0';
+    }
+  
+    if (paymentValue === '' || isNaN(parseFloat(paymentValue))) {
       Alert.alert('Error', 'Please enter a valid payment (even 0)');
       return;
     }
-
-    if (parseFloat(offeredPayment) < 0) {
+  
+    if (parseFloat(paymentValue) < 0) {
       Alert.alert('Error', 'Offered payment cannot be negative!');
       return;
     }
-
-    if (parseFloat(offeredPayment) > 0 && isVolunteering) {
+  
+    if (parseFloat(paymentValue) > 0 && isVolunteering) {
       Alert.alert('Error', 'Service cannot be both paid and volunteering!');
       return;
     }
-
+  
     const payload = {
       title,
       description,
@@ -119,148 +113,150 @@ export default function AddServiceModal({
       tags: selectedTags,
       date_time_range: [startDate.toISOString(), endDate.toISOString()],
       estimated_duration: convertToISO8601(),
-      offered_payment: parseFloat(offeredPayment),
+      offered_payment: parseFloat(paymentValue),
       service_from: serviceFrom,
       is_volunteering: isVolunteering,
     };
-
-    console.log('Submitting:', payload);
+  
+    console.log("Sending payload:", JSON.stringify(payload));
     onAddService(payload);
     handleClose();
   };
+  
 
   return (
-    <Modal visible={visible} animationType="slide" transparent onRequestClose={handleClose}>
+    <Modal visible={visible} animationType="slide" transparent>
       <View style={styles.overlay}>
-        <View style={styles.modal}>
-          <Text style={styles.header}>Add New Service</Text>
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+          style={{ flex: 1 }}
+        >
+          <ScrollView contentContainerStyle={styles.modal} keyboardShouldPersistTaps="handled">
+            <Text style={styles.header}>Add New Service</Text>
 
-          <TextInput placeholder="Title" placeholderTextColor="black" value={title} onChangeText={setTitle} style={styles.input} />
-          <TextInput placeholder="Description" placeholderTextColor="black" value={description} onChangeText={setDescription} style={styles.input} />
+            <TextInput placeholder="Title" placeholderTextColor="black" value={title} onChangeText={setTitle} style={styles.input} />
+            <TextInput placeholder="Description" placeholderTextColor="black" value={description} onChangeText={setDescription} style={styles.input} />
 
+            <TextInput
+              placeholder="City"
+              placeholderTextColor="black"
+              value={locationQuery}
+              onChangeText={(text) => {
+                setLocationQuery(text);
+                setLocation('');
+                setShowDropdown(true);
+              }}
+              onFocus={() => setShowDropdown(true)}
+              style={styles.input}
+            />
 
-          <Text style={{ marginTop: 10 }}>Location:</Text>
-          <Autocomplete
-          data={
-            locationQuery.length > 0
-              ? cities.filter(city =>
-                  city.toLowerCase().startsWith(locationQuery.toLowerCase())
-                )
-              : []
-          }
-          value={locationQuery || location} 
-          onChangeText={(text) => {
-            setLocationQuery(text); 
-            setLocation('');         
-          }}
-          flatListProps={{
-            keyExtractor: (_, idx) => idx.toString(),
-            renderItem: ({ item }) => (
-              <TouchableOpacity
-                onPress={() => {
-                  setLocation(item);
-                  setLocationQuery(''); 
-                  Keyboard.dismiss();
+            {showDropdown && filteredCities.length > 0 && (
+              <View style={styles.dropdown}>
+                {filteredCities.map((city, index) => (
+                  <TouchableOpacity
+                    key={index}
+                    onPress={() => {
+                      setLocation(city);
+                      setLocationQuery(city);
+                      setShowDropdown(false);
+                      Keyboard.dismiss();
+                    }}
+                  >
+                    <Text style={styles.dropdownItem}>{city}
+                      
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            )}
+
+            <TextInput
+              placeholder="Offered Payment"
+              placeholderTextColor="black"
+              value={offeredPayment}
+              onChangeText={setOfferedPayment}
+              keyboardType="numeric"
+              style={styles.input}
+            />
+
+            <View style={styles.switchRow}>
+              <Text>Volunteering</Text>
+              <Switch value={isVolunteering} onValueChange={setIsVolunteering} />
+            </View>
+
+            <TagBar
+              predefinedTags={predefinedTags}
+              selectedTags={selectedTags}
+              setSelectedTags={setSelectedTags}
+            />
+
+            <Text style={{ marginTop: 10 }}>Start: {formatDateTime(startDate)}</Text>
+            <TouchableOpacity onPress={() => setShowStartPicker(true)} style={styles.dateButton}>
+              <Text>Select Start Date & Time</Text>
+            </TouchableOpacity>
+            {showStartPicker && (
+              <DateTimePicker
+                value={startDate}
+                mode="datetime"
+                display="default"
+                onChange={(event, selectedDate) => {
+                  setShowStartPicker(false);
+                  if (selectedDate) setStartDate(selectedDate);
                 }}
-              >
-                <Text style={styles.itemText}>{item}</Text>
+              />
+            )}
+
+            <Text style={{ marginTop: 10 }}>End: {formatDateTime(endDate)}</Text>
+            <TouchableOpacity onPress={() => setShowEndPicker(true)} style={styles.dateButton}>
+              <Text>Select End Date & Time</Text>
+            </TouchableOpacity>
+            {showEndPicker && (
+              <DateTimePicker
+                value={endDate}
+                mode="datetime"
+                display="default"
+                onChange={(event, selectedDate) => {
+                  setShowEndPicker(false);
+                  if (selectedDate) setEndDate(selectedDate);
+                }}
+              />
+            )}
+
+            <TextInput
+              placeholder="Duration Days"
+              placeholderTextColor="black"
+              value={durationDays}
+              onChangeText={setDurationDays}
+              keyboardType="numeric"
+              style={styles.input}
+            />
+            <TextInput
+              placeholder="Duration Hours"
+              placeholderTextColor="black"
+              value={durationHours}
+              onChangeText={setDurationHours}
+              keyboardType="numeric"
+              style={styles.input}
+            />
+
+            <View style={styles.switchRow}>
+              <Text>Service Type: {serviceFrom === 'provider' ? 'Offer' : 'Request'}</Text>
+              <Switch
+                value={serviceFrom === 'provider'}
+                onValueChange={(val) => setServiceFrom(val ? 'provider' : 'publisher')}
+              />
+            </View>
+
+            <View style={styles.buttonRow}>
+              <TouchableOpacity onPress={handleAdd} style={styles.addButton}>
+                <Text style={{ color: 'white' }}>Add</Text>
               </TouchableOpacity>
-            ),
-          }}
-          inputContainerStyle={styles.input}
-          containerStyle={{ marginBottom: 10, zIndex: 1 }}
-          listContainerStyle={{
-            backgroundColor: '#fff',
-            borderRadius: 5,
-            borderWidth: 1,
-            borderColor: '#ccc',
-          }}
-          placeholder="Select City"
-        />
-
-
-
-
-          <TextInput placeholder="Offered Payment" placeholderTextColor="black" value={offeredPayment} onChangeText={setOfferedPayment} keyboardType="numeric" style={styles.input} />
-
-          <View style={styles.switchRow}>
-            <Text>Volunteering</Text>
-            <Switch value={isVolunteering} onValueChange={setIsVolunteering} />
-          </View>
-
-          <TagBar
-            predefinedTags={predefinedTags}
-            selectedTags={selectedTags}
-            setSelectedTags={setSelectedTags}
-          />
-
-
-          <Text style={{ marginTop: 10 }}>Start: {formatDateTime(startDate)}</Text>
-          <TouchableOpacity onPress={() => setShowStartPicker(true)} style={styles.dateButton}>
-            <Text>Select Start Date & Time</Text>
-          </TouchableOpacity>
-          {showStartPicker && (
-            <DateTimePicker
-              value={startDate}
-              mode="datetime"
-              display="default"
-              onChange={(event, selectedDate) => {
-                setShowStartPicker(false);
-                if (selectedDate) setStartDate(selectedDate);
-              }}
-            />
-          )}
-
-          <Text style={{ marginTop: 10 }}>End: {formatDateTime(endDate)}</Text>
-          <TouchableOpacity onPress={() => setShowEndPicker(true)} style={styles.dateButton}>
-            <Text>Select End Date & Time</Text>
-          </TouchableOpacity>
-          {showEndPicker && (
-            <DateTimePicker
-              value={endDate}
-              mode="datetime"
-              display="default"
-              onChange={(event, selectedDate) => {
-                setShowEndPicker(false);
-                if (selectedDate) setEndDate(selectedDate);
-              }}
-            />
-          )}
-
-          <TextInput
-            placeholder="Duration Days"
-            placeholderTextColor="black"
-            value={durationDays}
-            onChangeText={setDurationDays}
-            keyboardType="numeric"
-            style={styles.input}
-          />
-          <TextInput
-            placeholder="Duration Hours"
-            placeholderTextColor="black"
-            value={durationHours}
-            onChangeText={setDurationHours}
-            keyboardType="numeric"
-            style={styles.input}
-          />
-
-          <View style={styles.switchRow}>
-            <Text>Service Type: {serviceFrom === 'provider' ? 'Offer' : 'Request'}</Text>
-            <Switch
-              value={serviceFrom === 'provider'}
-              onValueChange={(val) => setServiceFrom(val ? 'provider' : 'publisher')}
-            />
-          </View>
-
-          <View style={styles.buttonRow}>
-            <TouchableOpacity onPress={handleAdd} style={styles.addButton}>
-              <Text style={{ color: 'white' }}>Add</Text>
-            </TouchableOpacity>
-            <TouchableOpacity onPress={handleClose} style={styles.cancelButton}>
-              <Text style={{ color: 'white' }}>Cancel</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
+              <TouchableOpacity onPress={handleClose} style={styles.cancelButton}>
+                <Text style={{ color: 'white' }}>Cancel</Text>
+              </TouchableOpacity>
+            </View>
+          </ScrollView>
+        </KeyboardAvoidingView>
       </View>
     </Modal>
   );
@@ -271,32 +267,41 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#00000099',
     justifyContent: 'center',
-    alignItems: 'center',
+    paddingTop: 50,
   },
   modal: {
     backgroundColor: 'white',
-    padding: 20,
-    width: '90%',
+    margin: 20,
     borderRadius: 10,
+    padding: 20,
+    paddingBottom: 50,
   },
   header: {
-    fontSize: 18,
+    fontSize: 20,
     fontWeight: 'bold',
-    marginBottom: 10,
+    marginBottom: 12,
+    textAlign: 'center',
   },
-
-  itemText: {
-    padding: 10,
-    fontSize: 16,
-  },
-
-  
   input: {
     borderWidth: 1,
     borderColor: '#ccc',
     padding: 8,
-    marginVertical: 5,
-    borderRadius: 5,
+    marginVertical: 6,
+    borderRadius: 6,
+  },
+  dropdown: {
+    backgroundColor: '#fff',
+    borderWidth: 1,
+    borderColor: '#ccc',
+    borderRadius: 6,
+    marginTop: -6,
+    marginBottom: 8,
+    zIndex: 99,
+  },
+  dropdownItem: {
+    padding: 10,
+    borderBottomWidth: 1,
+    borderColor: '#eee',
   },
   switchRow: {
     flexDirection: 'row',
@@ -307,26 +312,26 @@ const styles = StyleSheet.create({
   buttonRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginTop: 15,
+    marginTop: 20,
   },
   addButton: {
     backgroundColor: '#007AFF',
     padding: 10,
-    borderRadius: 5,
-    width: '45%',
+    borderRadius: 6,
+    width: '48%',
     alignItems: 'center',
   },
   cancelButton: {
     backgroundColor: '#d9534f',
     padding: 10,
-    borderRadius: 5,
-    width: '45%',
+    borderRadius: 6,
+    width: '48%',
     alignItems: 'center',
   },
   dateButton: {
-    backgroundColor: '#e8e8e8',
-    padding: 8,
-    borderRadius: 5,
+    backgroundColor: '#eee',
+    padding: 10,
+    borderRadius: 6,
     marginTop: 5,
     alignItems: 'center',
   },

@@ -11,7 +11,9 @@ from ninja.errors import HttpError
 from dateutil.parser import isoparse
 from datetime import timedelta
 from users.models import CustomUser
+from notifications.models import Notification
 import requests
+from django.utils import timezone
 
 
 
@@ -26,6 +28,14 @@ class ServiceController:
                 return
         else:
             user = user_or_id
+            
+            
+        Notification.objects.create(
+            user=user,
+            title=title,
+            body=body,
+            data=data,
+    )
 
         if not isinstance(user.expo_push_tokens, list) or len(user.expo_push_tokens) == 0:
             print(f"No tokens for user {user.id}")
@@ -124,9 +134,22 @@ class ServiceController:
         service = get_object_or_404(Service, id=service_id)
         if service.user != request.user:
             raise HttpError(403, "You do not have permission to delete this service!")
+        
+        for applicant in service.applicants:
+            try:
+                applicant_user = CustomUser.objects.get(id=applicant["user_id"])
+                self.send_notification(
+                    applicant_user,
+                    "Service Removed",
+                    f"The service '{service.title}' has been deleted by the creator.",
+                    data={"type": "service_deleted", "service_id": service.id}
+                )
+            except CustomUser.DoesNotExist:
+                print(f"Could not find user with ID {applicant['user_id']} to notify about service deletion")
+
         service.delete()
-        return {"message": "Service deleted"}
-    
+        return {"message": "Service deleted and all applicants were notified."}
+        
 
 
 
@@ -193,44 +216,56 @@ class ServiceController:
 
     def apply_to_service(self, request, service_id: int) -> dict:
         service = get_object_or_404(Service, id=service_id)
+
         if service.user == request.user:
             raise HttpError(400, "You cannot apply to your own service!")
-        
-        if {"user_id":request.user, "applicant_state": "pending"} in service.applicants:
+
+        if {"user_id": request.user, "applicant_state": "pending"} in service.applicants:
             raise HttpError(400, "You have already applied to this service!")
-        
-        if service.state != "pending" and service.state != "accepted":
+
+        if service.state not in ["pending", "accepted"]:
             raise HttpError(400, "Service is not available for application!")
-        
+
         service.applicants = [
-        applicant for applicant in service.applicants 
-        if not (applicant["user_id"] == request.user.id and applicant["applicant_state"] == "rejected")]
-        
+            applicant for applicant in service.applicants
+            if not (applicant["user_id"] == request.user.id and applicant["applicant_state"] == "rejected")
+        ]
+
         service.applicants.append({"user_id": request.user.id, "applicant_state": "pending"})
         service.save()
-        
-        self.send_notification(
-            service.user,
-            "New Application!",
-            f"{request.user.username} applied to your service '{service.title}'.",
-            data={"type": "new_applicant", "service_id": service.id}
-        )
-        
-        
 
+        from notifications.models import Notification
+        recent_time_threshold = timezone.now() - timedelta(minutes=3)
+        recent_similar = Notification.objects.filter(
+            user=service.user,
+            title="New Application!",
+            data__service_id=service.id,
+            read=False,
+            created_at__gte=recent_time_threshold
+        ).exists()
 
-        
+        if not recent_similar:
+            user_name = getattr(request.user.profile, "name", request.user.username)
+            self.send_notification(
+                service.user,
+                "New Application!",
+                f"{user_name} applied to your service '{service.title}'.",
+                data={"type": "new_applicant", "service_id": service.id}
+            )
+
         return {"message": "Application successful!"}
-    
-   
 
 
     def remove_from_service(self, request, service_id: int) -> dict:
         service = get_object_or_404(Service, id=service_id)
         applicants = service.applicants
 
+        was_accepted = False
+
         for applicant in applicants:
             if applicant["user_id"] == request.user.id:
+                if applicant["applicant_state"] == "accepted":
+                    was_accepted = True
                 applicants.remove(applicant)
                 break
         else:
@@ -238,9 +273,19 @@ class ServiceController:
 
         service.applicants = applicants
         service.save()
+
+        if was_accepted:
+            user_name = getattr(request.user.profile, "name", request.user.username)
+            self.send_notification(
+                service.user,
+                "Accepted Applicant Unapplied",
+                f"{user_name} was accepted to your service '{service.title}' but has now unapplied.",
+                data={"type": "applicant_unapplied", "service_id": service.id}
+            )
+
         return {"message": "Removed from service successfully!"}
 
-        
+            
     def get_applicants(self, request, service_id: int) -> list:
         service = get_object_or_404(Service, id=service_id)
         return service.applicants

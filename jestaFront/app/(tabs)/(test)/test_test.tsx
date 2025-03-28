@@ -1,4 +1,4 @@
-import React, { useContext, useState, useEffect } from 'react';
+import React, { useContext, useState, useEffect, useRef } from 'react';
 import { View, ScrollView, Text, TouchableOpacity, Alert, ActivityIndicator } from 'react-native';
 import axios from 'axios';
 import { Ionicons } from '@expo/vector-icons';
@@ -11,6 +11,10 @@ import TagBar from '../../components/serviceComponents/TagBar';
 import AddServiceModal from '../../components/serviceComponents/AddServiceModal';
 import ApplicantsModal from '../../components/serviceComponents/ApplicantsModal';
 import EditServiceModal from '../../components/serviceComponents/EditServiceModal';
+import NotificationModal from '../../components/serviceComponents/NotificationsModal';
+import { useNotification } from '../../contexts/notificationContext';
+
+
 
 interface Service {
   id: number;
@@ -62,7 +66,16 @@ export default function ExplorePage() {
 
   const [showSavedServices, setShowSavedServices] = useState(false);
   const [savedServiceIds, setSavedServiceIds] = useState<number[]>([]); 
-  
+
+  const [notificationModalVisible, setNotificationModalVisible] = useState(false);
+  const [notifications, setNotifications] = useState([]);
+
+  const [modalVisible, setModalVisible] = useState(false);
+  const modalRef = useRef(null);
+
+  const { newNotification } = useNotification();
+
+    
 
 
   const predefinedTags = [
@@ -79,10 +92,18 @@ export default function ExplorePage() {
   useEffect(() => {
     const interval = setInterval(() => {
       fetchServices();
-    }, 5000); //refresh every 10 seconds
+    }, 5000); 
   
-    return () => clearInterval(interval); // clean up
+    return () => clearInterval(interval); 
   }, []);
+
+
+  useEffect(() => {
+    if (newNotification) {
+      setNotifications((prev) => [newNotification, ...prev]);
+    }
+  }, [newNotification]);
+  
   
   
 
@@ -99,7 +120,6 @@ export default function ExplorePage() {
   
       if (response.status === 200 && response.data) {
         setServices(response.data);
-        setFilteredServices(response.data);
       } else {
         Alert.alert('Error', 'Failed to fetch services');
         setServices([]);
@@ -139,8 +159,21 @@ export default function ExplorePage() {
       Alert.alert("Error", "Failed to toggle save.");
     }
   };
+
+  const openModal = () => {
+    setModalVisible(true);
+    modalRef.current?.refreshNotifications(); 
+  };
   
 
+  const fetchNotifications = async () => {
+    try {
+      const res = await axios.get(`${process.env.EXPO_PUBLIC_HOST}/api/notifications/get_latest`);
+      setNotifications(res.data.notifications);
+    } catch (error) {
+      console.error("Failed to fetch notifications", error);
+    }
+  };
  
   
   //Apply filters & sorting
@@ -266,6 +299,20 @@ export default function ExplorePage() {
     }
   };
 
+
+  const handleOpenNotifications = async () => {
+    try {
+      const res = await axios.get(`${process.env.EXPO_PUBLIC_HOST}/api/notifications/get_unread`);
+      setNotifications(res.data);
+      setNotificationModalVisible(true);
+    } catch (error) {
+      console.error("Error opening notifications modal:", error);
+      Alert.alert("Error", "Unable to load notifications.");
+    }
+  };
+  
+  
+
   const handleUpdateService = (updatedService: Service) => {
     setServices((prev) =>
       prev.map((s) => (s.id === updatedService.id ? updatedService : s))
@@ -367,20 +414,26 @@ export default function ExplorePage() {
         </ScrollView>
       ) : (
         <ScrollView>
-      {/*Top Row Icons */}
+      {/*Top Row Icons*/}
         <View style={{ flexDirection: 'row', justifyContent: 'space-around', alignItems: 'center', marginBottom: 15 }}>
 
-      {/*Saved Services */}
+      {/*Saved Services*/}
       <TouchableOpacity onPress={() => setShowSavedServices(true)}>
         <Ionicons name="bookmark" size={40} color="#f0a500" />
       </TouchableOpacity>
 
-      {/*Show/Hide Filters */}
+      {/*Show/Hide Filters*/}
       <TouchableOpacity onPress={() => setShowFilters(!showFilters)}>
         <Ionicons name="search" size={40} color="#007AFF" />
       </TouchableOpacity>
 
-      {/*Add New Service */}
+      {/*Notifications*/}
+      <TouchableOpacity onPress={handleOpenNotifications}>
+        <Ionicons name="notifications-outline" size={40} />
+      </TouchableOpacity>
+
+
+      {/*Add New Service*/}
       <TouchableOpacity onPress={() => setAddServiceVisible(true)}>
         <Ionicons name="add-circle" size={40} color="#28a745" />
       </TouchableOpacity>
@@ -444,12 +497,22 @@ export default function ExplorePage() {
   
          
   
-              {/*Add Service Modal*/}
+          {/*Add Service Modal*/}
           <AddServiceModal
             visible={addServiceVisible}
             onClose={() => setAddServiceVisible(false)}
             onAddService={handleAddService}
           />
+
+          <NotificationModal
+            visible={notificationModalVisible}
+            onClose={() => setNotificationModalVisible(false)}
+            notifications={notifications}
+          />
+
+
+          
+
   
           {/*Services List*/}
           {loading ? (

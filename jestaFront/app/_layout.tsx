@@ -1,13 +1,14 @@
 import { Slot } from 'expo-router';
 import { QueryClientProvider } from '@tanstack/react-query';
-import { queryClient } from './hooks/queryClient';
+import { queryClient } from '../hooks/queryClient';
 
 import AuthContext from './contexts/authContext';
 import PContext from './contexts/profileContext';
-import { usePushNotifications } from './hooks/usePushNotifications';
+import { usePushNotifications } from '../hooks/usePushNotifications';
 import * as Notifications from 'expo-notifications';
 import React from 'react';
-
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import { NotificationProvider, useNotification } from './contexts/notificationContext';
 
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
@@ -17,20 +18,36 @@ Notifications.setNotificationHandler({
   }),
 });
 
-const Layout = () => {
-  usePushNotifications((data) => {
-    console.log('Foreground Notification Received:', data);
+const PushNotificationHandler = () => {
+  const { setNewNotification } = useNotification(); 
 
-    if (data?.type === 'new_applicant') {
-      queryClient.invalidateQueries({ queryKey: ['my-services'] });
+  usePushNotifications((data) => {
+    if (data?.title && data?.body) {
+      setNewNotification({
+        id: Date.now(),
+        title: data.title,
+        body: data.body,
+        created_at: new Date().toISOString(),
+        read: false,
+      });
     }
   });
 
+  return null;
+};
+
+
+const Layout = () => {
   return (
     <QueryClientProvider client={queryClient}>
       <AuthContext>
         <PContext>
-          <Slot />
+          <NotificationProvider>
+            <GestureHandlerRootView style={{ flex: 1 }}>
+              <PushNotificationHandler />
+              <Slot />
+            </GestureHandlerRootView>
+          </NotificationProvider>
         </PContext>
       </AuthContext>
     </QueryClientProvider>

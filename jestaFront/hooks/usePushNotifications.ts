@@ -61,5 +61,7 @@ export function usePushNotifications(onNotificationReceived?: (data: any) => voi
     };
   }, []);
 
+  
+
   return expoPushToken;
 }
