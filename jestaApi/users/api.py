@@ -1,12 +1,14 @@
-from ninja import NinjaAPI, Router
+from ninja import NinjaAPI, Router, File
 from ninja.security import django_auth
 from .schemas import *
 from services.schemas import ServiceSchema
 from specialists.schemas import SpecialistSchema
 from .userController import userController
 from .profileController import profileController
-from ninja import File
 from ninja.files import UploadedFile
+from ninja.errors import HttpError
+from django.shortcuts import get_object_or_404
+from services.models import Service
 
 from .models import CustomUser
 from .schemas import PushTokenSchema
@@ -61,9 +63,10 @@ def update_password(request, old_password: str, new_password: str):
 
 
 
-@router.get("/get_saved_services", response=list)
-def get_saved_services(request):
-    return uc.get_saved_services(request)
+@router.get("/get_saved_services/{user_id}", response=list)
+def get_saved_services(request, user_id: int):
+    user = get_object_or_404(CustomUser, id=user_id)
+    return [service['id'] for service in user.saved_services]
 
 
 @router.post("/save_push_token", response={200: Msg, 401: Error})

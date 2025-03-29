@@ -201,6 +201,10 @@ def get_list_of_all_user_volunteering_services_with_status(request, user_id: int
 def get_list_of_all_user_services_with_status(request, user_id: int):
     return sc.get_list_of_all_user_services_with_status(request, user_id)
 
+@router.get("/get_list_of_all_completed_services_of_user/{user_id}", response={200: list})
+def get_list_of_all_completed_services_of_user(request, user_id: int):
+    return sc.get_list_of_all_completed_services_of_user(request, user_id)
+
 
 @router.get("/get_applicant_state/{service_id}", response={200: dict})
 def get_applicant_state(request, service_id: int):

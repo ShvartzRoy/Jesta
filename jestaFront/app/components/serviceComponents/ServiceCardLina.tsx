@@ -4,6 +4,8 @@ import axios from 'axios';
 import ApplicantsModal from './ApplicantsModal';
 import EditServiceModal from './EditServiceModal';
 import { Ionicons } from '@expo/vector-icons'; 
+import { useRouter } from 'expo-router';
+
 
 
 
@@ -21,7 +23,9 @@ interface Service {
   offered_payment: number;
   service_from: 'provider' | 'publisher';
   is_volunteering: boolean;
+  
 }
+
 
 const parseDuration = (duration: string) => {
   if (!duration || typeof duration !== 'string') return 'No duration available';
@@ -58,6 +62,9 @@ export default function ServiceCard({
   isSaved,
   toggleSave,
   fetchServices,
+  hideOwner = false,
+  hideType = false,
+  
 }: {
   service: Service;
   user: any;
@@ -67,9 +74,19 @@ export default function ServiceCard({
   isSaved: boolean;
   toggleSave: (serviceId: number) => void;
   fetchServices: () => Promise<void>;
+  hideOwner?: boolean;
+  hideType?: boolean;
+
+
   
 }) {
+
+
   const serviceType = service.service_from === 'provider' ? 'Offer' : 'Request';
+
+  const router = useRouter();
+  const [creatorName, setCreatorName] = useState<string>('Loading...');
+
   const [isApplied, setIsApplied] = useState(
     service.applicants.some((applicant) => applicant.user_id === user.id)
   );
@@ -81,8 +98,27 @@ export default function ServiceCard({
   }, [service.applicants, user.id]);
   
 
+  useEffect(() => {
+    const fetchCreatorName = async () => {
+      try {
+        const response = await axios.get(
+          `${process.env.EXPO_PUBLIC_HOST}/api/services/get_owner_name/${service.id}`
+        );
+        setCreatorName(response.data.name || 'Unknown');
+      } catch (error) {
+        console.error("Error fetching creator name:", error);
+        setCreatorName('Unknown');
+      }
+    };
+  
+    fetchCreatorName();
+  }, [service.id]);
+  
+
   const [applicantsVisible, setApplicantsVisible] = useState(false);
   const [editVisible, setEditVisible] = useState(false);
+
+  
 
 
   const handleServiceUpdate = (updatedService: Service) => {
@@ -222,8 +258,20 @@ const shouldShowUnapplyButton =
   service.user_id !== user.id;
 
   return (
-    <View style={{ backgroundColor: 'white', padding: 15, marginBottom: 10, borderRadius: 10, borderWidth: 1, borderColor: '#001f3f', position: 'relative'  }}>
-      <TouchableOpacity onPress={() => openServiceModal(service)}>
+<View style={{ 
+  backgroundColor: 'white', 
+  borderRadius: 16, 
+  padding: 16, 
+  marginBottom: 12, 
+  width: '100%',
+  minHeight: 160,
+  shadowColor: '#000',
+  shadowOffset: { width: 0, height: 2 },
+  shadowOpacity: 0.05,
+  shadowRadius: 6,
+  elevation: 2,
+}}>
+        <TouchableOpacity onPress={() => openServiceModal(service)}>
         <Text style={{ fontSize: 20, fontWeight: 'bold' }}>{service.title}</Text>
         <Text>{service.description}</Text>
         <Text>Location: {service.location}</Text>
@@ -231,7 +279,9 @@ const shouldShowUnapplyButton =
           {formatDateTime(service.date_time_range[0])} - {formatDateTime(service.date_time_range[1])}
         </Text>
         <Text>Duration: {parseDuration(service.estimated_duration)}</Text>
-        <Text>Type: {serviceType}</Text>
+        {!hideType && (
+          <Text>Type: {serviceType}</Text>
+        )}
         <Text>
           {service.offered_payment > 0
             ? `₪${service.offered_payment}`
@@ -239,6 +289,16 @@ const shouldShowUnapplyButton =
             ? 'Volunteering'
             : 'Free'}
         </Text>
+
+        {!hideOwner && (
+        <TouchableOpacity onPress={() => router.push(`/service_user_profile/${service.user_id}`)}>
+          <Text style={{ color: '#007AFF', marginTop: 4 }}>
+            Created by: {creatorName}
+          </Text>
+        </TouchableOpacity>
+      )}
+
+
         {renderApplicantStatus()}
       </TouchableOpacity>
 
