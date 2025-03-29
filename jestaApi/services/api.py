@@ -210,6 +210,10 @@ def get_list_of_all_completed_services_of_user(request, user_id: int):
 def get_applicant_state(request, service_id: int):
     return sc.get_applicant_state(request, service_id)
 
+@router.get("/get_service_info_for_sharing/{service_id}", response={200: dict})
+def get_service_info_for_sharing(request, service_id: int):
+    return sc.get_service_info_for_sharing(service_id, request.user)
+
 
 @router.get("/save_service/{service_id}", response={200: dict})
 def save_service(request, service_id: int):

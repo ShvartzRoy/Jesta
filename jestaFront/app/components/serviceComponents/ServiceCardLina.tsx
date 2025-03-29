@@ -1,10 +1,12 @@
 import React, { useState , useEffect } from 'react';
-import { View, Text, TouchableOpacity, Alert } from 'react-native';
+import { View, Text, TouchableOpacity, Alert,StyleSheet } from 'react-native';
 import axios from 'axios';
 import ApplicantsModal from './ApplicantsModal';
 import EditServiceModal from './EditServiceModal';
 import { Ionicons } from '@expo/vector-icons'; 
 import { useRouter } from 'expo-router';
+import { Share } from 'react-native';
+
 
 
 
@@ -121,7 +123,56 @@ export default function ServiceCard({
   const [editVisible, setEditVisible] = useState(false);
 
   
+  const handleShare = async () => {
+    try {
+      console.log("Fetching share info for service:", service.id);
+      const response = await axios.get(
+        `${process.env.EXPO_PUBLIC_HOST}/api/services/get_service_info_for_sharing/${service.id}`
+      );
+  
+      console.log("Raw share info response:", response);
+  
+      const data = response.data;
+      console.log("Parsed data:", data);
+  
+      const shareData = {
+        title: data["title"],
+        description: data["description"],
+        location: data["location"],
+        date_time_range: data["date time range"] || ["", ""],
+        estimated_duration: data["estimated duration"] || "",
+        offered_payment: parseFloat(data["offered payment"]) || 0,
+        tags: data["tags"] || [],
+      };
+  
+      console.log("Processed share data:", shareData);
+  
+      const shareMessage = `
+  👤 ${data.shared_by} wants to share this service with you via Jesta:
 
+  📌 ${shareData.title}
+  📍 Location: ${shareData.location}
+  🕒 ${formatDateTime(shareData.date_time_range[0])} - ${formatDateTime(shareData.date_time_range[1])}
+  ⏱️ Duration: ${parseDuration(shareData.estimated_duration)}
+  💰 ${shareData.offered_payment > 0 ? `₪${shareData.offered_payment}` : service.is_volunteering ? 'Volunteering' : 'Free'}
+  🏷️ Tags: ${shareData.tags.join(', ')}
+  
+  📝 ${shareData.description}
+
+  🔗 Shared via the *Jesta* App — find more local services near you!
+
+  `;
+  
+      console.log("Final share message:", shareMessage);
+  
+      await Share.share({ message: shareMessage.trim() });
+    } catch (error) {
+      console.error("Error sharing service:", error);
+      Alert.alert("Error", "Could not share service info.");
+    }
+  };
+  
+  
 
   const handleServiceUpdate = (updatedService: Service) => {
     const updatedUserApplicant = updatedService.applicants.find(app => app.user_id === user.id);
@@ -305,10 +356,18 @@ const shouldShowUnapplyButton =
       </TouchableOpacity>
 
 
+      <TouchableOpacity
+      style={{ position: 'absolute', top: 10, right: 10  , margingBottom: 10}}
+      onPress={handleShare}
+    >
+      <Ionicons name="share-social-outline" size={22} color="#007AFF" />
+    </TouchableOpacity>
+
+
        {/*Heart Icon*/}
        {!hideSave && (
       <TouchableOpacity
-        style={{ position: 'absolute', top: 10, right: 10 }}
+        style={{ position: 'absolute', top: 10, right: 10, marginTop: 40 }}
         onPress={() => toggleSave(service.id)}
       >
         <Ionicons name={isSaved ? "heart" : "heart-outline"} size={24} color={isSaved ? 'red' : 'gray'} />

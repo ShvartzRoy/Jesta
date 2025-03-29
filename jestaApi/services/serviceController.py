@@ -581,6 +581,25 @@ class ServiceController:
 
     def get_services_by_state(self, state: str) -> list[Service]:
         return Service.objects.filter(state=state)
+    
+    def get_service_info_for_sharing(self, service_id: int, user) -> dict:
+        service = get_object_or_404(Service, id=service_id)
+        user_name = getattr(user.profile, "name", user.username)
+
+
+        return {
+            "shared_by": user_name,
+            "title": service.title,
+            "description": service.description,
+            "location": service.location,
+            "date_time_range": service.date_time_range,
+            "estimated_duration": service.estimated_duration,
+            "offered_payment": service.offered_payment,
+            "state": service.state,
+            "tags": [tag.name for tag in service.tags.all()],
+        }
+
+        
 
 
 
