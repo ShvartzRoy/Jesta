@@ -10,6 +10,7 @@ export default function ApplicantsModal({
   user,
   onApplicantChange,
   onServiceUpdate, 
+  isCompleted = false,
 }: {
   visible: boolean;
   onClose: () => void;
@@ -18,6 +19,7 @@ export default function ApplicantsModal({
   user: any;
   onApplicantChange: () => void;
   onServiceUpdate: (updatedService: any) => void; 
+  isCompleted?: boolean;
 }) {
   const [applicantList, setApplicantList] = useState<any[]>([]);
   const [selectedProfile, setSelectedProfile] = useState<any>(null);
@@ -160,7 +162,14 @@ export default function ApplicantsModal({
         </Text>
       </Text>
 
-      {item.status === 'pending' && (
+      {isCompleted && (
+      <Text style={{ fontStyle: 'italic', color: 'gray', marginTop: 4 }}>
+          This service is completed — applicants can no longer be accepted or rejected.
+        </Text>
+      )}
+
+
+      {item.status === 'pending' && !isCompleted &&(
         <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
           <TouchableOpacity
             style={{ backgroundColor: '#28a745', padding: 8, borderRadius: 5 }}
