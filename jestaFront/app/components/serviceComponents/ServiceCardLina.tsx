@@ -117,11 +117,42 @@ export default function ServiceCard({
   
     fetchCreatorName();
   }, [service.id]);
+
+  useEffect(() => {
+    console.log(`[ServiceCard] Service ${service.id} state:`, service.state);
+  }, []);
   
+
+
 
   const [applicantsVisible, setApplicantsVisible] = useState(false);
   const [editVisible, setEditVisible] = useState(false);
 
+  const isCompleted = service.state === 'completed';
+
+  const markServiceAsCompleted = async () => {
+    try {
+      const response = await axios.post(
+        `${process.env.EXPO_PUBLIC_HOST}/api/services/mark_service_completed/${service.id}`,
+        {},
+        {
+          headers: { Authorization: `Bearer ${user.token}` },
+        }
+      );
+  
+      if (response.status === 200) {
+        Alert.alert("Marked as Completed");
+
+        fetchServices();
+      } else {
+        Alert.alert("Error", "Failed to mark service as completed");
+      }
+    } catch (error) {
+      console.error("Error marking completed:", error);
+      Alert.alert("Error", "Something went wrong");
+    }
+  };
+  
   
   const handleShare = async () => {
     try {
@@ -291,7 +322,7 @@ export default function ServiceCard({
 
     return (
       <Text style={{ color: statusColor, fontWeight: 'bold', marginTop: 10 }}>
-        Your Status: {applicantState}
+        Your Application Status: {applicantState}
       </Text>
     );
   };
@@ -302,13 +333,15 @@ export default function ServiceCard({
   service.service_from === 'publisher' &&
   !isApplied &&
   applicantState !== 'rejected' &&
-  service.user_id !== user.id;
+  service.user_id !== user.id &&
+  !isCompleted;
 
 const shouldShowUnapplyButton =
   service.service_from === 'publisher' &&
   isApplied &&
   (applicantState === 'pending' || applicantState === 'accepted') &&
-  service.user_id !== user.id;
+  service.user_id !== user.id &&
+  !isCompleted;
 
   return (
 <View style={{ 
@@ -342,6 +375,11 @@ const shouldShowUnapplyButton =
             ? 'Volunteering'
             : 'Free'}
         </Text>
+
+        <Text style={{ fontWeight: 'bold', marginTop: 6, color: isCompleted ? 'green' : 'orange' }}>
+          Service Status: {isCompleted ? 'Completed' : 'Ongoing'}
+        </Text>
+
 
         {!hideOwner && (
         <TouchableOpacity onPress={() => router.push(`/service_user_profile/${service.user_id}`)}>
@@ -429,6 +467,40 @@ const shouldShowUnapplyButton =
         </TouchableOpacity>
       )}
 
+
+      {service.user_id === user.id && !isCompleted && (
+        <TouchableOpacity
+          style={{
+            marginTop: 10,
+            backgroundColor: '#6c63ff',
+            padding: 10,
+            borderRadius: 5,
+            alignItems: 'center',
+          }}
+          onPress={markServiceAsCompleted}
+        >
+          <Text style={{ color: 'white', fontWeight: 'bold' }}>Mark as Completed</Text>
+        </TouchableOpacity>
+      )}
+
+
+      {isCompleted && (service.user_id === user.id || applicantState === 'accepted') && (
+        <TouchableOpacity
+          style={{
+            marginTop: 10,
+            backgroundColor: '#007bff',
+            padding: 10,
+            borderRadius: 5,
+            alignItems: 'center',
+          }}
+          onPress={() => router.push(`/review/${service.id}`)}
+        >
+          <Text style={{ color: 'white', fontWeight: 'bold' }}>Leave a Review</Text>
+        </TouchableOpacity>
+      )}
+
+
+
       
 
 
@@ -470,6 +542,7 @@ const shouldShowUnapplyButton =
                   onUpdateService(updatedService);
                 }
               }}
+              isCompleted={isCompleted}
             />
 
 
@@ -477,8 +550,8 @@ const shouldShowUnapplyButton =
         </>
         )}
 
-      {/*Edit & Delete*/}
-      {service.user_id === user.id && (
+      {/* Edit (Only if not completed) */}
+      {service.user_id === user.id && !isCompleted && (
         <>
           <TouchableOpacity
             style={{
@@ -493,19 +566,6 @@ const shouldShowUnapplyButton =
             <Text style={{ color: 'white', fontWeight: 'bold' }}>Edit Service</Text>
           </TouchableOpacity>
 
-          <TouchableOpacity
-            style={{
-              marginTop: 10,
-              backgroundColor: '#dc3545',
-              padding: 10,
-              borderRadius: 5,
-              alignItems: 'center',
-            }}
-            onPress={confirmDelete}
-          >
-            <Text style={{ color: 'white', fontWeight: 'bold' }}>Delete Service</Text>
-          </TouchableOpacity>
-
           <EditServiceModal
             visible={editVisible}
             onClose={() => setEditVisible(false)}
@@ -514,6 +574,22 @@ const shouldShowUnapplyButton =
             onSave={onUpdateService}
           />
         </>
+      )}
+
+      {/* Delete (Always shown to creator) */}
+      {service.user_id === user.id && (
+        <TouchableOpacity
+          style={{
+            marginTop: 10,
+            backgroundColor: '#dc3545',
+            padding: 10,
+            borderRadius: 5,
+            alignItems: 'center',
+          }}
+          onPress={confirmDelete}
+        >
+          <Text style={{ color: 'white', fontWeight: 'bold' }}>Delete Service</Text>
+        </TouchableOpacity>
       )}
     </View>
   );
