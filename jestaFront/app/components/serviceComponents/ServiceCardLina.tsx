@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState , useEffect } from 'react';
 import { View, Text, TouchableOpacity, Alert } from 'react-native';
 import axios from 'axios';
 import ApplicantsModal from './ApplicantsModal';
@@ -73,13 +73,28 @@ export default function ServiceCard({
   const [isApplied, setIsApplied] = useState(
     service.applicants.some((applicant) => applicant.user_id === user.id)
   );
-  const [applicantState, setApplicantState] = useState(() => {
-    const userApplicant = service.applicants.find((applicant) => applicant.user_id === user.id);
-    return userApplicant ? userApplicant.applicant_state : null;
-  });
+  const [applicantState, setApplicantState] = useState<string | null>(null);
+
+  useEffect(() => {
+    const updated = service.applicants.find((applicant) => applicant.user_id === user.id);
+    setApplicantState(updated?.applicant_state || null);
+  }, [service.applicants, user.id]);
+  
 
   const [applicantsVisible, setApplicantsVisible] = useState(false);
   const [editVisible, setEditVisible] = useState(false);
+
+
+  const handleServiceUpdate = (updatedService: Service) => {
+    const updatedUserApplicant = updatedService.applicants.find(app => app.user_id === user.id);
+    setApplicantState(updatedUserApplicant?.applicant_state || null);
+    setIsApplied(!!updatedUserApplicant);
+  
+    if (onUpdateService) {
+      onUpdateService(updatedService);
+    }
+  };
+  
 
   //DELETE SERVICE
   const confirmDelete = () => {
@@ -195,16 +210,16 @@ export default function ServiceCard({
   //CONDITIONS:
   const userApplicant = service.applicants.find(applicant => applicant.user_id === user.id);
   const shouldShowApplyButton =
-    (userApplicant?.applicant_state === 'rejected' || !userApplicant) &&
-    service.user_id !== user.id &&
-    !isApplied &&
-    service.service_from === 'publisher';
+  service.service_from === 'publisher' &&
+  !isApplied &&
+  applicantState !== 'rejected' &&
+  service.user_id !== user.id;
 
-  const shouldShowUnapplyButton =
-    (userApplicant?.applicant_state === 'pending' || userApplicant?.applicant_state === 'accepted') &&
-    service.user_id !== user.id &&
-    isApplied &&
-    service.service_from === 'publisher';
+const shouldShowUnapplyButton =
+  service.service_from === 'publisher' &&
+  isApplied &&
+  (applicantState === 'pending' || applicantState === 'accepted') &&
+  service.user_id !== user.id;
 
   return (
     <View style={{ backgroundColor: 'white', padding: 15, marginBottom: 10, borderRadius: 10, borderWidth: 1, borderColor: '#001f3f', position: 'relative'  }}>
@@ -260,42 +275,43 @@ export default function ServiceCard({
       )}
 
       {/*Apply Button*/}
-        {service.user_id !== user.id && applicantState !== 'rejected' && !isApplied && (
+      {shouldShowApplyButton && (
         <TouchableOpacity
-            style={{
+          style={{
             marginTop: 10,
             backgroundColor: '#007AFF',
             padding: 10,
             borderRadius: 5,
             alignItems: 'center',
-            }}
-            onPress={handleApply}
+          }}
+          onPress={handleApply}
         >
-            <Text style={{ color: 'white', fontWeight: 'bold' }}>Apply</Text>
+          <Text style={{ color: 'white', fontWeight: 'bold' }}>Apply</Text>
         </TouchableOpacity>
-        )}
+      )}
 
-        {/*Unapply Button*/}
-        {service.user_id !== user.id && isApplied && applicantState !== 'rejected' && (
+      {shouldShowUnapplyButton && (
         <TouchableOpacity
-            style={{
+          style={{
             marginTop: 10,
             backgroundColor: '#FFA500',
             padding: 10,
             borderRadius: 5,
             alignItems: 'center',
-            }}
-            onPress={handleUnapply}
+          }}
+          onPress={handleUnapply}
         >
-            <Text style={{ color: 'white', fontWeight: 'bold' }}>Unapply</Text>
+          <Text style={{ color: 'white', fontWeight: 'bold' }}>Unapply</Text>
         </TouchableOpacity>
-        )}
+      )}
 
       
 
 
       {/*View Applicants Button*/}
-        {service.user_id === user.id && service.applicants.length > 0 && (
+      {service.service_from === 'publisher' &&
+          service.user_id === user.id &&
+          service.applicants.length > 0 && (
         <>
             <TouchableOpacity
             style={{
@@ -312,12 +328,28 @@ export default function ServiceCard({
 
             {/*Updated ApplicantsModal Integration*/}
             <ApplicantsModal
-            visible={applicantsVisible}
-            onClose={() => setApplicantsVisible(false)}
-            applicants={service.applicants}
-            serviceId={service.id}
-            user={user}
+              visible={applicantsVisible}
+              onClose={() => setApplicantsVisible(false)}
+              applicants={service.applicants}
+              serviceId={service.id}
+              user={user}
+              onApplicantChange={fetchServices}
+              onServiceUpdate={(updatedService) => {
+                setApplicantState(() => {
+                  const updatedApplicant = updatedService.applicants.find(
+                    (a: any) => a.user_id === user.id
+                  );
+                  return updatedApplicant?.applicant_state || null;
+                });
+                
+                if (onUpdateService) {
+                  onUpdateService(updatedService);
+                }
+              }}
             />
+
+
+
         </>
         )}
 

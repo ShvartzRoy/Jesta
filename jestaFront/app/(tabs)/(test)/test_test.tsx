@@ -75,9 +75,12 @@ export default function ExplorePage() {
 
   const { newNotification } = useNotification();
 
-    
+  const [acceptedServiceIds, setAcceptedServiceIds] = useState<number[]>([]);
+  const [showAcceptedOnly, setShowAcceptedOnly] = useState(false);
 
 
+
+  
   const predefinedTags = [
     "babysitter",
     "photographer",
@@ -116,11 +119,22 @@ export default function ExplorePage() {
         },
       });
   
-      console.log('Fetched services:', response.data);
-  
       if (response.status === 200 && response.data) {
         setServices(response.data);
-      } else {
+  
+        const acceptedIds = response.data
+          .filter(service =>
+            service.applicants.some(
+              applicant => applicant.user_id === user.id && applicant.applicant_state === 'accepted'
+            )
+          )
+          .map(service => service.id);
+
+        setAcceptedServiceIds(acceptedIds);
+
+
+        
+        } else {
         Alert.alert('Error', 'Failed to fetch services');
         setServices([]);
         setFilteredServices([]);
@@ -134,7 +148,7 @@ export default function ExplorePage() {
       setLoading(false);
     }
   };
-
+  
 
   const toggleSaveService = async (serviceId: number) => {
     try {
@@ -154,12 +168,14 @@ export default function ExplorePage() {
         }
         Alert.alert("Success", response.data.message);
       }
-    } catch (error) {
-      console.error("Error toggling save:", error.message);
+    } catch (error: any) {
+      console.error("Error toggling save:", error?.response?.data || error.message);
       Alert.alert("Error", "Failed to toggle save.");
     }
   };
-
+  
+  
+  
   const openModal = () => {
     setModalVisible(true);
     modalRef.current?.refreshNotifications(); 
@@ -331,15 +347,42 @@ export default function ExplorePage() {
         {},
         { headers: { Authorization: `Bearer ${user.token}` } }
       );
+  
       if (response.status === 200) {
         Alert.alert("Success", "Applicant accepted!");
-        await fetchServices();
+  
+        setServices((prevServices) => {
+          const updated = prevServices.map((service) => {
+            if (service.id === serviceId) {
+              const updatedApplicants = service.applicants.map((applicant) =>
+                applicant.email === applicantEmail ? { ...applicant, status: 'accepted' } : applicant
+              );
+              return { ...service, applicants: updatedApplicants };
+            }
+            return service;
+          });
+  
+          const accepted = updated
+            .filter(service =>
+              service.applicants?.some(
+                (applicant: any) =>
+                  (applicant.email === user.email || applicant.user_id === user.id) &&
+                  applicant.status === 'accepted'
+              )
+            )
+            .map(service => service.id);
+  
+          setAcceptedServiceIds(accepted);
+  
+          return updated;
+        });
       }
     } catch (error) {
       console.error("Accept error:", error);
       Alert.alert("Error", "Failed to accept applicant.");
     }
   };
+  
 
   const handleRejectApplicant = async (serviceId: number, applicantEmail: string) => {
     try {
@@ -348,9 +391,36 @@ export default function ExplorePage() {
         {},
         { headers: { Authorization: `Bearer ${user.token}` } }
       );
+  
       if (response.status === 200) {
         Alert.alert("Success", "Applicant rejected!");
-        await fetchServices();
+  
+        setServices((prevServices) => {
+          const updated = prevServices.map((service) => {
+            if (service.id === serviceId) {
+              const updatedApplicants = service.applicants.map((applicant) =>
+                applicant.email === applicantEmail ? { ...applicant, status: 'rejected' } : applicant
+              );
+              return { ...service, applicants: updatedApplicants };
+            }
+            return service;
+          });
+  
+          const accepted = updated
+            .filter(service =>
+              service.applicants?.some(
+                (applicant: any) =>
+                  (applicant.email === user.email || applicant.user_id === user.id) &&
+                  applicant.status === 'accepted'
+              )
+            )
+            .map(service => service.id);
+  
+          setAcceptedServiceIds(accepted);
+          
+  
+          return updated;
+        });
       }
     } catch (error) {
       console.error("Reject error:", error);
@@ -359,90 +429,107 @@ export default function ExplorePage() {
   };
   
 
+
   const openServiceModal = (service: Service) => {
     console.log('Open Service:', service.id);
   };
 
   return (
     <View style={{ flex: 1, padding: 10 }}>
-  
       {showSavedServices ? (
         <ScrollView>
-          {/*Top Bar for Saved Services */}
-          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 , marginTop: 10 }}>
-            
-            {/*Back Arrow */}
-            <TouchableOpacity 
-              onPress={() => setShowSavedServices(false)} 
-              style={{ position: 'absolute', left: 0 }}
-            >
-              <Ionicons name="arrow-back" size={45} color="#007AFF" />
+  
+          {/* Back Arrow at Top */}
+          <View style={{ marginTop: 10 }}>
+            <TouchableOpacity onPress={() => setShowSavedServices(false)}>
+              <Ionicons name="arrow-back" size={40} color="#007AFF" />
             </TouchableOpacity>
-
-            {/*Centered Title */}
-            <View style={{ flex: 1, alignItems: 'center' , marginBottom: 10 }}>
-              <Text style={{ fontWeight: 'bold', fontSize: 24 }}>Saved Services</Text>
-            </View>
           </View>
   
-          {/*Saved Services List */}
-          {services
-            .filter(s => savedServiceIds.includes(s.id))
-            .map(service => (
-              <ServiceCardLina
-                key={service.id}
-                service={service}
-                user={user}
-                openServiceModal={() => {}}
-                onUpdateService={handleUpdateService}
-                onDeleteService={handleDeleteService}
-                onAcceptApplicant={handleAcceptApplicant}
-                onRejectApplicant={handleRejectApplicant}
-                isSaved={savedServiceIds.includes(service.id)}
-                toggleSave={toggleSaveService}
-                fetchServices={fetchServices}
-              />
-            ))
-          }
+          {/* Title + Toggle */}
+          <View style={{ alignItems: 'center', marginBottom: 10 }}>
+            <Text style={{ fontWeight: 'bold', fontSize: 24 }}>Saved & Accepted Services</Text>
   
-          {/*No Saved Services Message */}
-          {savedServiceIds.length === 0 && (
+            <TouchableOpacity
+              onPress={() => setShowAcceptedOnly(prev => !prev)}
+              style={{
+                paddingVertical: 6,
+                paddingHorizontal: 12,
+                backgroundColor: '#007AFF',
+                borderRadius: 8,
+                marginTop: 8,
+              }}
+            >
+              <Text style={{ color: 'white' }}>
+                {showAcceptedOnly ? 'Show Only Saved' : 'Show Only Accepted'}
+              </Text>
+            </TouchableOpacity>
+          </View>
+  
+          {/* Filtered Services List */}
+          {services
+          .filter(service => {
+            if (showAcceptedOnly) {
+              return acceptedServiceIds.includes(service.id);
+            }
+            return savedServiceIds.includes(service.id);
+          })
+          .map(service => (
+            <ServiceCardLina
+              key={service.id}
+              service={service}
+              user={user}
+              openServiceModal={() => {}}
+              onUpdateService={handleUpdateService}
+              onDeleteService={handleDeleteService}
+              onAcceptApplicant={handleAcceptApplicant}
+              onRejectApplicant={handleRejectApplicant}
+              isSaved={savedServiceIds.includes(service.id)}
+              toggleSave={toggleSaveService}
+              fetchServices={fetchServices}
+            />
+        ))}
+
+  
+          {/* Empty State */}
+          {(showAcceptedOnly
+            ? acceptedServiceIds.length === 0
+            : services.filter(service =>
+                savedServiceIds.includes(service.id) || acceptedServiceIds.includes(service.id)
+              ).length === 0) && (
             <Text style={{ textAlign: 'center', marginTop: 20 }}>
-              No saved services yet
+              {showAcceptedOnly ? 'No accepted services yet' : 'No saved services yet'}
             </Text>
           )}
+
         </ScrollView>
       ) : (
         <ScrollView>
-      {/*Top Row Icons*/}
-        <View style={{ flexDirection: 'row', justifyContent: 'space-around', alignItems: 'center', marginBottom: 15 }}>
-
-      {/*Saved Services*/}
-      <TouchableOpacity onPress={() => setShowSavedServices(true)}>
-        <Ionicons name="bookmark" size={40} color="#f0a500" />
-      </TouchableOpacity>
-
-      {/*Show/Hide Filters*/}
-      <TouchableOpacity onPress={() => setShowFilters(!showFilters)}>
-        <Ionicons name="search" size={40} color="#007AFF" />
-      </TouchableOpacity>
-
-      {/*Notifications*/}
-      <TouchableOpacity onPress={handleOpenNotifications}>
-        <Ionicons name="notifications-outline" size={40} />
-      </TouchableOpacity>
-
-
-      {/*Add New Service*/}
-      <TouchableOpacity onPress={() => setAddServiceVisible(true)}>
-        <Ionicons name="add-circle" size={40} color="#28a745" />
-      </TouchableOpacity>
-
-      </View>
   
-     
+          {/* Top Row Icons */}
+          <View style={{ flexDirection: 'row', justifyContent: 'space-around', alignItems: 'center', marginBottom: 15 }}>
+            {/* Saved Services */}
+            <TouchableOpacity onPress={() => setShowSavedServices(true)}>
+              <Ionicons name="bookmark" size={40} color="#f0a500" />
+            </TouchableOpacity>
   
-          {/*Filters Section*/}
+            {/* Show/Hide Filters */}
+            <TouchableOpacity onPress={() => setShowFilters(!showFilters)}>
+              <Ionicons name="search" size={40} color="#007AFF" />
+            </TouchableOpacity>
+  
+            {/* Notifications */}
+            <TouchableOpacity onPress={handleOpenNotifications}>
+              <Ionicons name="notifications-outline" size={40} />
+            </TouchableOpacity>
+  
+            {/* Add New Service */}
+            <TouchableOpacity onPress={() => setAddServiceVisible(true)}>
+              <Ionicons name="add-circle" size={40} color="#28a745" />
+            </TouchableOpacity>
+          </View>
+  
+          {/* Filters Section */}
           {showFilters && (
             <>
               <SearchBar
@@ -459,7 +546,6 @@ export default function ExplorePage() {
                 setLocation={setLocation}
                 duration={duration}
                 setDuration={setDuration}
-
                 durationDays={durationDays}
                 setDurationDays={setDurationDays}
                 durationHours={durationHours}
@@ -479,7 +565,6 @@ export default function ExplorePage() {
                 setSelectedTags={setSelectedTags}
               />
   
-              {/*Reset Filters*/}
               <TouchableOpacity
                 style={{
                   backgroundColor: '#dc3545',
@@ -495,26 +580,21 @@ export default function ExplorePage() {
             </>
           )}
   
-         
-  
-          {/*Add Service Modal*/}
+          {/* Add Service Modal */}
           <AddServiceModal
             visible={addServiceVisible}
             onClose={() => setAddServiceVisible(false)}
             onAddService={handleAddService}
           />
-
+  
+          {/* Notification Modal */}
           <NotificationModal
             visible={notificationModalVisible}
             onClose={() => setNotificationModalVisible(false)}
             notifications={notifications}
           />
-
-
-          
-
   
-          {/*Services List*/}
+          {/* Services List */}
           {loading ? (
             <ActivityIndicator size="large" color="#007AFF" />
           ) : filteredServices.length > 0 ? (
@@ -536,10 +616,8 @@ export default function ExplorePage() {
           ) : (
             <Text style={{ textAlign: 'center', marginTop: 20 }}>No services available.</Text>
           )}
-  
         </ScrollView>
       )}
-  
     </View>
   );
 }  

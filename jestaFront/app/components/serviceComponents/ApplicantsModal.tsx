@@ -8,18 +8,21 @@ export default function ApplicantsModal({
   applicants,
   serviceId,
   user,
+  onApplicantChange,
+  onServiceUpdate, 
 }: {
   visible: boolean;
   onClose: () => void;
   applicants: any[];
   serviceId: number;
   user: any;
+  onApplicantChange: () => void;
+  onServiceUpdate: (updatedService: any) => void; 
 }) {
   const [applicantList, setApplicantList] = useState<any[]>([]);
   const [selectedProfile, setSelectedProfile] = useState<any>(null);
   const [profileVisible, setProfileVisible] = useState(false);
 
-  //fetch the applicants when the modal opens
   useEffect(() => {
     if (visible) {
       fetchApplicants();
@@ -60,8 +63,16 @@ export default function ApplicantsModal({
         {},
         { headers: { Authorization: `Bearer ${user.token}` } }
       );
+
       Alert.alert("Success", "Applicant accepted!");
       fetchApplicants();
+      onApplicantChange();
+
+      const updatedServiceRes = await axios.get(
+        `${process.env.EXPO_PUBLIC_HOST}/api/services/get_service/${serviceId}`,
+        { headers: { Authorization: `Bearer ${user.token}` } }
+      );
+      onServiceUpdate(updatedServiceRes.data); 
     } catch (error) {
       console.error('Error accepting applicant:', error.response?.data || error.message);
       Alert.alert('Error', 'Failed to accept applicant.');
@@ -84,6 +95,13 @@ export default function ApplicantsModal({
       );
       Alert.alert("Success", "Applicant rejected!");
       fetchApplicants();
+      onApplicantChange();
+
+      const updatedServiceRes = await axios.get(
+        `${process.env.EXPO_PUBLIC_HOST}/api/services/get_service/${serviceId}`,
+        { headers: { Authorization: `Bearer ${user.token}` } }
+      );
+      onServiceUpdate(updatedServiceRes.data); 
     } catch (error) {
       console.error('Error rejecting applicant:', error.response?.data || error.message);
       Alert.alert('Error', 'Failed to reject applicant.');
@@ -99,7 +117,6 @@ export default function ApplicantsModal({
       );
 
       const user_id = response.data["user_id"];
-
       const profileResponse = await axios.get(
         `${process.env.EXPO_PUBLIC_HOST}/api/users/get_profile/${user_id}`,
         { headers: { Authorization: `Bearer ${user.token}` } }
@@ -128,7 +145,19 @@ export default function ApplicantsModal({
         Email: {item.email}
       </Text>
       <Text style={{ marginBottom: 5 }}>
-        Status: <Text style={{ color: item.status === 'accepted' ? 'green' : item.status === 'rejected' ? 'red' : 'blue' }}>{item.status}</Text>
+        Status:{' '}
+        <Text
+          style={{
+            color:
+              item.status === 'accepted'
+                ? 'green'
+                : item.status === 'rejected'
+                ? 'red'
+                : 'blue',
+          }}
+        >
+          {item.status}
+        </Text>
       </Text>
 
       {item.status === 'pending' && (
@@ -163,7 +192,13 @@ export default function ApplicantsModal({
           />
 
           <TouchableOpacity
-            style={{ marginTop: 15, backgroundColor: '#f94449', padding: 10, borderRadius: 5, alignItems: 'center' }}
+            style={{
+              marginTop: 15,
+              backgroundColor: '#f94449',
+              padding: 10,
+              borderRadius: 5,
+              alignItems: 'center',
+            }}
             onPress={onClose}
           >
             <Text style={{ color: 'white', fontWeight: 'bold' }}>Close</Text>
@@ -171,7 +206,7 @@ export default function ApplicantsModal({
         </View>
       </View>
 
-      {/*Profile Modal*/}
+      {/* Profile Modal */}
       <Modal visible={profileVisible} transparent animationType="slide">
         <View style={{ flex: 1, backgroundColor: '#00000099', justifyContent: 'center', alignItems: 'center' }}>
           <View style={{ backgroundColor: 'white', padding: 20, borderRadius: 10, width: '90%' }}>
