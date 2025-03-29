@@ -193,11 +193,10 @@ const ServiceUserProfileScreen = () => {
               openServiceModal={() => {}}
               onUpdateService={() => {}}
               onDeleteService={() => {}}
-              isSaved={saved.includes(service.id)}
-              toggleSave={() => toggleSave(service.id)}
               fetchServices={() => {}}
               hideOwner
               hideType
+              hideSave
             />
           ))
         ) : (

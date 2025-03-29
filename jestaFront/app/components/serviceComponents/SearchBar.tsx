@@ -19,68 +19,78 @@ export default function SearchBar({
   const [showSortOptions, setShowSortOptions] = useState(false);
 
   return (
-    <View style={styles.container}>
+    <View style={styles.card}>
       <TextInput
-        placeholder="Search a service"
-        placeholderTextColor="black"
+        placeholder="🔍 Search for services..."
+        placeholderTextColor="#777"
         value={searchValue}
         onChangeText={setSearchValue}
         style={styles.input}
-        
       />
 
-      {/*Sort By Toggle Button*/}
-      <TouchableOpacity
-        style={styles.sortButton}
-        onPress={() => setShowSortOptions(!showSortOptions)}
-      >
-        <Ionicons name="options-outline" size={30} color="#007AFF" />
-        <Text style={[styles.sortText]}>Sort By</Text>
+      <TouchableOpacity style={styles.sortButton} onPress={() => setShowSortOptions(!showSortOptions)}>
+        <Ionicons name="filter-outline" size={20} color="#007AFF" />
+        <Text style={styles.sortText}>Sort Options</Text>
       </TouchableOpacity>
 
-      {/*Show Picker if toggled*/}
       {showSortOptions && (
-        <>
-          <Picker
-            selectedValue={sortOption}
-            onValueChange={(itemValue) => setSortOption(itemValue)}
-            style={styles.picker}
-          >
-            <Picker.Item label="Price (Low to High)" value="price_low_high" color="black" />
-            <Picker.Item label="Price (High to Low)" value="price_high_low" color="black" />
-            <Picker.Item label="Duration (Short to Long)" value="duration_short_long" color="black" />
-            <Picker.Item label="Duration (Long to Short)" value="duration_long_short" color="black" />
-          </Picker>
-        </>
+        <View style={styles.pickerContainer}>
+         <Picker
+          selectedValue={sortOption}
+          onValueChange={(itemValue) => setSortOption(itemValue)}
+          style={styles.picker}
+          dropdownIconColor="#007AFF"
+        >
+          <Picker.Item label="💸 Price: Low to High" value="price_low_high" color="black" />
+          <Picker.Item label="💰 Price: High to Low" value="price_high_low" color="black" />
+          <Picker.Item label="⏱ Duration: Short to Long" value="duration_short_long" color="black" />
+          <Picker.Item label="⏳ Duration: Long to Short" value="duration_long_short" color="black" />
+        </Picker>
+
+        </View>
       )}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    marginBottom: 20,
+  card: {
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    padding: 16,
+    marginVertical: 12,
+    shadowColor: '#000',
+    shadowOpacity: 0.05,
+    shadowOffset: { width: 0, height: 4 },
+    shadowRadius: 6,
+    elevation: 4,
   },
   input: {
-    borderWidth: 1,
-    borderColor: '#ccc',
-    padding: 8,
-    marginVertical: 5,
-    borderRadius: 5,
-  },
-  picker: {
-    borderWidth: 1,
-    borderColor: '#ccc',
-    marginTop: 5,
+    backgroundColor: '#f1f1f1',
+    padding: 12,
+    borderRadius: 12,
+    fontSize: 16,
   },
   sortButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginTop: 10,
+    marginTop: 14,
   },
   sortText: {
-    marginLeft: 8,
+    marginLeft: 6,
+    fontSize: 16,
     color: '#007AFF',
-    fontWeight: 'bold',
+    fontWeight: '600',
+  },
+  pickerContainer: {
+    marginTop: 10,
+    borderRadius: 12,
+    overflow: 'hidden',
+    borderColor: '#ccc',
+    borderWidth: 1,
+  },
+  picker: {
+    backgroundColor: '#f7f7f7',
+    fontSize: 16,
   },
 });

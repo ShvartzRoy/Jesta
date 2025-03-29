@@ -64,6 +64,7 @@ export default function ServiceCard({
   fetchServices,
   hideOwner = false,
   hideType = false,
+  hideSave = false,
   
 }: {
   service: Service;
@@ -76,6 +77,7 @@ export default function ServiceCard({
   fetchServices: () => Promise<void>;
   hideOwner?: boolean;
   hideType?: boolean;
+  hideSave?: boolean; 
 
 
   
@@ -304,12 +306,15 @@ const shouldShowUnapplyButton =
 
 
        {/*Heart Icon*/}
+       {!hideSave && (
       <TouchableOpacity
         style={{ position: 'absolute', top: 10, right: 10 }}
         onPress={() => toggleSave(service.id)}
       >
         <Ionicons name={isSaved ? "heart" : "heart-outline"} size={24} color={isSaved ? 'red' : 'gray'} />
       </TouchableOpacity>
+       )}
+
 
       {/*Tags*/}
       {service.tags && service.tags.filter(tag => tag.trim() !== '').length > 0 && (

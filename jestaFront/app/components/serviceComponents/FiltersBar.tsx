@@ -1,8 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, Switch, TextInput, StyleSheet } from 'react-native';
-import Slider from '@react-native-community/slider';
 import MultiSlider from '@ptomasroos/react-native-multi-slider';
-
 
 interface FiltersBarProps {
   priceRange: [number, number];
@@ -31,89 +29,84 @@ export default function FiltersBar({
   setFilterMine,
   resetTrigger,
 }: FiltersBarProps) {
-  
   const [days, setDays] = useState('');
   const [hours, setHours] = useState('');
   const [minutes, setMinutes] = useState('');
-
 
   useEffect(() => {
     setDays('');
     setHours('');
     setMinutes('');
   }, [resetTrigger]);
-  
 
   useEffect(() => {
     if (days === '' && hours === '' && minutes === '') {
-      setDuration(''); 
+      setDuration('');
     } else {
       const durString = `P${days || 0}DT${hours || 0}H${minutes || 0}M`;
       setDuration(durString);
     }
   }, [days, hours, minutes]);
-  
 
   return (
-    <View style={{ marginBottom: 20 }}>
-      <Text style={styles.label}>Price Range: {priceRange[0]}₪ - {priceRange[1]}₪</Text>
+    <View style={styles.card}>
+      <Text style={styles.label}>💰 Price Range: {priceRange[0]}₪ - {priceRange[1]}₪</Text>
       <MultiSlider
         values={priceRange}
         min={0}
         max={1000}
         step={20}
-        sliderLength={350}
+        sliderLength={340}
         onValuesChange={(values) => setPriceRange([values[0], values[1]])}
         selectedStyle={{ backgroundColor: '#007AFF' }}
-        containerStyle={{ alignSelf: 'center', marginVertical: 10 }}
-        markerStyle={{ height: 25, width: 25 }}
-
+        markerStyle={{ height: 24, width: 24 }}
+        containerStyle={{ alignSelf: 'center', marginVertical: 12 }}
       />
 
-      <Text style={styles.label}>Location:</Text>
+      <Text style={styles.label}>📍 Location</Text>
       <TextInput
-        placeholder="Enter Location"
+        placeholder="Enter city or area"
+        placeholderTextColor="#666"
         value={location}
         onChangeText={setLocation}
         style={styles.input}
       />
 
-<Text style={styles.label}>Duration:</Text>
-      <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+      <Text style={styles.label}>⏳ Duration</Text>
+      <View style={styles.durationRow}>
         <TextInput
           placeholder="Days"
-          keyboardType="numeric"
-          placeholderTextColor="black"
           value={days}
           onChangeText={setDays}
-          style={[styles.input, { flex: 1, marginRight: 5 }]}
+          keyboardType="numeric"
+          placeholderTextColor="#555"
+          style={styles.durationInput}
         />
         <TextInput
           placeholder="Hours"
-          keyboardType="numeric"
-          placeholderTextColor="black"
           value={hours}
           onChangeText={setHours}
-          style={[styles.input, { flex: 1, marginHorizontal: 5 }]}
+          keyboardType="numeric"
+          placeholderTextColor="#555"
+          style={styles.durationInput}
         />
         <TextInput
           placeholder="Minutes"
-          keyboardType="numeric"
-          placeholderTextColor="black"
           value={minutes}
           onChangeText={setMinutes}
-          style={[styles.input, { flex: 1, marginLeft: 5 }]}
+          keyboardType="numeric"
+          placeholderTextColor="#555"
+          style={styles.durationInput}
         />
       </View>
 
-      <View style={[styles.toggleRow, { justifyContent: 'center' }]}>
-        <View style={{ flexDirection: 'row', alignItems: 'center', marginRight: 20 }}>
-          <Text style={{ marginRight: 5 }}>{filterRequests ? 'Requests' : 'Offers'}</Text>
+      <View style={styles.toggleGroup}>
+        <View style={styles.toggleItem}>
+          <Text style={styles.toggleText}>{filterRequests ? '📝 Requests' : '🎯 Offers'}</Text>
           <Switch value={filterRequests} onValueChange={setFilterRequests} />
         </View>
-
-        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-          <Text style={{ marginRight: 5 }}>{filterMine ? 'Mine' : 'Others'}</Text>
+        <View style={styles.toggleItem}>
+          <Text style={styles.toggleText}>{filterMine ? '👤 Mine' : '🌍 Others'}</Text>
           <Switch value={filterMine} onValueChange={setFilterMine} />
         </View>
       </View>
@@ -122,20 +115,55 @@ export default function FiltersBar({
 }
 
 const styles = StyleSheet.create({
-  input: {
-    borderWidth: 1,
-    borderColor: '#ccc',
-    padding: 8,
-    marginVertical: 5,
-    borderRadius: 5,
+  card: {
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    padding: 16,
+    marginVertical: 12,
+    shadowColor: '#000',
+    shadowOpacity: 0.05,
+    shadowOffset: { width: 0, height: 4 },
+    shadowRadius: 6,
+    elevation: 3,
   },
   label: {
-    marginTop: 10,
-    fontWeight: 'bold',
+    fontSize: 16,
+    fontWeight: '600',
+    marginTop: 8,
+    marginBottom: 4,
   },
-  toggleRow: {
+  input: {
+    backgroundColor: '#f1f1f1',
+    borderRadius: 12,
+    padding: 10,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: '#ddd',
+  },
+  durationRow: {
+    flexDirection: 'row',
+    gap: 10,
+    marginBottom: 12,
+  },
+  durationInput: {
+    flex: 1,
+    backgroundColor: '#f1f1f1',
+    borderRadius: 10,
+    padding: 10,
+    borderWidth: 1,
+    borderColor: '#ccc',
+  },
+  toggleGroup: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    marginTop: 10,
+  },
+  toggleItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginTop: 10,
+    gap: 6,
+  },
+  toggleText: {
+    fontSize: 14,
   },
 });
