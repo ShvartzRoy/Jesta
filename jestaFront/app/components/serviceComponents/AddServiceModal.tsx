@@ -75,10 +75,27 @@ export default function AddServiceModal({ visible, onClose, onAddService }: AddS
   };
 
   const handleAdd = () => {
-    if (!title || !description || !location) {
-      Alert.alert('Error', 'Please fill in all required fields');
+
+    const inputDays = parseInt(durationDays.trim() || '0');
+    const inputHours = parseInt(durationHours.trim() || '0');
+
+    const durationInMs = (inputDays * 24 * 60 * 60 * 1000) +
+                        (inputHours * 60 * 60 * 1000);
+
+    const rangeInMs = endDate.getTime() - startDate.getTime();
+
+    if (durationInMs > rangeInMs + 60 * 1000) {
+      Alert.alert(
+        "Invalid Duration",
+        `The estimated duration (${inputDays}d ${inputHours}h) is longer than the time between start and end.`
+      );
       return;
     }
+
+        if (!title || !description || !location) {
+          Alert.alert('Error', 'Please fill in all required fields');
+          return;
+        }
   
     if (startDate > endDate) {
       Alert.alert('Error', 'End date cannot be before start date!');

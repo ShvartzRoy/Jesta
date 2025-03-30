@@ -1,5 +1,5 @@
 import React, { useState , useEffect } from 'react';
-import { View, Text, TouchableOpacity, Alert,StyleSheet } from 'react-native';
+import { View, Text, TouchableOpacity, Alert, StyleSheet, Image, Modal } from 'react-native';
 import axios from 'axios';
 import ApplicantsModal from './ApplicantsModal';
 import EditServiceModal from './EditServiceModal';
@@ -90,11 +90,16 @@ export default function ServiceCard({
 
   const router = useRouter();
   const [creatorName, setCreatorName] = useState<string>('Loading...');
+  const [creatorImage, setCreatorImage] = useState<string | null>(null);
+
 
   const [isApplied, setIsApplied] = useState(
     service.applicants.some((applicant) => applicant.user_id === user.id)
   );
   const [applicantState, setApplicantState] = useState<string | null>(null);
+
+  const [descriptionVisible, setDescriptionVisible] = useState(false);
+
 
   useEffect(() => {
     const updated = service.applicants.find((applicant) => applicant.user_id === user.id);
@@ -106,12 +111,16 @@ export default function ServiceCard({
     const fetchCreatorName = async () => {
       try {
         const response = await axios.get(
-          `${process.env.EXPO_PUBLIC_HOST}/api/services/get_owner_name/${service.id}`
+          //`${process.env.EXPO_PUBLIC_HOST}/api/services/get_owner_name/${service.id}`
+          `${process.env.EXPO_PUBLIC_HOST}/api/services/get_owner_profile/${service.id}`
         );
         setCreatorName(response.data.name || 'Unknown');
-      } catch (error) {
+        setCreatorImage(response.data.image || null);
+        } catch (error) {
         console.error("Error fetching creator name:", error);
         setCreatorName('Unknown');
+        setCreatorImage(null);
+
       }
     };
   
@@ -357,40 +366,103 @@ const shouldShowUnapplyButton =
   shadowRadius: 6,
   elevation: 2,
 }}>
-        <TouchableOpacity onPress={() => openServiceModal(service)}>
-        <Text style={{ fontSize: 20, fontWeight: 'bold' }}>{service.title}</Text>
-        <Text>{service.description}</Text>
-        <Text>Location: {service.location}</Text>
-        <Text>
-          {formatDateTime(service.date_time_range[0])} - {formatDateTime(service.date_time_range[1])}
-        </Text>
-        <Text>Duration: {parseDuration(service.estimated_duration)}</Text>
-        {!hideType && (
-          <Text>Type: {serviceType}</Text>
-        )}
-        <Text>
-          {service.offered_payment > 0
-            ? `₪${service.offered_payment}`
-            : service.is_volunteering
-            ? 'Volunteering'
-            : 'Free'}
-        </Text>
+  
+    <TouchableOpacity onPress={() => setDescriptionVisible(true)}>
+          
+        <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 4 }}>
+        <View style={{
+          backgroundColor: service.service_from === 'provider' ? '#4CAF50' : '#FFC107',
+          paddingHorizontal: 8,
+          paddingVertical: 4,
+          borderRadius: 6,
+          marginRight: 8,
+          minWidth: 70,
+          alignItems: 'center'
+        }}>
+          <Text style={{ color: 'white', fontWeight: '600', fontSize: 12 }}>
+            {service.service_from === 'provider' ? 'OFFER' : 'REQUEST'}
+          </Text>
+        </View>
+        <Text style={{ fontSize: 20, fontWeight: 'bold', flexShrink: 1 }}>{service.title}</Text>
+      </View>
 
-        <Text style={{ fontWeight: 'bold', marginTop: 6, color: isCompleted ? 'green' : 'orange' }}>
-          Service Status: {isCompleted ? 'Completed' : 'Ongoing'}
+
+
+
+        <View style={{ marginTop: 6 }}>
+        <Text style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 4 }}>
+          📍 <Text>Location: {service.location}</Text>
         </Text>
+        <Text style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 4 }}>
+          🗓️ <Text>{formatDateTime(service.date_time_range[0])} - {formatDateTime(service.date_time_range[1])}</Text>
+        </Text>
+        {parseDuration(service.estimated_duration) !== '0 minutes' &&
+          !service.estimated_duration.includes('P0DT0H0M') && (
+            <Text style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 4 }}>
+              ⏱️ Duration: {parseDuration(service.estimated_duration)}
+            </Text>
+          )}
+
+      </View>
+
+        
+        <Text style={{
+          fontSize: 18,
+          fontWeight: 'bold',
+          color: service.offered_payment > 0
+          ? '#2E7D32'
+          : service.is_volunteering
+          ? '#00bcd4'
+          : '#555',
+        marginTop: 8,
+      }}>
+        {service.offered_payment > 0
+          ? `₪${service.offered_payment}`
+          : service.is_volunteering
+          ? 'Volunteering'
+          : 'Free'}
+      </Text>
+
+
+      <Text style={{ marginTop: 4, fontWeight: 'bold', color: isCompleted ? 'green' : 'orange' }}>
+        Service Status: {isCompleted ? 'Completed' : 'Ongoing'}
+      </Text>
+
 
 
         {!hideOwner && (
         <TouchableOpacity onPress={() => router.push(`/service_user_profile/${service.user_id}`)}>
-          <Text style={{ color: '#007AFF', marginTop: 4 }}>
-            Created by: {creatorName}
-          </Text>
+         <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 8 }}>
+            {creatorImage ? (
+              <Image
+                source={{ uri: creatorImage }}
+                style={{ width: 28, height: 28, borderRadius: 14, marginRight: 8 }}
+                />
+            ) : (
+              <View
+                style={{
+                  width: 24,
+                  height: 24,
+                  borderRadius: 12,
+                  backgroundColor: '#ccc',
+                  justifyContent: 'center',
+                  alignItems: 'center',
+                  marginRight: 8,
+                }}
+              >
+                <Text style={{ color: 'white', fontSize: 12 }}>👤</Text>
+              </View>
+            )}
+            <Text style={{ color: '#007AFF', fontWeight: 'bold' }}>
+              Created by: {creatorName}
+            </Text>
+          </View>
+
+
         </TouchableOpacity>
       )}
 
 
-        {renderApplicantStatus()}
       </TouchableOpacity>
 
 
@@ -591,6 +663,50 @@ const shouldShowUnapplyButton =
           <Text style={{ color: 'white', fontWeight: 'bold' }}>Delete Service</Text>
         </TouchableOpacity>
       )}
+
+      {descriptionVisible && (
+        <Modal
+          transparent
+          animationType="slide"
+          visible={descriptionVisible}
+          onRequestClose={() => setDescriptionVisible(false)}
+        >
+          <View style={{
+            flex: 1,
+            backgroundColor: 'rgba(0,0,0,0.5)',
+            justifyContent: 'center',
+            alignItems: 'center',
+          }}>
+            <View style={{
+              backgroundColor: 'white',
+              borderRadius: 10,
+              padding: 20,
+              width: '85%',
+            }}>
+              <Text style={{ fontSize: 18, fontWeight: 'bold', marginBottom: 10 }}>
+                Description
+              </Text>
+              <Text style={{ marginBottom: 10 }}>
+                {service.description || 'No description available.'}
+              </Text>
+
+              {/*Application Status*/}
+              {renderApplicantStatus()}
+
+              <TouchableOpacity
+                style={{ marginTop: 10, backgroundColor: '#007AFF', padding: 10, borderRadius: 5, alignItems: 'center' }}
+                onPress={() => setDescriptionVisible(false)}
+              >
+                <Text style={{ color: 'white', fontWeight: 'bold' }}>Close</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </Modal>
+      )}
+
+
+
+
     </View>
   );
 }

@@ -47,8 +47,12 @@ export default function EditServiceModal({ visible, onClose, service, user, onSa
   }, [visible, service]);
 
   const formatDateTime = (date) => `${date.toLocaleDateString()} ${date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
-  const convertToISO8601 = () => `P${parseInt(durationDays) || 0}DT${parseInt(durationHours) || 0}H00M00S`;
-
+  const convertToISO8601 = () => {
+    const days = durationDays.trim() === '' ? 0 : parseInt(durationDays);
+    const hours = durationHours.trim() === '' ? 0 : parseInt(durationHours);
+    return `P${days}DT${hours}H00M00S`;
+  };
+  
   const filteredCities = locationQuery ? cities.filter(c => c.toLowerCase().startsWith(locationQuery.toLowerCase())) : [];
 
   const handleClose = () => {
@@ -59,6 +63,23 @@ export default function EditServiceModal({ visible, onClose, service, user, onSa
   };
 
   const handleSave = async () => {
+    const inputDays = parseInt(durationDays.trim() || '0');
+    const inputHours = parseInt(durationHours.trim() || '0');
+    
+    const durationInMs = (inputDays * 24 * 60 * 60 * 1000) +
+                         (inputHours * 60 * 60 * 1000);
+    
+    const rangeInMs = endDate.getTime() - startDate.getTime();
+    
+    if (durationInMs > rangeInMs + 60 * 1000) {
+      Alert.alert(
+        "Invalid Duration",
+        `The estimated duration (${inputDays}d ${inputHours}h) is longer than the time between start and end.`
+      );
+      return;
+    }
+    
+
     try {
       const id = service.id;
       const headers = { Authorization: `Bearer ${user.token}` };
@@ -87,9 +108,8 @@ export default function EditServiceModal({ visible, onClose, service, user, onSa
         });
       }
 
-      if (durationDays || durationHours) {
-        await postWithQueryParam("update_estimated_duration", convertToISO8601());
-      }
+      await postWithQueryParam("update_estimated_duration", convertToISO8601());
+      
 
       const payment = parseFloat(offeredPayment);
       if (payment !== service.offered_payment) await postWithQueryParam("update_offered_payment", payment);

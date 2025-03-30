@@ -415,6 +415,16 @@ class ServiceController:
         owner = service.user  
         return {"name": owner.profile.name if hasattr(owner, "profile") and owner.profile.name else "Unknown"}
         
+    def get_owner_profile(self, service_id: int, request=None) -> dict:
+        service = get_object_or_404(Service, id=service_id)
+        owner = service.user
+        profile = getattr(owner, "profile", None)
+
+        return {
+            "name": profile.name if profile and profile.name else "Unknown",
+            "image": request.build_absolute_uri(profile.image.url) if profile and profile.image else ""
+        }
+
 
     def update_service_state(self, request, service_id: int, new_state: str) -> dict:
         allowed_states = ["pending", "accepted", "inProgress", "completed"]

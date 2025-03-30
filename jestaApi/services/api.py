@@ -317,3 +317,9 @@ def get_all_volunteering_services(request):
 def get_completed_services(request, user_id: Optional[int] = None):
     services = sc.get_completed_services_of_user(user_id)
     return [ServiceSchema.from_model(service) for service in services]
+
+
+@router.get("/get_owner_profile/{service_id}", response={200: dict})
+def get_owner_profile(request, service_id: int):
+    return sc.get_owner_profile(service_id, request)
+
