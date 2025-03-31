@@ -424,6 +424,25 @@ class ServiceController:
             "name": profile.name if profile and profile.name else "Unknown",
             "image": request.build_absolute_uri(profile.image.url) if profile and profile.image else ""
         }
+        
+    def get_all_accepted_applicants(self, request, service_id: int) -> list:
+        service = get_object_or_404(Service, id=service_id)
+        accepted_applicants = []
+
+        for app in service.applicants:
+            if app.get("applicant_state") == "accepted":
+                try:
+                    user = CustomUser.objects.get(id=app["user_id"])
+                    accepted_applicants.append({
+                        "user_id": user.id,
+                        "email": user.email,
+                        "name": user.profile.name if hasattr(user, "profile") and user.profile and user.profile.name else None,
+                        "applicant_state": app["applicant_state"]
+                    })
+                except CustomUser.DoesNotExist:
+                    continue
+
+        return accepted_applicants
 
 
     def update_service_state(self, request, service_id: int, new_state: str) -> dict:

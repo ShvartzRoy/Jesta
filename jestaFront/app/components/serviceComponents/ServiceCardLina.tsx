@@ -1,11 +1,28 @@
 import React, { useState , useEffect } from 'react';
-import { View, Text, TouchableOpacity, Alert, StyleSheet, Image, Modal } from 'react-native';
+import { View, Text, TouchableOpacity, Alert, StyleSheet, Image, Modal, FlatList } from 'react-native';
 import axios from 'axios';
 import ApplicantsModal from './ApplicantsModal';
 import EditServiceModal from './EditServiceModal';
 import { Ionicons } from '@expo/vector-icons'; 
 import { useRouter } from 'expo-router';
 import { Share } from 'react-native';
+import ReviewModal from './ReviewModal';
+
+const styles = StyleSheet.create({
+  actionButton: {
+    padding: 10,
+    borderRadius: 30,
+    backgroundColor: '#f0f0f0',
+    marginHorizontal: 5,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
+    elevation: 3,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+});
 
 
 
@@ -127,9 +144,7 @@ export default function ServiceCard({
     fetchCreatorName();
   }, [service.id]);
 
-  useEffect(() => {
-    console.log(`[ServiceCard] Service ${service.id} state:`, service.state);
-  }, []);
+
   
 
 
@@ -137,7 +152,83 @@ export default function ServiceCard({
   const [applicantsVisible, setApplicantsVisible] = useState(false);
   const [editVisible, setEditVisible] = useState(false);
 
+  const [reviewModalVisible, setReviewModalVisible] = useState(false);
+  const [selectedApplicantId, setSelectedApplicantId] = useState<number | null>(null);
+  const [showApplicantsForReview, setShowApplicantsForReview] = useState(false);
+
+  const [hasReviewed, setHasReviewed] = useState(false);
+
   const isCompleted = service.state === 'completed';
+
+  
+
+
+
+  useEffect(() => {
+    if (isCompleted && service.user_id !== user.id && applicantState === 'accepted') {
+      axios.get(
+        `${process.env.EXPO_PUBLIC_HOST}/api/reviews/check_review_exists?reviewed_user_id=${service.user_id}&service_id=${service.id}`,
+        { headers: { Authorization: `Bearer ${user.token}` } }
+      )
+      .then((res) => {
+        setHasReviewed(res.data.already_reviewed);
+      })
+      .catch((err) => {
+        console.log('Review check error:', err.response?.data || err.message);
+      });
+    }
+  }, [isCompleted, applicantState, service.id, user.id]);
+  
+
+
+
+
+
+
+  const [hasReviewedApplicantIds, setHasReviewedApplicantIds] = useState<number[]>([]);
+  useEffect(() => {
+    if (showApplicantsForReview && isCompleted) {
+      axios
+        .get(`${process.env.EXPO_PUBLIC_HOST}/api/reviews/get_written_reviews/${user.id}`, {
+          headers: { Authorization: `Bearer ${user.token}` },
+        })
+        .then((res) => {
+          console.log("Fetched reviews:", res.data); 
+          const reviewedIds = res.data
+            .filter((r: any) => r.service === service.id)
+            .map((r: any) => r.reviewed_user); 
+  
+          console.log("Reviewed user IDs:", reviewedIds);
+          setHasReviewedApplicantIds(reviewedIds);
+        })
+        .catch((err) => {
+          console.error('Error fetching reviewed applicants:', err.response?.data || err.message);
+        });
+    }
+  }, [showApplicantsForReview]);
+  
+
+
+  
+
+
+
+
+  const [acceptedApplicants, setAcceptedApplicants] = useState<any[]>([]);
+
+  useEffect(() => {
+    if (isCompleted) {
+      axios.get(
+        `${process.env.EXPO_PUBLIC_HOST}/api/services/get_all_accepted_applicants/${service.id}`,
+        { headers: { Authorization: `Bearer ${user.token}` } }
+      ).then(res => {
+        setAcceptedApplicants(res.data);
+      }).catch(err => {
+        console.error("Error fetching accepted applicants:", err.response?.data || err.message);
+      });
+    }
+  }, [isCompleted, service.id]);
+
 
   const markServiceAsCompleted = async () => {
     try {
@@ -508,91 +599,48 @@ const shouldShowUnapplyButton =
         </View>
       )}
 
-      {/*Apply Button*/}
-      {shouldShowApplyButton && (
-        <TouchableOpacity
-          style={{
-            marginTop: 10,
-            backgroundColor: '#007AFF',
-            padding: 10,
-            borderRadius: 5,
-            alignItems: 'center',
-          }}
-          onPress={handleApply}
-        >
-          <Text style={{ color: 'white', fontWeight: 'bold' }}>Apply</Text>
-        </TouchableOpacity>
-      )}
-
-      {shouldShowUnapplyButton && (
-        <TouchableOpacity
-          style={{
-            marginTop: 10,
-            backgroundColor: '#FFA500',
-            padding: 10,
-            borderRadius: 5,
-            alignItems: 'center',
-          }}
-          onPress={handleUnapply}
-        >
-          <Text style={{ color: 'white', fontWeight: 'bold' }}>Unapply</Text>
-        </TouchableOpacity>
-      )}
+      <View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', marginTop: 12 }}>
 
 
-      {service.user_id === user.id && !isCompleted && (
-        <TouchableOpacity
-          style={{
-            marginTop: 10,
-            backgroundColor: '#6c63ff',
-            padding: 10,
-            borderRadius: 5,
-            alignItems: 'center',
-          }}
-          onPress={markServiceAsCompleted}
-        >
-          <Text style={{ color: 'white', fontWeight: 'bold' }}>Mark as Completed</Text>
-        </TouchableOpacity>
-      )}
+        
+        {/* Apply */}
+        {shouldShowApplyButton && (
+
+          <TouchableOpacity style={styles.actionButton} onPress={handleApply}>
+          <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+            <Ionicons name="checkmark-circle-outline"  size={22} color="#007AFF" />
+            <Text style={{ marginLeft: 6, color: '#007AFF', fontWeight: 'bold' }}>Apply</Text>
+            </View>
+
+          </TouchableOpacity>
+
+        )}
 
 
-      {isCompleted && (service.user_id === user.id || applicantState === 'accepted') && (
-        <TouchableOpacity
-          style={{
-            marginTop: 10,
-            backgroundColor: '#007bff',
-            padding: 10,
-            borderRadius: 5,
-            alignItems: 'center',
-          }}
-          onPress={() => router.push(`/review/${service.id}`)}
-        >
-          <Text style={{ color: 'white', fontWeight: 'bold' }}>Leave a Review</Text>
-        </TouchableOpacity>
-      )}
+        {/* Unapply */}
+        {shouldShowUnapplyButton && (
+          <TouchableOpacity style={styles.actionButton} onPress={handleUnapply}>
+          <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+            <Ionicons name="close-circle-outline" size={22} color="#FF5722" />
+            <Text style={{ marginLeft: 6, color: '#FF5722', fontWeight: 'bold' }}>Unapply</Text>
+            </View>
+          </TouchableOpacity>
+        )}
 
 
 
-      
-
-
-      {/*View Applicants Button*/}
-      {service.service_from === 'publisher' &&
+   {/*View Applicants Button*/}
+   {service.service_from === 'publisher' &&
           service.user_id === user.id &&
           service.applicants.length > 0 && (
         <>
-            <TouchableOpacity
-            style={{
-                marginTop: 10,
-                backgroundColor: '#28a745',
-                padding: 10,
-                borderRadius: 5,
-                alignItems: 'center',
-            }}
-            onPress={() => setApplicantsVisible(true)}
-            >
-            <Text style={{ color: 'white', fontWeight: 'bold' }}>View Applicants</Text>
-            </TouchableOpacity>
+          <TouchableOpacity style={styles.actionButton} onPress={() => setApplicantsVisible(true)}>
+            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+            <Ionicons name="people-outline" size={22} color="#28a745" />
+            <Text style={{ marginLeft: 6, color: '#28a745', fontWeight: 'bold' }}>Applicants</Text>
+            </View>
+
+          </TouchableOpacity>
 
             {/*Updated ApplicantsModal Integration*/}
             <ApplicantsModal
@@ -622,22 +670,69 @@ const shouldShowUnapplyButton =
         </>
         )}
 
-      {/* Edit (Only if not completed) */}
-      {service.user_id === user.id && !isCompleted && (
-        <>
-          <TouchableOpacity
-            style={{
-              marginTop: 10,
-              backgroundColor: '#FFA500',
-              padding: 10,
-              borderRadius: 5,
-              alignItems: 'center',
-            }}
-            onPress={() => setEditVisible(true)}
-          >
-            <Text style={{ color: 'white', fontWeight: 'bold' }}>Edit Service</Text>
-          </TouchableOpacity>
 
+        {/* Mark as Completed */}
+        {service.user_id === user.id && !isCompleted && (
+          <TouchableOpacity style={styles.actionButton} onPress={markServiceAsCompleted}>
+            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+            <Ionicons name="checkmark-done-outline" size={22} color="#6c63ff" />
+            <Text style={{ marginLeft: 6, color: '#6c63ff', fontWeight: 'bold' }}>Complete</Text>
+            </View>
+          </TouchableOpacity>
+        )}
+
+
+        {/* Leave Review */}
+        {isCompleted && (
+     
+      (
+        (service.user_id === user.id && service.applicants.some((a) => a.applicant_state === 'accepted')) ||
+        (service.user_id !== user.id && applicantState === 'accepted')
+      ) && (
+        <TouchableOpacity
+          style={styles.actionButton}
+          onPress={() => {
+            if (service.user_id === user.id) {
+              setShowApplicantsForReview(true);
+            } else {
+              setSelectedApplicantId(service.user_id);
+              setReviewModalVisible(true);
+            }
+          }}
+        >
+          <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+          <Ionicons
+            name={service.user_id !== user.id && hasReviewed ? "checkmark-circle-outline" : "star-outline"}
+            size={22}
+            color={service.user_id !== user.id && hasReviewed ? "green" : "#FFA500"}
+          />
+          <Text style={{
+            marginLeft: 6,
+            color: service.user_id !== user.id && hasReviewed ? "green" : "#FFA500",
+            fontWeight: 'bold',
+          }}>
+            {service.user_id !== user.id && hasReviewed ? "Reviewed" : "Review"}
+          </Text>
+            
+          </View>
+        </TouchableOpacity>
+      )
+    )}
+  
+  
+          {/* Save */}
+
+
+
+        {/* Edit */}
+        {service.user_id === user.id && !isCompleted && (
+          <>
+          <TouchableOpacity style={styles.actionButton} onPress={() => setEditVisible(true)}>
+            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+            <Ionicons name="create-outline" size={22} color="#FFA500" />
+            <Text style={{ marginLeft: 6, color: '#FFA500', fontWeight: 'bold' }}>Edit</Text>
+            </View>
+          </TouchableOpacity>
           <EditServiceModal
             visible={editVisible}
             onClose={() => setEditVisible(false)}
@@ -646,23 +741,22 @@ const shouldShowUnapplyButton =
             onSave={onUpdateService}
           />
         </>
-      )}
+        )}
 
-      {/* Delete (Always shown to creator) */}
-      {service.user_id === user.id && (
-        <TouchableOpacity
-          style={{
-            marginTop: 10,
-            backgroundColor: '#dc3545',
-            padding: 10,
-            borderRadius: 5,
-            alignItems: 'center',
-          }}
-          onPress={confirmDelete}
-        >
-          <Text style={{ color: 'white', fontWeight: 'bold' }}>Delete Service</Text>
-        </TouchableOpacity>
-      )}
+
+        {/* Delete */}
+        {service.user_id === user.id && (
+          <TouchableOpacity style={styles.actionButton} onPress={confirmDelete}>
+            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+            <Ionicons name="trash-outline" size={22} color="#dc3545" />
+            <Text style={{ marginLeft: 6, color: '#dc3545', fontWeight: 'bold' }}>Delete</Text>
+            </View>
+          </TouchableOpacity>
+        )}
+      </View>
+
+
+
 
       {descriptionVisible && (
         <Modal
@@ -704,6 +798,111 @@ const shouldShowUnapplyButton =
         </Modal>
       )}
 
+
+      {/* Creator selecting from applicants to review */}
+      <Modal
+        visible={showApplicantsForReview}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setShowApplicantsForReview(false)}
+      >
+        <View style={{
+          flex: 1,
+          justifyContent: 'center',
+          alignItems: 'center',
+          backgroundColor: 'rgba(0,0,0,0.5)',
+        }}>
+          <View style={{
+            backgroundColor: 'white',
+            padding: 20,
+            borderRadius: 10,
+            width: '85%',
+            maxHeight: '60%',
+          }}>
+            <Text style={{ fontWeight: 'bold', fontSize: 18, marginBottom: 10 }}>Select Applicant to Review</Text>
+            <FlatList
+
+              //data={service.applicants.filter(a => a.applicant_state === 'accepted')}
+              data={acceptedApplicants}
+
+              keyExtractor={(item) => item.user_id.toString()}
+              
+              renderItem={({ item }) => {
+                const displayName = item.name || item.email || 'Unknown Applicant';
+                const hasReviewed = hasReviewedApplicantIds.includes(item.user_id);
+              
+                return (
+                  <TouchableOpacity
+                    style={{
+                      backgroundColor: '#f9f9f9',
+                      paddingVertical: 12,
+                      paddingHorizontal: 10,
+                      borderRadius: 8,
+                      marginBottom: 8,
+                      borderWidth: 1,
+                      borderColor: '#ddd',
+                      shadowColor: '#000',
+                      shadowOffset: { width: 0, height: 1 },
+                      shadowOpacity: 0.1,
+                      shadowRadius: 2,
+                      elevation: 2,
+                    }}
+                    onPress={() => {
+                      setSelectedApplicantId(item.user_id);
+                      setShowApplicantsForReview(false);
+                      setReviewModalVisible(true);
+                    }}
+                  >
+                    <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <Text style={{ fontSize: 16, color: '#333', fontWeight: 'bold' }}>
+                      {displayName}
+                    </Text>
+                    {hasReviewed && (
+                      <Ionicons name="checkmark-circle" size={20} color="green" style={{ marginLeft: 10 }} />
+                    )}
+                  </View>
+
+                  </TouchableOpacity>
+                );
+              }}
+              
+
+
+
+
+            />
+            <TouchableOpacity
+              onPress={() => setShowApplicantsForReview(false)}
+              style={{
+                marginTop: 10,
+                backgroundColor: '#dc3545',
+                padding: 10,
+                borderRadius: 6,
+                alignItems: 'center',
+              }}
+            >
+              <Text style={{ color: 'white', fontWeight: 'bold' }}>Cancel</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
+
+      <ReviewModal
+        key={`${selectedApplicantId}-${service.id}`}
+        visible={reviewModalVisible}
+        onClose={() => {
+          setReviewModalVisible(false);
+          //setSelectedApplicantId(null);
+        }}
+        reviewedUserId={selectedApplicantId}
+        serviceId={service.id}
+        user={user}
+        onReviewSuccess={() => {
+          Alert.alert("Thank you!", "Your review has been submitted.");
+          setHasReviewedApplicantIds((prev) => [...prev, selectedApplicantId!]); 
+        }}
+      />
 
 
 

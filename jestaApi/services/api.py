@@ -323,3 +323,6 @@ def get_completed_services(request, user_id: Optional[int] = None):
 def get_owner_profile(request, service_id: int):
     return sc.get_owner_profile(service_id, request)
 
+@router.get("/get_all_accepted_applicants/{service_id}", response={200: list})
+def get_all_accepted_applicants(request, service_id: int):
+    return sc.get_all_accepted_applicants(request, service_id)
