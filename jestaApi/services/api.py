@@ -134,6 +134,14 @@ def validate_users_worked_together(request, user_id: int, participant_id: int):
     return {"worked_together": validated}
 
 
+
+
+@router.get("/get_list_of_all_completed_services_of_user/{user_id}", response={200: list[ServiceSchema]})
+def get_list_of_all_completed_services_of_user(request, user_id: int):
+    return sc.get_list_of_all_completed_services_of_user(request, user_id)
+
+
+
 @router.get("/get_service/{service_id}", response={200: ServiceSchema})
 def get_service(request, service_id: int):
     service = sc.get_service(service_id)

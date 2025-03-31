@@ -39,12 +39,25 @@ class ReviewController():
 
         return review
 
-
-    def get_reviews(self, request, user_id: int) -> list[ReviewSchema]:
+    def get_reviews(self, request, user_id: int) -> list[dict]:
         user = get_object_or_404(CustomUser, id=user_id)
-        reviews = Review.objects.filter(reviewed_user=user).order_by("-created_at")
-        return reviews
-    
+        reviews = Review.objects.filter(reviewed_user=user).select_related("service", "reviewer").order_by("-created_at")
+
+        enriched_reviews = []
+        for review in reviews:
+            enriched_reviews.append({
+                "id": review.id,
+                "reviewer": review.reviewer.id,
+                "reviewer_name": review.reviewer.profile.name if hasattr(review.reviewer, "profile") else "Unknown",
+                "reviewed_user": review.reviewed_user.id,
+                "service": review.service.title if review.service else "Unknown",
+                "ranking": review.ranking,
+                "info": review.info,
+                "created_at": review.created_at,
+            })
+
+        return enriched_reviews
+
     def delete_review(self, request, review_id: int) -> dict:
         review = get_object_or_404(Review, id=review_id)
         if review.reviewer != request.user:

@@ -391,12 +391,18 @@ class ServiceController:
         res.extend(self.get_list_of_all_user_volunteering_services_with_status(request, user_id))
         return res
     
-    def get_list_of_all_completed_services_of_user(self, request, user_id) -> list:
+    # def get_list_of_all_completed_services_of_user(self, request, user_id) -> list:
+    #     services = Service.objects.filter(user=user_id, state="completed")
+    #     res = []
+    #     for service in services:
+    #         res.append({'title': service.title, 'state': service.state})
+    #     return res
+    
+    
+  
+    def get_list_of_all_completed_services_of_user(self, request, user_id) -> list[ServiceSchema]:
         services = Service.objects.filter(user=user_id, state="completed")
-        res = []
-        for service in services:
-            res.append({'title': service.title, 'state': service.state})
-        return res
+        return [ServiceSchema.from_model(service) for service in services]
 
         
     

@@ -9,6 +9,7 @@ import ServiceCardLina from '../components/serviceComponents/ServiceCardLina';
 
 const ServiceUserProfileScreen = () => {
   const { id } = useLocalSearchParams();
+  const userId = id ? parseInt(id as string) : null;
   const { user } = useContext(UserContext);
 
   const [profile, setProfile] = useState(null);
@@ -20,7 +21,42 @@ const ServiceUserProfileScreen = () => {
   const [error, setError] = useState(null);
   const [activeTab, setActiveTab] = useState<'request' | 'offer' | null>(null);
 
+
+  const [completedServices, setCompletedServices] = useState([]);
+  const [receivedReviews, setReceivedReviews] = useState([]);
+
+
+  const [showReviews, setShowReviews] = useState(false);
+  const [showCompletedServices, setShowCompletedServices] = useState(false);
+ 
+
   useEffect(() => {
+
+    const fetchProfileData = async () => {
+      try {
+        const headers = { Authorization: `Bearer ${user.token}` };
+
+        const [servicesRes, reviewsRes] = await Promise.all([
+          axios.get(`${process.env.EXPO_PUBLIC_HOST}/api/services/get_list_of_all_completed_services_of_user/${userId}`, { headers }),
+          axios.get(`${process.env.EXPO_PUBLIC_HOST}/api/reviews/get_reviews/${userId}/`, { headers }),
+        ]);
+
+        setCompletedServices(servicesRes.data);
+        setReceivedReviews(reviewsRes.data);
+      } catch (err) {
+        console.error("Error fetching profile data:", err.response?.data || err.message);
+        Alert.alert("Error", "Failed to load profile info.");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchProfileData();
+  }, [userId]);
+
+
+  useEffect(() => {
+
     const fetchData = async () => {
       try {
         const profileRes = await axios.get(`${process.env.EXPO_PUBLIC_HOST}/api/users/get_profile/${id}`);
@@ -121,10 +157,17 @@ const ServiceUserProfileScreen = () => {
           </View>
         )}
 
-        <View style={styles.nameAndAgeContainer}>
-          <Text style={styles.name}>{profile?.name}</Text>
-          <Text style={styles.age}>{profile?.age}</Text>
-        </View>
+      <View style={styles.nameAgeChatContainer}>
+        <Text style={styles.name}>{profile?.name}</Text>
+        <Text style={styles.age}>{profile?.age}</Text>
+
+        {accepted && (
+          <TouchableOpacity onPress={() => Alert.alert('Open private chat')} style={styles.chatIconButton}>
+            <Ionicons name="chatbubble-ellipses-outline" size={28} color="#007bff" />
+          </TouchableOpacity>
+        )}
+      </View>
+
 
         <Text style={styles.bio}>{profile?.bio}</Text>
 
@@ -146,34 +189,110 @@ const ServiceUserProfileScreen = () => {
           )}
         </View>
 
-        <Text style={styles.sectionTitle}>Specialty</Text>
-        {specialists.length > 0 ? (
-          specialists.map((specialist) => (
-            <SpecialistShowCard key={specialist.id} specialist={specialist} />
-          ))
-        ) : (
-          <Text style={styles.noSpecialistsText}>No specialist profile for this user</Text>
+        {specialists.length > 0 && (
+          <>
+            <Text style={styles.sectionTitle}>Specialty</Text>
+            {specialists.map((specialist) => (
+              <SpecialistShowCard key={specialist.id} specialist={specialist} />
+            ))}
+          </>
         )}
 
-        {accepted && (
-          <TouchableOpacity style={styles.chatButton} onPress={() => Alert.alert('Open private chat')}>
-            <Text style={styles.chatText}>Open Private Chat</Text>
-          </TouchableOpacity>
-        )}
 
-        <Text style={styles.sectionTitle}>Services</Text>
 
-        <View style={{ flexDirection: 'row', gap: 10, marginBottom: 16 }}>
-          <TouchableOpacity
+       
+
+
+ {/* Completed Services Section */}
+
+      <TouchableOpacity onPress={() => setShowCompletedServices(!showCompletedServices)} style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 8 }}>
+        <Text style={styles.sectionTitle}>My Completed Services</Text>
+        <Ionicons name={showCompletedServices ? 'chevron-up' : 'chevron-down'} size={20} style={{ marginLeft: 6 }} />
+      </TouchableOpacity>
+
+
+      <View style={{ maxHeight: 250, width: '100%' }}>
+      <ScrollView showsVerticalScrollIndicator={false}>
+      {showCompletedServices &&(
+      completedServices.length > 0 ? (
+        completedServices.map(service => (
+          <View key={service.id} style={[styles.completedServiceCard, styles.shadowCard]}>
+            <Text style={styles.cardTitle}>{service.title}</Text>
+            <Text>{service.location}</Text>
+            <Text>{new Date(service.date_time_range[0]).toLocaleDateString()}</Text>
+          </View>
+        ))
+      ) : (
+        <Text style={styles.emptyText}>No completed services yet.</Text>
+      )
+      )}
+
+</ScrollView>
+</View>
+
+{/* Received Reviews Section */}  
+
+
+      <TouchableOpacity onPress={() => setShowReviews(!showReviews)} style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 8 }}>
+        <Text style={styles.sectionTitle}>Reviews About Me</Text>
+        <Ionicons name={showReviews ? 'chevron-up' : 'chevron-down'} size={20} style={{ marginLeft: 6 }} />
+      </TouchableOpacity>
+
+
+      <View style={{ maxHeight: 250, width: '100%' }}>
+      <ScrollView showsVerticalScrollIndicator={false}>
+        
+      {showReviews && (
+      receivedReviews.length > 0 ? (
+        receivedReviews.map((review) => (
+          <View key={review.id} style={[styles.reviewCard, styles.shadowCard]}>
+
+            <View style={{ flexDirection: 'row' }}>
+              {Array.from({ length: review.ranking }).map((_, i) => (
+                <Ionicons key={i} name="star" size={18} color="#fbc02d" />
+              ))}
+            </View>
+
+
+            {review.info && <Text style={styles.reviewText}>{review.info}</Text>}
+
+
+            
+            <Text style={styles.reviewDate}>
+              By: {review.reviewer_name} on {new Date(review.created_at).toLocaleDateString()} 
+            </Text>
+            <Text style={styles.reviewDate}>
+              Related service: {review.service}
+            </Text>
+
+          </View>
+        ))
+      ) : (
+        <Text style={styles.emptyText}>No reviews received.</Text>
+      )
+      
+      )}
+
+</ScrollView>
+</View>
+
+
+
+
+{/* Services Section */}
+
+
+        <View style={styles.filterToggleContainer}>
+        <TouchableOpacity
             style={[styles.filterButton, activeTab === 'request' && styles.filterButtonActive]}
-            onPress={() => setActiveTab('request')}
+            onPress={() => setActiveTab(activeTab === 'request' ? null : 'request')}
           >
             <Text style={styles.filterButtonText}>Show Requests</Text>
           </TouchableOpacity>
 
           <TouchableOpacity
             style={[styles.filterButton, activeTab === 'offer' && styles.filterButtonActive]}
-            onPress={() => setActiveTab('offer')}
+            onPress={() =>  setActiveTab(activeTab === 'offer' ? null : 'offer')}
           >
             <Text style={styles.filterButtonText}>Show Offers</Text>
           </TouchableOpacity>
@@ -224,15 +343,130 @@ const styles = StyleSheet.create({
   socialLinks: { flexDirection: 'row', marginTop: 16, justifyContent: 'center', width: '100%' },
   linkContainer: { paddingVertical: 12, paddingHorizontal: 20, marginHorizontal: 12, backgroundColor: '#ffffff', borderRadius: 30, borderWidth: 1, borderColor: '#ddd', shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.1, shadowRadius: 6, elevation: 4 },
   linkLogo: { color: '#007bff', fontSize: 20, textAlign: 'center' },
-  sectionTitle: { fontSize: 20, fontWeight: 'bold', marginTop: 24, marginBottom: 12, color: '#333' },
+  sectionTitle: { fontSize: 20, fontWeight: 'bold', marginTop: 20, marginBottom: 12, color: '#333' },
   noSpecialistsText: { fontSize: 16, color: '#888', textAlign: 'center', marginTop: 8 },
   chatButton: { marginTop: 20, backgroundColor: '#007bff', padding: 12, borderRadius: 8 },
   chatText: { color: 'white', fontWeight: 'bold', fontSize: 16, textAlign: 'center' },
   backButton: { position: 'absolute', top: 60, left: 16, zIndex: 10, backgroundColor: '#f8f8f8', borderRadius: 30, padding: 10, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 4, elevation: 5 },
   error: { color: 'red', fontSize: 16 },
-  filterButton: { borderWidth: 1, borderColor: '#ccc', padding: 10, borderRadius: 8 },
-  filterButtonActive: { backgroundColor: '#007bff', borderColor: '#007bff' },
-  filterButtonText: { color: 'black' },
+
+  nameAgeChatContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    marginBottom: 8,
+  },
+  
+  chatIconButton: {
+    marginLeft: 8,
+    padding: 4,
+  },
+  
+  
+  shadowCard: {
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  
+
+  card: {
+    backgroundColor: '#f2f2f2',
+    padding: 12,
+    borderRadius: 8,
+    marginBottom: 10,
+  },
+  cardTitle: {
+    fontWeight: 'bold',
+    fontSize: 16,
+  },
+  emptyText: {
+    fontStyle: 'italic',
+    color: 'gray',
+  },
+  reviewCard: {
+    backgroundColor: '#fff8e1',
+    borderRadius: 8,
+    padding: 12,
+    marginBottom: 10,
+    borderWidth: 1,
+    borderColor: '#ffe082',
+  },
+  reviewRating: {
+    fontWeight: 'bold',
+    color: '#fbc02d',
+  },
+  reviewText: {
+    marginTop: 4,
+    color: '#333',
+  },
+  reviewDate: {
+    marginTop: 4,
+    fontSize: 12,
+    color: '#777',
+  },
+
+
+  completedServiceCard: {
+    backgroundColor: '#e0f7e9', 
+    borderRadius: 8,
+    padding: 12,
+    marginBottom: 10,
+    borderWidth: 1,
+    borderColor: '#b2dfdb',
+  },
+
+
+  roundedButton: {
+    backgroundColor: '#007bff',
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    borderRadius: 25,
+    marginTop: 20,
+    alignSelf: 'center',
+  },
+  roundedButtonText: {
+    color: 'white',
+    fontWeight: 'bold',
+    fontSize: 16,
+    textAlign: 'center',
+  },
+
+
+  filterToggleContainer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: 10,
+    marginTop: 12,
+    marginBottom: 20,
+  },
+
+  //filterButton: { borderWidth: 1, borderColor: '#ccc', padding: 10, borderRadius: 8 },
+  //filterButtonActive: { backgroundColor: '#007bff', borderColor: '#007bff' },
+  //filterButtonText: { color: 'black' },
+
+  filterButton: {
+    borderWidth: 1,
+    borderColor: '#ccc',
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    borderRadius: 20,
+  },
+  filterButtonActive: {
+    backgroundColor: '#007bff',
+    borderColor: '#007bff',
+  },
+  filterButtonText: {
+    color: '#333',
+    fontSize: 14,
+  },
+  
+  
+  
+  
 });
 
 export default ServiceUserProfileScreen;
