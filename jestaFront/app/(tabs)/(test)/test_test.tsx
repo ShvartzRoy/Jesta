@@ -109,7 +109,7 @@ export default function ExplorePage() {
     try {
       const { status } = await Location.requestForegroundPermissionsAsync();
       const granted = status === 'granted';
-      setLocationPermissionGranted(granted); // ✅ Track permission status
+      setLocationPermissionGranted(granted); 
   
       if (!granted) {
         if (manual) Alert.alert("Permission Denied", "Please enable location access in your phone settings.");
