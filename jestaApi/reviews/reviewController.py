@@ -5,6 +5,10 @@ from users.models import CustomUser
 from .schemas import ReviewCreateSchema, ReviewSchema
 from django.conf import settings
 from ninja.errors import HttpError
+from services.serviceController import ServiceController 
+
+ 
+sc = ServiceController()  
 
 class ReviewController():
     def add_review(self, request, payload: ReviewCreateSchema) -> ReviewSchema:
@@ -24,6 +28,13 @@ class ReviewController():
             existing_review.ranking = payload.ranking
             existing_review.info = payload.info
             existing_review.save()
+            
+            
+            sc.send_notification(
+            reviewed_user,
+            "Review Updated",
+            f"{reviewer.profile.name if hasattr(reviewer, 'profile') else 'Someone'} updated their review for you.",
+            data={"type": "review_updated", "service_id": payload.service})
             return existing_review
 
         if payload.info and len(payload.info) > 200:
@@ -35,6 +46,14 @@ class ReviewController():
             service_id=payload.service, 
             ranking=payload.ranking,
             info=payload.info,
+        )
+        
+        reviewer_name = reviewer.profile.name if hasattr(reviewer, "profile") and reviewer.profile.name else reviewer.username
+        sc.send_notification(
+            reviewed_user,
+            "You Got a Review!",
+            f"{reviewer_name} just left a review about you!",
+            data={"type": "review", "reviewer_id": reviewer.id}
         )
 
         return review

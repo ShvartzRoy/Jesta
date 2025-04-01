@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useContext } from 'react';
-import { View, Text, Image, StyleSheet, ActivityIndicator, ScrollView, TouchableOpacity, Linking, Alert } from 'react-native';
+import { View, Text, Image, StyleSheet, ActivityIndicator, ScrollView, TouchableOpacity, Linking, Alert, FlatList } from 'react-native';
 import { useLocalSearchParams, router } from 'expo-router';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import axios from 'axios';
@@ -211,10 +211,13 @@ const ServiceUserProfileScreen = () => {
       </TouchableOpacity>
 
 
-      <View style={{ maxHeight: 250, width: '100%' }}>
-      <ScrollView showsVerticalScrollIndicator={false}>
-      {showCompletedServices &&(
-      completedServices.length > 0 ? (
+      {showCompletedServices && (
+  <View style={{ maxHeight: 250, width: '100%' }}>
+    <ScrollView
+      showsVerticalScrollIndicator
+      nestedScrollEnabled
+    >
+      {completedServices.length > 0 ? (
         completedServices.map(service => (
           <View key={service.id} style={[styles.completedServiceCard, styles.shadowCard]}>
             <Text style={styles.cardTitle}>{service.title}</Text>
@@ -224,11 +227,11 @@ const ServiceUserProfileScreen = () => {
         ))
       ) : (
         <Text style={styles.emptyText}>No completed services yet.</Text>
-      )
       )}
+    </ScrollView>
+  </View>
+)}
 
-</ScrollView>
-</View>
 
 {/* Received Reviews Section */}  
 
@@ -239,44 +242,36 @@ const ServiceUserProfileScreen = () => {
       </TouchableOpacity>
 
 
-      <View style={{ maxHeight: 250, width: '100%' }}>
-      <ScrollView showsVerticalScrollIndicator={false}>
-        
-      {showReviews && (
-      receivedReviews.length > 0 ? (
-        receivedReviews.map((review) => (
-          <View key={review.id} style={[styles.reviewCard, styles.shadowCard]}>
-
-            <View style={{ flexDirection: 'row' }}>
-              {Array.from({ length: review.ranking }).map((_, i) => (
-                <Ionicons key={i} name="star" size={18} color="#fbc02d" />
-              ))}
+  {showReviews && (
+    <View style={{ maxHeight: 250, width: '100%' }}>
+      <ScrollView
+        showsVerticalScrollIndicator
+        nestedScrollEnabled
+      >
+        {receivedReviews.length > 0 ? (
+          receivedReviews.map((review) => (
+            <View key={review.id} style={[styles.reviewCard, styles.shadowCard]}>
+              <View style={{ flexDirection: 'row' }}>
+                {Array.from({ length: review.ranking }).map((_, i) => (
+                  <Ionicons key={i} name="star" size={18} color="#fbc02d" />
+                ))}
+              </View>
+              {review.info && <Text style={styles.reviewText}>{review.info}</Text>}
+              <Text style={styles.reviewDate}>
+                By: {review.reviewer_name} on {new Date(review.created_at).toLocaleDateString()}
+              </Text>
+              <Text style={styles.reviewDate}>
+                Related service: {review.service}
+              </Text>
             </View>
-
-
-            {review.info && <Text style={styles.reviewText}>{review.info}</Text>}
-
-
-            
-            <Text style={styles.reviewDate}>
-              By: {review.reviewer_name} on {new Date(review.created_at).toLocaleDateString()} 
-            </Text>
-            <Text style={styles.reviewDate}>
-              Related service: {review.service}
-            </Text>
-
-          </View>
-        ))
-      ) : (
-        <Text style={styles.emptyText}>No reviews received.</Text>
-      )
-      
-      )}
-
-</ScrollView>
-</View>
-
-
+          ))
+        ) : (
+          <Text style={styles.emptyText}>No reviews received.</Text>
+        )}
+      </ScrollView>
+    </View>
+  )}
+  
 
 
 {/* Services Section */}

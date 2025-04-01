@@ -342,6 +342,19 @@ class ServiceController:
         service.state = "completed"
         service.save()
         
+        for applicant in service.applicants:
+            if applicant.get("applicant_state") == "accepted":
+                try:
+                    user = CustomUser.objects.get(id=applicant["user_id"])
+                    self.send_notification(
+                        user,
+                        "Service Completed",
+                        f"The service '{service.title}' you participated in is now marked as completed.",
+                        data={"type": "service_completed", "service_id": service.id}
+                    )
+                except CustomUser.DoesNotExist:
+                    print(f"Applicant with ID {applicant['user_id']} not found")
+        
         return {"message": f"Service '{service.title}' marked as completed!"}
     
     def get_progress_status_of_service(self, request, service_id: int) -> dict:

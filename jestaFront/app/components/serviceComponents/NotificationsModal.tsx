@@ -12,6 +12,8 @@ const SCREEN_HEIGHT = Dimensions.get('window').height;
 const NotificationsModal = forwardRef(({ visible, onClose }, ref) => {
   const [fetchedNotifications, setFetchedNotifications] = useState([]);
   const { liveNotifications, removeLiveNotification } = useNotification();
+  const [combinedNotifications, setCombinedNotifications] = useState([]);
+
 
   const fetchNotifications = async () => {
     try {
@@ -27,9 +29,34 @@ const NotificationsModal = forwardRef(({ visible, onClose }, ref) => {
   }));
 
   useEffect(() => {
-    if (visible) fetchNotifications();
+    if (visible) {
+      fetchNotifications();
+      setFetchedNotifications([]);
+    }
   }, [visible]);
-
+  
+  useEffect(() => {
+    const merged = [
+      ...liveNotifications,
+      ...fetchedNotifications.filter(
+        (n) => !liveNotifications.some((live) => live.id === n.id)
+      ),
+    ];
+    merged.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+    setCombinedNotifications(merged);
+  }, [liveNotifications, fetchedNotifications]);
+  
+  useEffect(() => {
+    if (!visible) return;
+  
+    const interval = setInterval(() => {
+      fetchNotifications();
+    }, 3000); //every 3 seconds
+  
+    return () => clearInterval(interval);
+  }, [visible]);
+  
+  
   const markAsRead = async (id) => {
     try {
       await axios.post(`${process.env.EXPO_PUBLIC_HOST}/api/notifications/mark_as_read/${id}`);
@@ -40,15 +67,15 @@ const NotificationsModal = forwardRef(({ visible, onClose }, ref) => {
     }
   };
 
-  const combinedNotifications = useMemo(() => {
-    const merged = [
-      ...liveNotifications,
-      ...fetchedNotifications.filter(
-        (n) => !liveNotifications.some((live) => live.id === n.id)
-      ),
-    ];
-    return merged.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
-  }, [fetchedNotifications, liveNotifications]);
+  // const combinedNotifications = useMemo(() => {
+  //   const merged = [
+  //     ...liveNotifications,
+  //     ...fetchedNotifications.filter(
+  //       (n) => !liveNotifications.some((live) => live.id === n.id)
+  //     ),
+  //   ];
+  //   return merged.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+  // }, [fetchedNotifications, liveNotifications]);
 
   const renderItem = ({ item }) => (
     <View style={styles.notificationItem}>
