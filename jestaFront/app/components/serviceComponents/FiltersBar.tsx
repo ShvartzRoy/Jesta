@@ -36,6 +36,9 @@ interface FiltersBarProps {
   setNearby: (val: boolean) => void;
   resetTrigger: boolean;
   hideLocationInput?: boolean;
+  radiusKm: string;
+  setRadiusKm: (val: string) => void;
+
 }
 
 export default function FiltersBar({
@@ -53,6 +56,8 @@ export default function FiltersBar({
   setNearby,
   resetTrigger,
   hideLocationInput = false,
+  radiusKm,
+  setRadiusKm,
 }: FiltersBarProps) {
   const [days, setDays] = useState('');
   const [hours, setHours] = useState('');
@@ -127,6 +132,7 @@ export default function FiltersBar({
             />
           </View>
 
+          {(!hideLocationInput && !radiusKm) && (
           <TouchableOpacity
             style={styles.checkboxContainer}
             onPress={() => setNearby(!nearby)}
@@ -138,6 +144,10 @@ export default function FiltersBar({
             />
             <Text style={styles.checkboxLabel}>Nearby</Text>
           </TouchableOpacity>
+          )}
+
+
+
         </View>
 
 
@@ -161,6 +171,22 @@ export default function FiltersBar({
           )}
         </>
       )}
+
+      {hideLocationInput && (
+        <View style={{ marginBottom: 10 }}>
+          <Text style={styles.label}>📏 Radius Filter (km)</Text>
+          <TextInput
+            placeholder="Enter radius in km (e.g. 10)"
+            placeholderTextColor="#555"
+            value={radiusKm}
+            onChangeText={setRadiusKm}
+            keyboardType="numeric"
+            style={styles.input}
+          />
+        </View>
+      )}
+
+
 
       <Text style={styles.label}>⏳ Duration</Text>
       <View style={styles.durationRow}>

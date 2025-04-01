@@ -15,6 +15,11 @@ import NotificationModal from '../../components/serviceComponents/NotificationsM
 import { useNotification } from '../../contexts/notificationContext';
 
 import nearbyCities from '../../../hooks/cityMapping'; 
+import citiesWithCoords from '../../../hooks/citiesWithCoords';
+import { normalizeCityName } from '../../../hooks/cityUtils';
+import { getDistance } from 'geolib';
+
+
 
 
 
@@ -89,6 +94,9 @@ export default function ExplorePage() {
   const [useGpsNearby, setUseGpsNearby] = useState(false);
   const [showGpsPreferences, setShowGpsPreferences] = useState(false);
 
+  const [radiusKm, setRadiusKm] = useState('');
+
+
 
 
   useEffect(() => {
@@ -96,7 +104,11 @@ export default function ExplorePage() {
       try {
         const res = await axios.get(`${process.env.EXPO_PUBLIC_HOST}/api/users/get_profile/${user.id}`);
         const profileCity = res.data.city;
-        if (profileCity) setUserCity(profileCity);
+        if (profileCity) {
+          const normalized = normalizeCityName(profileCity);
+          setUserCity(profileCity);
+        }
+          
       } catch (err) {
         console.error("Failed to fetch user city:", err);
       
@@ -257,7 +269,18 @@ export default function ExplorePage() {
  
 
     //Location filter:
-    if (useGpsNearby && userCity) {
+    if (radiusKm && userCity && citiesWithCoords[userCity]) {
+      const userCoords = citiesWithCoords[userCity];
+      const radiusInMeters = parseFloat(radiusKm) * 1000;
+    
+      result = result.filter(service => {
+        const serviceCoords = citiesWithCoords[service.location];
+        if (!serviceCoords) return false;
+    
+        const distance = getDistance(userCoords, serviceCoords);
+        return distance <= radiusInMeters;
+      });
+    } else if (useGpsNearby && userCity) {
       const nearbyList = (nearbyCities[userCity] || []).map(c => c.trim().toLowerCase());
       result = result.filter(service =>
         nearbyList.includes(service.location.trim().toLowerCase())
@@ -272,6 +295,7 @@ export default function ExplorePage() {
         service.location.toLowerCase().includes(location.toLowerCase())
       );
     }
+    
 
 
     
@@ -328,6 +352,9 @@ export default function ExplorePage() {
     setDurationDays('');
     setDurationHours('');
     setDurationMinutes('');
+    setNearby(false);            
+    setRadiusKm('');            
+    setUseGpsNearby(false); 
 
 
   };
@@ -609,7 +636,15 @@ export default function ExplorePage() {
                 <Text style={{ marginBottom: 6 }}>📍 Your detected city: <Text style={{ fontWeight: 'bold' }}>{userCity || 'Unknown'}</Text></Text>
                 <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
                   <Text>Show services near my location</Text>
-                  <Switch value={useGpsNearby} onValueChange={setUseGpsNearby} />
+                  <Switch
+                    value={useGpsNearby}
+                    onValueChange={(value) => {
+                      setUseGpsNearby(value);
+                      if (!value) {
+                        setRadiusKm('');    
+                      }
+                    }}
+                  />
                 </View>
               </View>
             )}
@@ -636,6 +671,8 @@ export default function ExplorePage() {
                 nearby={nearby}
                 setNearby={setNearby}
                 resetTrigger={resetTrigger}
+                radiusKm={radiusKm}
+                setRadiusKm={setRadiusKm}
                 hideLocationInput={useGpsNearby} 
               />
   

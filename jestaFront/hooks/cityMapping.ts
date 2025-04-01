@@ -90,4 +90,7 @@ const nearbyCities: Record<string, string[]> = {
   "Yavne'el": ["Tiberias", "Yavne'el"]
 };
 
+
+
+
 export default nearbyCities;
