@@ -9,7 +9,6 @@ class CustomUser(AbstractUser):
     email = models.EmailField(unique=True)
     USERNAME_FIELD = 'email'
     REQUIRED_FIELDS = ['username']
-    
     saved_services = models.JSONField(default=list, blank=True)
     expo_push_tokens = models.JSONField(default=list, blank=True)
 
@@ -59,6 +58,8 @@ class Profile(models.Model):
     facebook = models.URLField(max_length=255, blank=True, null=True)
     linkedin = models.URLField(max_length=255, blank=True, null=True)
     instagram = models.URLField(max_length=255, blank=True, null=True)
+    city = models.CharField(max_length=100, null=True, blank=True)
+
 
 
 

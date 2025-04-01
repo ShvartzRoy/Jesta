@@ -7,11 +7,21 @@ import DateTimePicker from '@react-native-community/datetimepicker';
 import axios from 'axios';
 import TagBar from './TagBar';
 
-const cities = [
-  "Ashdod", "Ashkelon", "Bat Yam", "Beer Sheva", "Bnei Brak", "Eilat", "Haifa",
-  "Herzliya", "Holon", "Jerusalem", "Kfar Saba", "Netanya", "Nazareth",
-  "Petah Tikva", "Ramat Gan", "Rehovot", "Rishon LeZion", "Tel Aviv", "Tiberias", "Yokneam"
+const cities  = [
+  "Acre (Akko)", "Afula", "Arad", "Ashdod", "Ashkelon", "Bat Yam", "Be'er Ora", "Be'er Ya'akov",
+  "Be'er Sheva", "Beit She'an", "Beit Shemesh", "Binyamina", "Bnei Brak", "Caesarea", "Dimona",
+  "Eilat", "El'ad", "Even Yehuda", "Giv'at Ze'ev", "Givat Shmuel", "Givatayim", "Haifa",
+  "Hadera", "Herzliya", "Hod Hasharon", "Holon", "Jerusalem", "Karmiel", "Kfar Saba", "Kfar Yona",
+  "Kiryat Ata", "Kiryat Bialik", "Kiryat Gat", "Kiryat Motzkin", "Kiryat Ono", "Kiryat Yam",
+  "Lehavim", "Lod", "Ma'ale Adumim", "Ma'alot-Tarshiha", "Megiddo", "Meitar", "Mevaseret Zion",
+  "Migdal", "Migdal HaEmek", "Mitzpe Ramon", "Modi'in", "Nahariya", "Nazareth", "Nazareth Illit",
+  "Nesher", "Ness Ziona", "Netanya", "Netivot", "Omer", "Or Akiva", "Or Yehuda", "Pardes Hanna",
+  "Petah Tikva", "Ra'anana", "Rahath", "Ramla", "Ramat Gan", "Ramat HaSharon", "Rehovot",
+  "Rishon LeZion", "Rosh HaAyin", "Rosh Pina", "Sderot", "Shoham", "Tel Aviv", "Tiberias",
+  "Timna", "Tirat Carmel", "Tzfat (Safed)", "Yavne", "Yavne'el", "Yehud", "Yeruham", "Yokneam",
+  "Yotvata", "Zikhron Ya'akov"
 ].sort();
+
 
 const predefinedTags = [
   "babysitter", "photographer", "private tutor", "hitchhike",

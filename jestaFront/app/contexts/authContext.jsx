@@ -5,6 +5,8 @@ import * as SecureStore from "expo-secure-store";
 import * as Notifications from 'expo-notifications';
 import Constants from 'expo-constants';
 import * as Device from 'expo-device';
+import * as Location from 'expo-location';
+
 
 
 axios.defaults.withCredentials = true;
@@ -21,11 +23,38 @@ const AuthContext = ({ children }) => {
   const [expoPushToken, setExpoPushToken] = useState(null);
   const [deviceId, setDeviceId] = useState(null);
 
+  const [userCity, setUserCity] = useState(null);
+
+
   const getDeviceId = () => {
     const id = Device.osInternalBuildId || Device.deviceName || Constants.deviceName || Math.random().toString();
     setDeviceId(id);
     return id;
   };
+
+  const getAndSaveUserCity = async (token) => {
+    try {
+      let { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== 'granted') {
+        console.warn('Permission to access location was denied');
+        return;
+      }
+  
+      const location = await Location.getCurrentPositionAsync({});
+      const [place] = await Location.reverseGeocodeAsync(location.coords);
+      const city = place.city || place.subregion || place.region;
+  
+      console.log('Detected city:', city);
+  
+      await axios.post(`${process.env.EXPO_PUBLIC_HOST}/api/users/set_user_city`, 
+        { city },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+    } catch (err) {
+      console.error('Failed to get/save location:', err);
+    }
+  };
+  
 
   const registerForPushNotificationsAsync = async () => {
     let token;
@@ -74,34 +103,42 @@ const AuthContext = ({ children }) => {
           headers: { "Content-Type": "application/json" },
           withCredentials: true,
         });
-        console.log("User response:", response.data);
-
+  
         const token = await registerForPushNotificationsAsync();
         const id = getDeviceId();
-
+  
         if (token && id) {
-          console.log("Saving push token:", token, "device:", id);
           await axios.post(`${process.env.EXPO_PUBLIC_HOST}/api/users/save_push_token`, {
             token,
             device_id: id,
           });
         }
-        
-
+  
         setUser({
           loggedIn: true,
           id: response.data.id,
         });
+  
+        await getAndSaveUserCity(token); 
+  
       } catch (error) {
         setUser({ loggedIn: false, id: null });
       }
+  
+      const city = await getUserCity(); 
+      setUserCity(city);
+  
+      await axios.post(`${process.env.EXPO_PUBLIC_HOST}/api/users/set_user_city`, { city });
+  
+      console.log("User city:", city);
     };
-
+  
     initializeAuth();
   }, []);
+  
 
   return (
-    <UserContext.Provider value={{ user, setUser, logoutUser }}>
+    <UserContext.Provider value={{ user, setUser, logoutUser, userCity }}>
       {children}
     </UserContext.Provider>
   );

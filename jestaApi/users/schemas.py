@@ -44,9 +44,13 @@ class Msg(Schema):
 class ProfileSchema(ModelSchema):
     class Meta:
         model = Profile
-        fields = ["name", "bio", "age", "facebook", "linkedin", "instagram"]
+        fields = ["name", "bio", "age", "facebook", "linkedin", "instagram", "city"]
 
 class GetProfileSchema(ModelSchema):
     class Meta:
         model = Profile
-        fields = ["name", "bio", "age","image","resume", "facebook", "linkedin", "instagram"]
+        fields = ["name", "bio", "age","image","resume", "facebook", "linkedin", "instagram", "city"]
+        
+        
+class CitySchema(Schema):
+    city: str

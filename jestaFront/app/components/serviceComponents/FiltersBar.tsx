@@ -1,6 +1,25 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, Switch, TextInput, StyleSheet } from 'react-native';
+import { View, Text, Switch, TextInput, StyleSheet, TouchableOpacity, Keyboard } from 'react-native';
 import MultiSlider from '@ptomasroos/react-native-multi-slider';
+import { UserContext } from '../../contexts/authContext';
+import { Ionicons } from '@expo/vector-icons';
+
+
+
+const cities = [
+  "Acre (Akko)", "Afula", "Arad", "Ashdod", "Ashkelon", "Bat Yam", "Be'er Ora", "Be'er Ya'akov",
+  "Be'er Sheva", "Beit She'an", "Beit Shemesh", "Binyamina", "Bnei Brak", "Caesarea", "Dimona",
+  "Eilat", "El'ad", "Even Yehuda", "Giv'at Ze'ev", "Givat Shmuel", "Givatayim", "Haifa",
+  "Hadera", "Herzliya", "Hod Hasharon", "Holon", "Jerusalem", "Karmiel", "Kfar Saba", "Kfar Yona",
+  "Kiryat Ata", "Kiryat Bialik", "Kiryat Gat", "Kiryat Motzkin", "Kiryat Ono", "Kiryat Yam",
+  "Lehavim", "Lod", "Ma'ale Adumim", "Ma'alot-Tarshiha", "Megiddo", "Meitar", "Mevaseret Zion",
+  "Migdal", "Migdal HaEmek", "Mitzpe Ramon", "Modi'in", "Nahariya", "Nazareth", "Nazareth Illit",
+  "Nesher", "Ness Ziona", "Netanya", "Netivot", "Omer", "Or Akiva", "Or Yehuda", "Pardes Hanna",
+  "Petah Tikva", "Ra'anana", "Rahath", "Ramla", "Ramat Gan", "Ramat HaSharon", "Rehovot",
+  "Rishon LeZion", "Rosh HaAyin", "Rosh Pina", "Sderot", "Shoham", "Tel Aviv", "Tiberias",
+  "Timna", "Tirat Carmel", "Tzfat (Safed)", "Yavne", "Yavne'el", "Yehud", "Yeruham", "Yokneam",
+  "Yotvata", "Zikhron Ya'akov"
+].sort();
 
 interface FiltersBarProps {
   priceRange: [number, number];
@@ -13,7 +32,10 @@ interface FiltersBarProps {
   setFilterRequests: (val: boolean) => void;
   filterMine: boolean;
   setFilterMine: (val: boolean) => void;
+  nearby: boolean;
+  setNearby: (val: boolean) => void;
   resetTrigger: boolean;
+  hideLocationInput?: boolean;
 }
 
 export default function FiltersBar({
@@ -27,11 +49,17 @@ export default function FiltersBar({
   setFilterRequests,
   filterMine,
   setFilterMine,
+  nearby,
+  setNearby,
   resetTrigger,
+  hideLocationInput = false,
 }: FiltersBarProps) {
   const [days, setDays] = useState('');
   const [hours, setHours] = useState('');
   const [minutes, setMinutes] = useState('');
+  const [locationQuery, setLocationQuery] = useState('');
+  const [showDropdown, setShowDropdown] = useState(false);
+  const { userCity } = React.useContext(UserContext);
 
   useEffect(() => {
     setDays('');
@@ -48,6 +76,18 @@ export default function FiltersBar({
     }
   }, [days, hours, minutes]);
 
+
+  useEffect(() => {
+    if (nearby) {
+      setShowDropdown(false);
+    }
+  }, [nearby]);
+  
+
+  const filteredCities = locationQuery
+    ? cities.filter(c => c.toLowerCase().startsWith(locationQuery.toLowerCase()))
+    : [];
+
   return (
     <View style={styles.card}>
       <Text style={styles.label}>💰 Price Range: {priceRange[0]}₪ - {priceRange[1]}₪</Text>
@@ -63,14 +103,64 @@ export default function FiltersBar({
         containerStyle={{ alignSelf: 'center', marginVertical: 12 }}
       />
 
-      <Text style={styles.label}>📍 Location</Text>
-      <TextInput
-        placeholder="Enter city or area"
-        placeholderTextColor="#666"
-        value={location}
-        onChangeText={setLocation}
-        style={styles.input}
-      />
+      {!hideLocationInput && (
+        <>
+          <View style={styles.locationRow}>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.label}>📍 Specific Location</Text>
+            <TextInput
+              placeholder="Enter a city name"
+              placeholderTextColor="#666"
+
+
+              value={locationQuery}
+              onChangeText={(text) => {
+                setLocationQuery(text);
+                setLocation(''); 
+                setShowDropdown(true);
+              }}
+              onFocus={() => setShowDropdown(true)}
+
+              
+              editable={!nearby}
+              style={[styles.input, nearby && { opacity: 0.5 }]}
+            />
+          </View>
+
+          <TouchableOpacity
+            style={styles.checkboxContainer}
+            onPress={() => setNearby(!nearby)}
+          >
+            <Ionicons
+              name={nearby ? 'checkbox' : 'square-outline'}
+              size={24}
+              color={nearby ? '#007AFF' : '#aaa'}
+            />
+            <Text style={styles.checkboxLabel}>Nearby</Text>
+          </TouchableOpacity>
+        </View>
+
+
+
+          {showDropdown && filteredCities.length > 0 && (
+            <View style={styles.dropdown}>
+              {filteredCities.map((city, index) => (
+                <TouchableOpacity
+                  key={index}
+                  onPress={() => {
+                    setLocation(city);
+                    setLocationQuery(city);
+                    setShowDropdown(false);
+                    Keyboard.dismiss();
+                  }}
+                >
+                  <Text style={styles.dropdownItem}>{city}</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          )}
+        </>
+      )}
 
       <Text style={styles.label}>⏳ Duration</Text>
       <View style={styles.durationRow}>
@@ -105,10 +195,13 @@ export default function FiltersBar({
           <Text style={styles.toggleText}>{filterRequests ? '📝 Requests' : '🎯 Offers'}</Text>
           <Switch value={filterRequests} onValueChange={setFilterRequests} />
         </View>
+
         <View style={styles.toggleItem}>
-          <Text style={styles.toggleText}>{filterMine ? '👤 Mine' : '🌍 Others'}</Text>
+          <Text style={styles.toggleText}>{filterMine ? '👤 Mine' : ' 🌍 Others'}</Text>
           <Switch value={filterMine} onValueChange={setFilterMine} />
         </View>
+
+     
       </View>
     </View>
   );
@@ -129,7 +222,7 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 16,
     fontWeight: '600',
-    marginTop: 8,
+    marginTop: 5,
     marginBottom: 4,
   },
   input: {
@@ -139,6 +232,21 @@ const styles = StyleSheet.create({
     marginBottom: 12,
     borderWidth: 1,
     borderColor: '#ddd',
+    minHeight: 48,   
+  },
+  dropdown: {
+    backgroundColor: '#fff',
+    borderWidth: 1,
+    borderColor: '#ccc',
+    borderRadius: 6,
+    marginTop: -6,
+    marginBottom: 8,
+    zIndex: 99,
+  },
+  dropdownItem: {
+    padding: 10,
+    borderBottomWidth: 1,
+    borderColor: '#eee',
   },
   durationRow: {
     flexDirection: 'row',
@@ -166,4 +274,40 @@ const styles = StyleSheet.create({
   toggleText: {
     fontSize: 14,
   },
+
+
+  locationRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 12,
+    gap: 8,
+
+  },
+  
+
+  checkboxContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    height: 48, 
+    paddingHorizontal: 8,
+    marginLeft: 10,
+  },
+
+  nearToggle: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginLeft: 4,
+  },
+  
+
+  
+  checkboxLabel: {
+    marginLeft: 6,
+    fontSize: 14,
+  },
+  
+  
+  
 });

@@ -1,5 +1,5 @@
 import React, { useContext, useState, useEffect, useRef } from 'react';
-import { View, ScrollView, Text, TouchableOpacity, Alert, ActivityIndicator } from 'react-native';
+import { View, ScrollView, Text, TouchableOpacity, Alert, ActivityIndicator, Switch } from 'react-native';
 import axios from 'axios';
 import { Ionicons } from '@expo/vector-icons';
 
@@ -13,6 +13,9 @@ import ApplicantsModal from '../../components/serviceComponents/ApplicantsModal'
 import EditServiceModal from '../../components/serviceComponents/EditServiceModal';
 import NotificationModal from '../../components/serviceComponents/NotificationsModal';
 import { useNotification } from '../../contexts/notificationContext';
+
+import nearbyCities from '../../../hooks/cityMapping'; 
+
 
 
 
@@ -73,10 +76,40 @@ export default function ExplorePage() {
   const [modalVisible, setModalVisible] = useState(false);
   const modalRef = useRef(null);
 
-  const { newNotification } = useNotification();
+  const {newNotification } = useNotification();
 
   const [acceptedServiceIds, setAcceptedServiceIds] = useState<number[]>([]);
   const [showAcceptedOnly, setShowAcceptedOnly] = useState(false);
+
+  const [nearby, setNearby] = useState(false);
+  const [userCity, setUserCity] = useState('');
+
+  const [loadingCity, setLoadingCity] = useState(true);
+
+  const [useGpsNearby, setUseGpsNearby] = useState(false);
+  const [showGpsPreferences, setShowGpsPreferences] = useState(false);
+
+
+
+  useEffect(() => {
+    const fetchUserCity = async () => {
+      try {
+        const res = await axios.get(`${process.env.EXPO_PUBLIC_HOST}/api/users/get_profile/${user.id}`);
+        const profileCity = res.data.city;
+        if (profileCity) setUserCity(profileCity);
+      } catch (err) {
+        console.error("Failed to fetch user city:", err);
+      
+    } finally {
+      setLoadingCity(false); 
+    }
+    };
+  
+    fetchUserCity();
+  }, []);
+  
+
+
 
 
 
@@ -216,10 +249,32 @@ export default function ExplorePage() {
     else result = result.filter(service => service.user_id === user.id);
 
     //Location
-    if (location.trim() !== '') {
-      result = result.filter(service => service.location.toLowerCase().includes(location.toLowerCase()));
+    // if (location.trim() !== '') {
+    //   result = result.filter(service => service.location.toLowerCase().includes(location.toLowerCase()));
+    // }
+
+
+ 
+
+    //Location filter:
+    if (useGpsNearby && userCity) {
+      const nearbyList = (nearbyCities[userCity] || []).map(c => c.trim().toLowerCase());
+      result = result.filter(service =>
+        nearbyList.includes(service.location.trim().toLowerCase())
+      );
+    } else if (nearby && location.trim() !== '') {
+      const nearbyList = (nearbyCities[location] || []).map(c => c.trim().toLowerCase());
+      result = result.filter(service =>
+        nearbyList.includes(service.location.trim().toLowerCase())
+      );
+    } else if (location.trim() !== '') {
+      result = result.filter(service =>
+        service.location.toLowerCase().includes(location.toLowerCase())
+      );
     }
 
+
+    
     const parseDurationToMinutes = (durationStr: string) => {
       const regex = /P(\d+)DT(\d+)H(\d+)M/;
       const match = durationStr.match(regex);
@@ -538,6 +593,28 @@ export default function ExplorePage() {
                 sortOption={sortOption}
                 setSortOption={setSortOption}
               />
+
+
+          <View style={{ marginVertical: 10, paddingHorizontal: 10 }}>
+            <TouchableOpacity
+              onPress={() => setShowGpsPreferences(prev => !prev)}
+              style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}
+            >
+              <Text style={{ fontWeight: 'bold', fontSize: 16 }}>📡 Location Preferences</Text>
+              <Ionicons name={showGpsPreferences ? 'chevron-up' : 'chevron-down'} size={20} />
+            </TouchableOpacity>
+
+            {showGpsPreferences && (
+              <View style={{ marginTop: 10, padding: 10, backgroundColor: '#f9f9f9', borderRadius: 10 }}>
+                <Text style={{ marginBottom: 6 }}>📍 Your detected city: <Text style={{ fontWeight: 'bold' }}>{userCity || 'Unknown'}</Text></Text>
+                <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <Text>Show services near my location</Text>
+                  <Switch value={useGpsNearby} onValueChange={setUseGpsNearby} />
+                </View>
+              </View>
+            )}
+          </View>
+
   
               <FiltersBar
                 priceRange={priceRange}
@@ -556,7 +633,10 @@ export default function ExplorePage() {
                 setFilterRequests={setFilterRequests}
                 filterMine={filterMine}
                 setFilterMine={setFilterMine}
+                nearby={nearby}
+                setNearby={setNearby}
                 resetTrigger={resetTrigger}
+                hideLocationInput={useGpsNearby} 
               />
   
               <TagBar
@@ -595,8 +675,12 @@ export default function ExplorePage() {
           />
   
           {/* Services List */}
-          {loading ? (
+          {loadingCity  ? (
+            <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', paddingTop: 50 }}>
             <ActivityIndicator size="large" color="#007AFF" />
+            <Text>Loading location preferences...</Text>
+            </View>
+
           ) : filteredServices.length > 0 ? (
             filteredServices.map((service) => (
               <ServiceCardLina

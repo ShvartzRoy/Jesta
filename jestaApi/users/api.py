@@ -73,7 +73,14 @@ def get_saved_services(request, user_id: int):
 def save_push_token(request, payload: PushTokenSchema):
     return userController().save_push_token(request, payload)
 
-
+@router.post("/set_user_city", response={200: Msg, 401: Error})
+def set_user_city(request, data: CitySchema):
+    if not request.user.is_authenticated:
+        raise HttpError(401, "Unauthorized")
+    profile, _ = Profile.objects.get_or_create(user=request.user)
+    profile.city = data.city
+    profile.save()
+    return {"msg": f"City set to {data.city}"}
 
 '''
 @router.post("/share_saved_services_listing", response={200: dict, 400: dict})
