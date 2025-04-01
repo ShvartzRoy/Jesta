@@ -179,7 +179,7 @@ const Set_profile = () => {
         <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
           <View style={styles.container}>
             {success && (
-              <TouchableOpacity style={styles.topRightButton} onPress={() => router.replace('/explore_page')}>
+              <TouchableOpacity style={styles.topRightButton} onPress={() => router.replace('/test_test')}>
                 <Text style={styles.topRightButtonText}>Advance</Text>
                 <Ionicons name="arrow-forward-outline" style={styles.topRightButtonText} size={24} color="blue" />
               </TouchableOpacity>

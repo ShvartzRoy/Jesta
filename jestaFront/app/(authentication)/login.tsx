@@ -56,7 +56,7 @@ export default function LoginScreen() {
         console.log("didn't find profile for:", user.id);
       }
 
-      router.replace("/explore_page");
+      router.replace("/test_test");
       setEmail("");
       setPassword("");
     } catch (error) {
