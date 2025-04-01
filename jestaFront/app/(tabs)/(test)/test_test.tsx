@@ -3,6 +3,7 @@ import { View, ScrollView, Text, TouchableOpacity, Alert, ActivityIndicator, Swi
 import axios from 'axios';
 import { Ionicons } from '@expo/vector-icons';
 
+
 import { UserContext } from '../../contexts/authContext';
 import ServiceCardLina from '../../components/serviceComponents/ServiceCardLina';
 import FiltersBar from '../../components/serviceComponents/FiltersBar';
@@ -18,6 +19,8 @@ import nearbyCities from '../../../hooks/cityMapping';
 import citiesWithCoords from '../../../hooks/citiesWithCoords';
 import { normalizeCityName } from '../../../hooks/cityUtils';
 import { getDistance } from 'geolib';
+import * as Location from 'expo-location';
+
 
 
 
@@ -96,31 +99,42 @@ export default function ExplorePage() {
 
   const [radiusKm, setRadiusKm] = useState('');
 
+  const [locationPermissionGranted, setLocationPermissionGranted] = useState(false);
 
 
 
-  useEffect(() => {
-    const fetchUserCity = async () => {
-      try {
-        const res = await axios.get(`${process.env.EXPO_PUBLIC_HOST}/api/users/get_profile/${user.id}`);
-        const profileCity = res.data.city;
-        if (profileCity) {
-          const normalized = normalizeCityName(profileCity);
-          setUserCity(profileCity);
-        }
-          
-      } catch (err) {
-        console.error("Failed to fetch user city:", err);
-      
+
+
+  const fetchUserCity = async (manual = false) => {
+    try {
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      const granted = status === 'granted';
+      setLocationPermissionGranted(granted); // ✅ Track permission status
+  
+      if (!granted) {
+        if (manual) Alert.alert("Permission Denied", "Please enable location access in your phone settings.");
+        return;
+      }
+  
+      const location = await Location.getCurrentPositionAsync({});
+      const geocode = await Location.reverseGeocodeAsync(location.coords);
+      const city = geocode?.[0]?.city;
+  
+      if (city) {
+        const normalized = normalizeCityName(city);
+        setUserCity(normalized);
+      } else if (manual) {
+        Alert.alert("Could not detect city", "Try again later or enter manually.");
+      }
+    } catch (err) {
+      console.error("Manual location error:", err);
+      if (manual) Alert.alert("Error", "Something went wrong detecting your location.");
     } finally {
-      setLoadingCity(false); 
+      setLoadingCity(false);
     }
-    };
+  };
   
-    fetchUserCity();
-  }, []);
   
-
 
 
 
@@ -151,6 +165,10 @@ export default function ExplorePage() {
       setNotifications((prev) => [newNotification, ...prev]);
     }
   }, [newNotification]);
+
+  useEffect(() => {
+    fetchUserCity(); 
+  }, []);
   
   
   
@@ -633,7 +651,28 @@ export default function ExplorePage() {
 
             {showGpsPreferences && (
               <View style={{ marginTop: 10, padding: 10, backgroundColor: '#f9f9f9', borderRadius: 10 }}>
-                <Text style={{ marginBottom: 6 }}>📍 Your detected city: <Text style={{ fontWeight: 'bold' }}>{userCity || 'Unknown'}</Text></Text>
+
+                {userCity ? (
+                  <Text style={{ marginBottom: 6 }}>
+                    📍 Your detected city: <Text style={{ fontWeight: 'bold' }}>{userCity}</Text>
+                  </Text>
+                ) : (
+                  <TouchableOpacity
+                    onPress={() => fetchUserCity(true)}
+                    style={{
+                      backgroundColor: '#007AFF',
+                      paddingVertical: 8,
+                      paddingHorizontal: 12,
+                      borderRadius: 8,
+                      alignSelf: 'flex-start',
+                      marginBottom: 8,
+                    }}
+                  >
+                    <Text style={{ color: 'white', fontWeight: 'bold' }}>📍 Detect My Location</Text>
+                  </TouchableOpacity>
+                )}
+
+              {locationPermissionGranted && (
                 <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
                   <Text>Show services near my location</Text>
                   <Switch
@@ -646,6 +685,7 @@ export default function ExplorePage() {
                     }}
                   />
                 </View>
+              )}
               </View>
             )}
           </View>
