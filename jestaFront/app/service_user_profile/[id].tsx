@@ -1,11 +1,16 @@
 import React, { useEffect, useState, useContext } from 'react';
-import { View, Text, Image, StyleSheet, ActivityIndicator, ScrollView, TouchableOpacity, Linking, Alert, FlatList } from 'react-native';
+import { View, Text, Image, StyleSheet, ActivityIndicator, ScrollView, TouchableOpacity, Linking, Alert, FlatList, Modal } from 'react-native';
 import { useLocalSearchParams, router } from 'expo-router';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import axios from 'axios';
 import SpecialistShowCard from '../components/serviceComponents/specialistShowCard';
 import { UserContext } from '../contexts/authContext';
 import ServiceCardLina from '../components/serviceComponents/ServiceCardLina';
+import RankBadgeSection from '../components/serviceComponents/RankBadgeSection';
+import AllBadgesModal from '../components/serviceComponents/AllBadgesModal';
+
+
+
 
 const ServiceUserProfileScreen = () => {
   const { id } = useLocalSearchParams();
@@ -28,7 +33,89 @@ const ServiceUserProfileScreen = () => {
 
   const [showReviews, setShowReviews] = useState(false);
   const [showCompletedServices, setShowCompletedServices] = useState(false);
- 
+
+  const [userXP, setUserXP] = useState(0);
+  const [userLevel, setUserLevel] = useState(1);
+
+
+  interface Badge {
+    id: number;
+    name: string;
+    description: string;
+  }
+
+
+  const [badges, setBadges] = useState<Badge[]>([]);
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
+
+  const [showAllBadges, setShowAllBadges] = useState(false);
+
+
+  const [averageRating, setAverageRating] = useState<number | null>(null);
+
+
+  const cleanBadgeArray = (badges: any[]) =>
+    badges.map(({ id, name, description }) => ({
+      id,
+      name,
+      description,
+    }));
+  
+
+useEffect(() => {
+  const fetchAverageRating = async () => {
+    try {
+      const res = await axios.get(`${process.env.EXPO_PUBLIC_HOST}/api/reviews/get_average_rating/${userId}/`);
+      setAverageRating(res.data?.average_rating || null);
+    } catch (err) {
+      console.error('Error fetching average rating:', err);
+    }
+  };
+
+  if (userId) {
+    fetchAverageRating();
+  }
+}, [userId]);
+
+
+  
+  useEffect(() => {
+    const fetchBadges = async () => {
+      try {
+        const res = await axios.get(`${process.env.EXPO_PUBLIC_HOST}/api/ranks/get_badges/${userId}/`, {
+          headers: { Authorization: `Bearer ${user.token}` },
+        });
+
+
+        const cleanedBadges = res.data.map(({ id, name, description }) => ({
+          id,
+          name,
+          description,
+        }));
+        setBadges(cleanBadgeArray(res.data));
+
+
+      } catch (err) {
+        console.error('Error fetching badges:', err.response?.data || err.message);
+      }
+    };
+  
+    fetchBadges();
+  }, [userId]);
+
+
+  const handleReviewSuccess = () => {
+    setRefreshTrigger(prev => prev + 1);
+  };
+  
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setRefreshTrigger((prev) => prev + 1);
+    }, 3000); //every 3 seconds
+  
+    return () => clearInterval(interval); 
+  }, []);
+  
 
   useEffect(() => {
 
@@ -36,13 +123,37 @@ const ServiceUserProfileScreen = () => {
       try {
         const headers = { Authorization: `Bearer ${user.token}` };
 
-        const [servicesRes, reviewsRes] = await Promise.all([
+        const [servicesRes, reviewsRes, xpRes, levelRes, profileRes] = await Promise.all([
           axios.get(`${process.env.EXPO_PUBLIC_HOST}/api/services/get_list_of_all_completed_services_of_user/${userId}`, { headers }),
           axios.get(`${process.env.EXPO_PUBLIC_HOST}/api/reviews/get_reviews/${userId}/`, { headers }),
+          axios.get(`${process.env.EXPO_PUBLIC_HOST}/api/ranks/get_xp/${userId}/`, { headers }),
+          axios.get(`${process.env.EXPO_PUBLIC_HOST}/api/ranks/get_level/${userId}/`, { headers }),
+          axios.get(`${process.env.EXPO_PUBLIC_HOST}/api/users/get_profile/${userId}`, { headers }),
+          
         ]);
 
         setCompletedServices(servicesRes.data);
         setReceivedReviews(reviewsRes.data);
+        setUserXP(xpRes.data);
+        setUserLevel(levelRes.data);
+        const profileData = profileRes.data;
+
+        if (profileData.image) {
+          profileData.image = `${process.env.EXPO_PUBLIC_HOST}${profileData.image}`;
+        }
+        
+        setProfile(profileData);
+
+        const cleanedBadges = profileData.badges.map(({ id, name, description }) => ({
+          id,
+          name,
+          description,
+        }));
+        setBadges(cleanBadgeArray(profileData.badges));
+
+        console.log("Initial badge fetch (one-time):", profileData.badges);
+        
+
       } catch (err) {
         console.error("Error fetching profile data:", err.response?.data || err.message);
         Alert.alert("Error", "Failed to load profile info.");
@@ -52,7 +163,7 @@ const ServiceUserProfileScreen = () => {
     };
 
     fetchProfileData();
-  }, [userId]);
+  }, [userId,refreshTrigger]);
 
 
   useEffect(() => {
@@ -61,8 +172,15 @@ const ServiceUserProfileScreen = () => {
       try {
         const profileRes = await axios.get(`${process.env.EXPO_PUBLIC_HOST}/api/users/get_profile/${id}`);
         const profileData = profileRes.data;
-        if (profileData.image) profileData.image = `${process.env.EXPO_PUBLIC_HOST}${profileData.image}`;
-        setProfile(profileData);
+        const { badges: _, ...profileWithoutBadges } = profileData;
+
+        if (profileWithoutBadges.image) {
+          profileWithoutBadges.image = `${process.env.EXPO_PUBLIC_HOST}${profileWithoutBadges.image}`;
+        }
+        
+        setProfile(profileWithoutBadges);
+        console.log("Skipped profile.badges overwrite:", profileData.badges);
+
 
         try {
           const specialistsResponse = await axios.get(`${process.env.EXPO_PUBLIC_HOST}/api/specialists/get_specialist/${id}/`);
@@ -158,15 +276,31 @@ const ServiceUserProfileScreen = () => {
         )}
 
       <View style={styles.nameAgeChatContainer}>
+        {averageRating && (
+          <View style={{ flexDirection: 'row', alignItems: 'center', marginRight: 6 }}>
+            <Ionicons name="star" size={28} color="#fbc02d" />
+            <Text style={{ fontWeight: 'bold',fontSize: 18, marginLeft: 4 }}>{averageRating.toFixed(1)}</Text>
+          </View>
+        )}
         <Text style={styles.name}>{profile?.name}</Text>
         <Text style={styles.age}>{profile?.age}</Text>
-
         {accepted && (
           <TouchableOpacity onPress={() => Alert.alert('Open private chat')} style={styles.chatIconButton}>
             <Ionicons name="chatbubble-ellipses-outline" size={28} color="#007bff" />
           </TouchableOpacity>
         )}
       </View>
+
+
+      {/* XP + Level + Badge Row */}
+      <RankBadgeSection
+        level={userLevel}
+        xp={userXP}
+        badges={badges}
+        userName={profile?.name}
+        onPressSeeAll={() => setShowAllBadges(true)}
+      />
+
 
 
         <Text style={styles.bio}>{profile?.bio}</Text>
@@ -229,6 +363,16 @@ const ServiceUserProfileScreen = () => {
         <Text style={styles.emptyText}>No completed services yet.</Text>
       )}
     </ScrollView>
+
+
+    <AllBadgesModal
+      visible={showAllBadges}
+      onClose={() => setShowAllBadges(false)}
+      badges={badges}
+    />
+
+
+
   </View>
 )}
 
@@ -311,6 +455,8 @@ const ServiceUserProfileScreen = () => {
               hideOwner
               hideType
               hideSave
+              refreshTrigger={refreshTrigger}
+              setRefreshTrigger={setRefreshTrigger}
             />
           ))
         ) : (
@@ -332,7 +478,7 @@ const styles = StyleSheet.create({
   placeholderImage: { width: 100, height: 100, borderRadius: 50, backgroundColor: '#ddd', justifyContent: 'center', alignItems: 'center', marginBottom: 16 },
   placeholderText: { color: '#888' },
   nameAndAgeContainer: { alignItems: 'center', flexDirection: 'row' },
-  name: { fontSize: 24, fontWeight: 'bold', marginRight: 8 },
+  name: { fontSize: 26, fontWeight: 'bold', marginRight: 8 },
   age: { fontSize: 18, color: 'rgba(36,36,38,0.8)' },
   bio: { fontSize: 16, fontStyle: 'italic', marginBottom: 16, textAlign: 'center' },
   socialLinks: { flexDirection: 'row', marginTop: 16, justifyContent: 'center', width: '100%' },

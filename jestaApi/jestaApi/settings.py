@@ -55,6 +55,8 @@ INSTALLED_APPS = [
     'tags',
     'ninja',
     'corsheaders',
+    'new_badges',
+    'new_ranks',
 ]
 
 MIDDLEWARE = [

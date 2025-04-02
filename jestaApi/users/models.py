@@ -3,6 +3,11 @@ from django.db import models
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 from services.models import Service
+import uuid
+from new_badges.models import Badge
+
+
+
 
 
 class CustomUser(AbstractUser):
@@ -11,6 +16,12 @@ class CustomUser(AbstractUser):
     REQUIRED_FIELDS = ['username']
     saved_services = models.JSONField(default=list, blank=True)
     expo_push_tokens = models.JSONField(default=list, blank=True)
+    referral_code = models.CharField(max_length=20, unique=True, null=True, blank=True)
+    referred_by = models.ForeignKey(
+        "self", null=True, blank=True, on_delete=models.SET_NULL, related_name="referrals"
+    )
+    #badges = models.ManyToManyField(Badge, blank=True)
+
 
 
 
@@ -18,6 +29,7 @@ class CustomUser(AbstractUser):
     def __str__(self):
         return self.email
     
+ 
 
     def add_service_to_saved(self, service):
             saved_service_data = {"id": service.id, "title": service.title, "state": service.state}
@@ -59,8 +71,16 @@ class Profile(models.Model):
     linkedin = models.URLField(max_length=255, blank=True, null=True)
     instagram = models.URLField(max_length=255, blank=True, null=True)
     city = models.CharField(max_length=100, null=True, blank=True)
+    badges = models.ManyToManyField(Badge, blank=True)
+
+    
 
 
 
 
+@receiver(post_save, sender=CustomUser)
+def generate_referral_code(sender, instance, created, **kwargs):
+    if created and not instance.referral_code:
+        instance.referral_code = str(uuid.uuid4())[:8]
+        instance.save()
 

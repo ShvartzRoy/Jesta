@@ -6,6 +6,9 @@ import { UserContext } from '../../contexts/authContext';
 import Menu from '../../components/profileComponents/menu';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import SpecialistCard from '../../components/profileComponents/specialistCard';
+import { useFocusEffect } from '@react-navigation/native';
+import { useCallback } from 'react';
+
 
 const ProfileScreen = () => {
   const { user } = useContext(UserContext);
@@ -14,6 +17,43 @@ const ProfileScreen = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [isMenuVisible, setIsMenuVisible] = useState(false);
+
+  useFocusEffect(
+    useCallback(() => {
+      const fetchProfileAndSpecialists = async () => {
+        try {
+          const profileResponse = await axios.get(`${process.env.EXPO_PUBLIC_HOST}/api/users/get_profile/${user?.id}`);
+          const profileData = profileResponse.data;
+  
+          if (profileData.image) {
+            profileData.image = `${process.env.EXPO_PUBLIC_HOST}${profileData.image}`;
+          }
+  
+          setProfile(profileData);
+  
+          try {
+            const specialistsResponse = await axios.get(`${process.env.EXPO_PUBLIC_HOST}/api/specialists/get_specialist/${user?.id}/`);
+            if (specialistsResponse.data && typeof specialistsResponse.data === 'object' && !Array.isArray(specialistsResponse.data)) {
+              setSpecialists([specialistsResponse.data]);
+            } else {
+              setSpecialists([]);
+            }
+          } catch {
+            setSpecialists([]);
+          }
+        } catch (err) {
+          setError('Failed to fetch profile or specialists.');
+        } finally {
+          setLoading(false);
+        }
+      };
+  
+      if (user?.id) {
+        fetchProfileAndSpecialists();
+      }
+    }, [user?.id])
+  );
+  
 
   useEffect(() => {
     const fetchProfileAndSpecialists = async () => {

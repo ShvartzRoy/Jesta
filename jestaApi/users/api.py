@@ -1,3 +1,4 @@
+from ninja import Form
 from ninja import NinjaAPI, Router, File
 from ninja.security import django_auth
 from .schemas import *
@@ -43,10 +44,18 @@ def register(request, payload: RegisterSchema):
 def delete_user(request, user_password: str):
     return uc.delete_user(request, user_password)
 
+# @router.post("/edit_profile", response={200: ProfileSchema, 401: Error})
+# def edit_profile(request, payload: ProfileSchema, image: UploadedFile = File(None), resume: UploadedFile = File(None)):
+#     user = pc.edit_profile(request, payload , image, resume)
+#     return user
+
+
 @router.post("/edit_profile", response={200: ProfileSchema, 401: Error})
-def edit_profile(request, payload: ProfileSchema, image: UploadedFile = File(None), resume: UploadedFile = File(None)):
-    user = pc.edit_profile(request, payload , image, resume)
+def edit_profile(request, image: UploadedFile = File(None), resume: UploadedFile = File(None)):
+    form_data = request.POST
+    user = pc.edit_profile(request, form_data, image, resume)
     return user
+
 
 @router.get("/get_profile/{user_id}", response={200: GetProfileSchema, 401: Error})
 def get_profile(request, user_id: int):

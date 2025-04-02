@@ -128,19 +128,27 @@ export default function ServiceCard({
     const fetchCreatorName = async () => {
       try {
         const response = await axios.get(
-          //`${process.env.EXPO_PUBLIC_HOST}/api/services/get_owner_name/${service.id}`
           `${process.env.EXPO_PUBLIC_HOST}/api/services/get_owner_profile/${service.id}`
         );
         setCreatorName(response.data.name || 'Unknown');
-        setCreatorImage(response.data.image || null);
-        } catch (error) {
+    
+        const sanitizeImageUrl = (img: string | null) => {
+          if (!img) return null;
+          const trimmed = img.trim();
+          if (trimmed.startsWith('http')) return trimmed;
+          return `${process.env.EXPO_PUBLIC_HOST?.replace(/\/$/, '')}${trimmed}`;
+        };
+    
+        setCreatorImage(sanitizeImageUrl(response.data.image));
+    
+    
+      } catch (error) {
         console.error("Error fetching creator name:", error);
         setCreatorName('Unknown');
         setCreatorImage(null);
-
       }
     };
-  
+    
     fetchCreatorName();
   }, [service.id]);
 
@@ -186,6 +194,17 @@ export default function ServiceCard({
 
 
   const [hasReviewedApplicantIds, setHasReviewedApplicantIds] = useState<number[]>([]);
+
+
+  useEffect(() => {
+    if (selectedApplicantId != null) {
+      setHasReviewedApplicantIds((prev) =>
+        prev.includes(selectedApplicantId) ? prev : [...prev, selectedApplicantId]
+      );
+    }
+  }, [selectedApplicantId]);
+  
+  
   useEffect(() => {
     if (showApplicantsForReview && isCompleted) {
       axios
@@ -216,6 +235,9 @@ export default function ServiceCard({
 
   const [acceptedApplicants, setAcceptedApplicants] = useState<any[]>([]);
 
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
+  
+
   useEffect(() => {
     if (isCompleted) {
       axios.get(
@@ -239,6 +261,9 @@ export default function ServiceCard({
           headers: { Authorization: `Bearer ${user.token}` },
         }
       );
+
+      setRefreshTrigger(prev => prev + 1);
+
   
       if (response.status === 200) {
         Alert.alert("Marked as Completed");
@@ -524,26 +549,27 @@ const shouldShowUnapplyButton =
         {!hideOwner && (
         <TouchableOpacity onPress={() => router.push(`/service_user_profile/${service.user_id}`)}>
          <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 8 }}>
-            {creatorImage ? (
-              <Image
-                source={{ uri: creatorImage }}
-                style={{ width: 28, height: 28, borderRadius: 14, marginRight: 8 }}
-                />
-            ) : (
-              <View
-                style={{
-                  width: 24,
-                  height: 24,
-                  borderRadius: 12,
-                  backgroundColor: '#ccc',
-                  justifyContent: 'center',
-                  alignItems: 'center',
-                  marginRight: 8,
-                }}
-              >
-                <Text style={{ color: 'white', fontSize: 12 }}>👤</Text>
-              </View>
-            )}
+         {creatorImage && creatorImage.startsWith('http') ? (
+  <Image
+    source={{ uri: creatorImage }}
+    style={{ width: 28, height: 28, borderRadius: 14, marginRight: 8 }}
+  />
+) : (
+  <View
+    style={{
+      width: 24,
+      height: 24,
+      borderRadius: 12,
+      backgroundColor: '#ccc',
+      justifyContent: 'center',
+      alignItems: 'center',
+      marginRight: 8,
+    }}
+  >
+    <Text style={{ color: 'white', fontSize: 12 }}>👤</Text>
+  </View>
+)}
+
             <Text style={{ color: '#007AFF', fontWeight: 'bold' }}>
               Created by: {creatorName}
             </Text>
@@ -899,6 +925,7 @@ const shouldShowUnapplyButton =
         serviceId={service.id}
         user={user}
         onReviewSuccess={() => {
+          setRefreshTrigger(prev => prev + 1);
           Alert.alert("Thank you!", "Your review has been submitted.");
           setHasReviewedApplicantIds((prev) => [...prev, selectedApplicantId!]); 
         }}

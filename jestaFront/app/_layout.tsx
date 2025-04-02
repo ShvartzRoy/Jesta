@@ -10,6 +10,19 @@ import React from 'react';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { NotificationProvider, useNotification } from './contexts/notificationContext';
 
+
+import { library } from '@fortawesome/fontawesome-svg-core';
+import {
+  faUserCheck,
+  faUserGraduate,
+  faUserTie,
+  faHandsHelping,
+  faCrown,
+} from '@fortawesome/free-solid-svg-icons';
+
+library.add(faUserCheck, faUserGraduate, faUserTie, faHandsHelping, faCrown);
+
+
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
     shouldShowAlert: true,

@@ -12,6 +12,8 @@ from django.contrib.auth.hashers import check_password
 # from django.core.mail import send_mail
 # from django.conf import settings
 import requests
+from new_ranks.xp_service import add_xp_for_referral
+
 
 
 def send_push_notification_to_user(user, title, body, data={}):
@@ -92,12 +94,28 @@ class userController:
         # check if user exists
         if CustomUser.objects.filter(email= email).exists():
             raise HttpError(400, "Email already exists")
+        
+        
+        #Handle referral
+        referred_by = None
+        if payload.referral_code:
+            try:
+                referred_by = CustomUser.objects.get(referral_code=payload.referral_code)
+            except CustomUser.DoesNotExist:
+                raise HttpError(400, "Invalid referral code")
+            
+        
+        
         # Hash the password before saving
         payload.password = make_password(payload.password)
         user = CustomUser.objects.create(
-            username= email, email = email, password=payload.password
+            username= email, email = email, password=payload.password,  referred_by=referred_by,
         )
         user.save()
+        
+        if referred_by:
+            add_xp_for_referral(referred_by.id)
+
         return user
     
     

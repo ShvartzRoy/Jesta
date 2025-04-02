@@ -14,6 +14,12 @@ from users.models import CustomUser
 from notifications.models import Notification
 import requests
 from django.utils import timezone
+from new_ranks.xp_service import add_xp_for_completed_service, add_xp_for_referral  
+from new_ranks.rankController import RankController
+from new_badges.badgeController import BadgeController
+
+
+
 
 
 
@@ -336,27 +342,63 @@ class ServiceController:
 
         
     def mark_service_completed(self, request, service_id: int) -> dict:
-        service = get_object_or_404(Service, id=service_id, user=request.user)
+        
+        service = get_object_or_404(Service, id=service_id)
         if service.state == "completed":
             raise HttpError(400, "Service is already completed!")
+
+        if request.user != service.user:
+            raise HttpError(403, "Only the creator can mark this service as completed.")
+
+
+        if service.state == "completed":
+            raise HttpError(400, "Service is already completed!")
+        
+        print(f"Checking creator badges for {service.user.email}")
+
+
         service.state = "completed"
         service.save()
-        
+
+        rc = RankController()
+        bc = BadgeController()
+
+        rc.add_xp_for_completed_service(service.user_id, is_volunteer=service.is_volunteering)
+        bc.check_and_assign_all_badges(service.user)
+
+
         for applicant in service.applicants:
             if applicant.get("applicant_state") == "accepted":
                 try:
                     user = CustomUser.objects.get(id=applicant["user_id"])
+
+                    rc.add_xp_for_completed_service(user.id, is_volunteer=service.is_volunteering)
+
+                    bc.check_and_assign_all_badges(user)
+
+
+                    if user.referred_by:
+                        completed_count = Service.objects.filter(
+                            applicants__contains=[{"user_id": user.id, "applicant_state": "accepted"}],
+                            state="completed"
+                        ).count()
+
+                        if completed_count == 1:
+                            rc.add_xp_for_referral(user.referred_by.id)
+
                     self.send_notification(
                         user,
                         "Service Completed",
                         f"The service '{service.title}' you participated in is now marked as completed.",
                         data={"type": "service_completed", "service_id": service.id}
                     )
+
                 except CustomUser.DoesNotExist:
                     print(f"Applicant with ID {applicant['user_id']} not found")
-        
+
         return {"message": f"Service '{service.title}' marked as completed!"}
-    
+
+        
     def get_progress_status_of_service(self, request, service_id: int) -> dict:
             service = get_object_or_404(Service, id=service_id, user=request.user)
             return {"state": service.state}
@@ -413,12 +455,31 @@ class ServiceController:
     
     
   
-    def get_list_of_all_completed_services_of_user(self, request, user_id) -> list[ServiceSchema]:
-        services = Service.objects.filter(user=user_id, state="completed")
-        return [ServiceSchema.from_model(service) for service in services]
+    # def get_list_of_all_completed_services_of_user(self, request, user_id) -> list[ServiceSchema]:
+    #     services_as_applicant = Service.objects.filter(
+    #         state="completed",
+    #         applicants__contains=[{"user_id": user_id, "applicant_state": "accepted"}]
+    #     )
 
-        
+    #     services_as_creator = Service.objects.filter(user=user_id, state="completed")
+
+    #     all_services = services_as_applicant | services_as_creator
+    #     all_services = all_services.distinct()
+
+    #     return [ServiceSchema.from_model(service) for service in all_services]
     
+    
+    def get_list_of_all_completed_services_of_user(self, request, user_id) -> list[ServiceSchema]:
+        created_services = Service.objects.filter(user=user_id, state="completed")
+        participated_services = Service.objects.filter(
+            applicants__contains=[{"user_id": user_id, "applicant_state": "accepted"}],
+            state="completed"
+        )
+        all_services = (created_services | participated_services).distinct()
+        return [ServiceSchema.from_model(service) for service in all_services]
+
+    
+        
     def get_applicant_state(self, request, service_id: int) -> dict:
         user= request.user
         

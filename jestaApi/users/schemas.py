@@ -1,6 +1,8 @@
 #from typing import List
 from pydantic import BaseModel, EmailStr
 from ninja import Schema, ModelSchema
+from new_badges.schemas import BadgeSchema
+
 
 from .models import *
 
@@ -11,6 +13,7 @@ class LogInSchema(BaseModel):
 class RegisterSchema(BaseModel):
     email: str
     password: str
+    referral_code: str | None = None
     
 class SavedServiceSchema(BaseModel):
     id: int
@@ -27,7 +30,7 @@ class UserSchema(ModelSchema):
     
     class Meta:
         model = CustomUser
-        fields = ["id", "email", "saved_services", "expo_push_tokens"]
+        fields = ["id", "email", "saved_services", "expo_push_tokens", "referral_code"]
 
         
 
@@ -42,14 +45,17 @@ class Msg(Schema):
     
 
 class ProfileSchema(ModelSchema):
+    badges: list[BadgeSchema]
     class Meta:
         model = Profile
-        fields = ["name", "bio", "age", "facebook", "linkedin", "instagram", "city"]
+        fields = ["name", "bio", "age", "facebook", "linkedin", "instagram", "city", "badges"]
 
 class GetProfileSchema(ModelSchema):
+    badges: list[BadgeSchema]
+    #level: int
     class Meta:
         model = Profile
-        fields = ["name", "bio", "age","image","resume", "facebook", "linkedin", "instagram", "city"]
+        fields = ["name", "bio", "age","image","resume", "facebook", "linkedin", "instagram", "city", "badges"]
         
         
 class CitySchema(Schema):

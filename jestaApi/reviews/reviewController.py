@@ -5,13 +5,17 @@ from users.models import CustomUser
 from .schemas import ReviewCreateSchema, ReviewSchema
 from django.conf import settings
 from ninja.errors import HttpError
-from services.serviceController import ServiceController 
+from new_ranks.xp_service import add_xp_for_positive_review 
+from new_ranks.rankController import RankController 
 
  
-sc = ServiceController()  
+
+ 
 
 class ReviewController():
     def add_review(self, request, payload: ReviewCreateSchema) -> ReviewSchema:
+        from services.serviceController import ServiceController  
+
         reviewer = request.user
         reviewed_user = get_object_or_404(CustomUser, id=payload.reviewed_user)
 
@@ -24,21 +28,28 @@ class ReviewController():
             service_id=payload.service
         ).first()
 
+        if payload.info and len(payload.info) > 200:
+            raise HttpError(400, "Review is too long")
+
+        sc = ServiceController()  
+
         if existing_review:
             existing_review.ranking = payload.ranking
             existing_review.info = payload.info
             existing_review.save()
-            
-            
-            sc.send_notification(
-            reviewed_user,
-            "Review Updated",
-            f"{reviewer.profile.name if hasattr(reviewer, 'profile') else 'Someone'} updated their review for you.",
-            data={"type": "review_updated", "service_id": payload.service})
-            return existing_review
 
-        if payload.info and len(payload.info) > 200:
-            raise HttpError(400, "Review is too long")
+            sc.send_notification(
+                reviewed_user,
+                "Review Updated",
+                f"{reviewer.profile.name if hasattr(reviewer, 'profile') else 'Someone'} updated their review for you.",
+                data={"type": "review_updated", "service_id": payload.service}
+            )
+
+            if payload.ranking >= 4.0:
+                rc = RankController()
+                rc.add_xp_for_positive_review(reviewed_user.id, payload.ranking)
+
+            return existing_review
 
         review = Review.objects.create(
             reviewer=reviewer,
@@ -47,8 +58,9 @@ class ReviewController():
             ranking=payload.ranking,
             info=payload.info,
         )
-        
+
         reviewer_name = reviewer.profile.name if hasattr(reviewer, "profile") and reviewer.profile.name else reviewer.username
+
         sc.send_notification(
             reviewed_user,
             "You Got a Review!",
@@ -56,7 +68,12 @@ class ReviewController():
             data={"type": "review", "reviewer_id": reviewer.id}
         )
 
+        if payload.ranking >= 4.0:
+            rc = RankController()
+            rc.add_xp_for_positive_review(reviewed_user.id, payload.ranking)
+
         return review
+
 
     def get_reviews(self, request, user_id: int) -> list[dict]:
         user = get_object_or_404(CustomUser, id=user_id)
@@ -84,16 +101,18 @@ class ReviewController():
         review.delete()
         return {"message": "Review deleted"}
     
-    def get_average_rating(self, request, user_id: int) -> dict:
+    def calculate_average_rating(self, user_id: int) -> float:
         user = get_object_or_404(CustomUser, id=user_id)
         reviews = Review.objects.filter(reviewed_user=user)
-        if reviews.count() == 0:
-            return {"massage": "No reviews yet"}
-        total = 0
-        for review in reviews:
-            total += review.ranking
-        return {"average_rating": total / reviews.count()}
+        if not reviews.exists():
+            return 0.0
+        total = sum(review.ranking for review in reviews)
+        return total / reviews.count()
+
     
+    def get_average_rating(self, request, user_id: int) -> dict:
+        return {"average_rating": self.calculate_average_rating(user_id)}
+
     def check_if_review_exists(self, request, reviewed_user_id: int, service_id: int) -> dict:
         exists = Review.objects.filter(
             reviewer=request.user,
