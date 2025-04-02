@@ -95,18 +95,43 @@ class BadgeController:
         print(f"Checking badges for {user.email}")
         print(f"Level: {level}, Avg Rating: {avg_rating}, Volunteer count: {completed_volunteering}")
 
-        if level >= 5:
-            self.assign_badge_if_missing(user, "Experienced")
+        # if level >= 5:
+        #     self.assign_badge_if_missing(user, "Experienced")
 
-        if avg_rating >= 4.0:
-            self.assign_badge_if_missing(user, "Excellent")
+        # if avg_rating >= 4.0:
+        #     self.assign_badge_if_missing(user, "Excellent")
 
-        if completed_volunteering >= 5:
-            self.assign_badge_if_missing(user, "Community Contributor")
+        # if completed_volunteering >= 5:
+        #     self.assign_badge_if_missing(user, "Community Contributor")
 
-        if email_is_student:
-            self.assign_badge_if_missing(user, "Student")
+        # if email_is_student:
+        #     self.assign_badge_if_missing(user, "Student")
 
+        profile = Profile.objects.get(user=user)
 
+        badge_conditions = {
+            "Experienced": level >= 5,
+            "Excellent": avg_rating >= 4.0,
+            "Community Contributor": completed_volunteering >= 5,
+            "Student": email_is_student
+        }
 
-            # Verified badge logic will be added later
+        for badge_name, should_have in badge_conditions.items():
+            try:
+                badge = Badge.objects.get(name=badge_name)
+                has_badge = profile.badges.filter(id=badge.id).exists()
+
+                if should_have and not has_badge:
+                    print(f"Assigning badge '{badge_name}' to user {user.id}")
+                    profile.badges.add(badge)
+
+                elif not should_have and has_badge:
+                    print(f"Removing badge '{badge_name}' from user {user.id}")
+                    profile.badges.remove(badge)
+
+            except Badge.DoesNotExist:
+                print(f"Badge '{badge_name}' does not exist.")
+
+        profile.save()
+
+            # Verified badge logic will be added later !!!!!!!!!!

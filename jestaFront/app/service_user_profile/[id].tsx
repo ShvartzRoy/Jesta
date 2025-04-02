@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useContext } from 'react';
+import React, { useEffect, useState, useContext, useRef } from 'react';
 import { View, Text, Image, StyleSheet, ActivityIndicator, ScrollView, TouchableOpacity, Linking, Alert, FlatList, Modal } from 'react-native';
 import { useLocalSearchParams, router } from 'expo-router';
 import Ionicons from '@expo/vector-icons/Ionicons';
@@ -8,6 +8,10 @@ import { UserContext } from '../contexts/authContext';
 import ServiceCardLina from '../components/serviceComponents/ServiceCardLina';
 import RankBadgeSection from '../components/serviceComponents/RankBadgeSection';
 import AllBadgesModal from '../components/serviceComponents/AllBadgesModal';
+import ConfettiCannon from 'react-native-confetti-cannon';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
+
 
 
 
@@ -36,6 +40,11 @@ const ServiceUserProfileScreen = () => {
 
   const [userXP, setUserXP] = useState(0);
   const [userLevel, setUserLevel] = useState(1);
+
+  const [prevLevel, setPrevLevel] = useState(userLevel);
+  const [showConfetti, setShowConfetti] = useState(false);
+
+  const previousLevelRef = useRef(userLevel); 
 
 
   interface Badge {
@@ -75,7 +84,7 @@ useEffect(() => {
   if (userId) {
     fetchAverageRating();
   }
-}, [userId]);
+}, [userId,refreshTrigger]);
 
 
   
@@ -136,6 +145,24 @@ useEffect(() => {
         setReceivedReviews(reviewsRes.data);
         setUserXP(xpRes.data);
         setUserLevel(levelRes.data);
+
+    
+
+        if (userId === user?.id) {
+          const storedLevel = await AsyncStorage.getItem('lastSeenLevel');
+          const numericStoredLevel = parseInt(storedLevel || "0");
+        
+          if (levelRes.data > numericStoredLevel) {
+            setShowConfetti(true);
+            setTimeout(() => setShowConfetti(false), 3000);
+        
+            await AsyncStorage.setItem('lastSeenLevel', levelRes.data.toString());
+          }
+        }
+        
+
+
+
         const profileData = profileRes.data;
 
         if (profileData.image) {
@@ -300,6 +327,21 @@ useEffect(() => {
         userName={profile?.name}
         onPressSeeAll={() => setShowAllBadges(true)}
       />
+
+
+      {showConfetti && (
+        <ConfettiCannon
+          count={100}
+          origin={{ x: 200, y: 0 }}
+          explosionSpeed={350}
+          fallSpeed={3000}
+          fadeOut
+        />
+        
+      )}
+
+      
+
 
 
 
@@ -467,6 +509,17 @@ useEffect(() => {
           )
         )}
       </ScrollView>
+
+
+      <Modal visible={showConfetti} transparent animationType="fade">
+        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: 'rgba(0,0,0,0.4)' }}>
+          <View style={{ backgroundColor: 'white', padding: 24, borderRadius: 16, elevation: 10 }}>
+            <Text style={{ fontSize: 28, fontWeight: 'bold', textAlign: 'center' }}> 🎉 Leveled Up 🎉 </Text>
+            <Text style={{ fontSize: 18, marginTop: 10, textAlign: 'center' }}> Keep going! </Text>
+          </View>
+        </View>
+      </Modal>
+
     </View>
   );
 };
