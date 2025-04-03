@@ -1,4 +1,4 @@
-import React, { useState , useEffect } from 'react';
+import React, { useState , useEffect, useRef } from 'react';
 import { View, Text, TouchableOpacity, Alert, StyleSheet, Image, Modal, FlatList } from 'react-native';
 import axios from 'axios';
 import ApplicantsModal from './ApplicantsModal';
@@ -7,6 +7,10 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { Share } from 'react-native';
 import ReviewModal from './ReviewModal';
+
+import { Animated } from 'react-native';
+
+
 
 const styles = StyleSheet.create({
   actionButton: {
@@ -106,7 +110,7 @@ export default function ServiceCard({
   const serviceType = service.service_from === 'provider' ? 'Offer' : 'Request';
 
   const router = useRouter();
-  const [creatorName, setCreatorName] = useState<string>('Loading...');
+  const [creatorName, setCreatorName] = useState<string>('');
   const [creatorImage, setCreatorImage] = useState<string | null>(null);
 
 
@@ -116,6 +120,21 @@ export default function ServiceCard({
   const [applicantState, setApplicantState] = useState<string | null>(null);
 
   const [descriptionVisible, setDescriptionVisible] = useState(false);
+
+  const [imageLoaded, setImageLoaded] = useState(false);
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+
+
+
+  const handleImageLoad = () => {
+    setImageLoaded(true);
+    Animated.timing(fadeAnim, {
+      toValue: 1,
+      duration: 300,
+      useNativeDriver: true,
+    }).start();
+  };
+  
 
 
   useEffect(() => {
@@ -168,6 +187,9 @@ export default function ServiceCard({
 
   const isCompleted = service.state === 'completed';
 
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
+
+
   
 
 
@@ -185,7 +207,7 @@ export default function ServiceCard({
         console.log('Review check error:', err.response?.data || err.message);
       });
     }
-  }, [isCompleted, applicantState, service.id, user.id]);
+  }, [isCompleted, applicantState, service.id, user.id, refreshTrigger]);
   
 
 
@@ -235,7 +257,6 @@ export default function ServiceCard({
 
   const [acceptedApplicants, setAcceptedApplicants] = useState<any[]>([]);
 
-  const [refreshTrigger, setRefreshTrigger] = useState(0);
   
 
   useEffect(() => {
@@ -548,32 +569,50 @@ const shouldShowUnapplyButton =
 
         {!hideOwner && (
         <TouchableOpacity onPress={() => router.push(`/service_user_profile/${service.user_id}`)}>
-         <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 8 }}>
-         {creatorImage && creatorImage.startsWith('http') ? (
-  <Image
-    source={{ uri: creatorImage }}
-    style={{ width: 28, height: 28, borderRadius: 14, marginRight: 8 }}
-  />
-) : (
-  <View
-    style={{
-      width: 24,
-      height: 24,
-      borderRadius: 12,
-      backgroundColor: '#ccc',
-      justifyContent: 'center',
-      alignItems: 'center',
-      marginRight: 8,
-    }}
-  >
-    <Text style={{ color: 'white', fontSize: 12 }}>👤</Text>
-  </View>
-)}
 
-            <Text style={{ color: '#007AFF', fontWeight: 'bold' }}>
-              Created by: {creatorName}
-            </Text>
-          </View>
+
+        <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 8 }}>
+          {!imageLoaded && (
+            <View
+              style={{
+                width: 28,
+                height: 28,
+                borderRadius: 14,
+                backgroundColor: '#ccc',
+                justifyContent: 'center',
+                alignItems: 'center',
+                marginRight: 8,
+              }}
+            >
+              <Text style={{ color: 'white', fontSize: 12 }}>👤</Text>
+            </View>
+          )}
+
+          {creatorImage && (
+            <Animated.Image
+              source={{ uri: creatorImage }}
+              style={{
+                width: 28,
+                height: 28,
+                borderRadius: 14,
+                marginRight: 8,
+                opacity: fadeAnim,
+              }}
+              onLoad={handleImageLoad}
+            />
+          )}
+
+          <Text style={{ color: '#007AFF', fontWeight: 'bold' }}>
+            Created by: {creatorName}
+          </Text>
+        </View>
+
+
+
+
+
+
+
 
 
         </TouchableOpacity>

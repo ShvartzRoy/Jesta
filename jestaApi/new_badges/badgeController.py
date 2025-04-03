@@ -111,7 +111,7 @@ class BadgeController:
 
         badge_conditions = {
             "Experienced": level >= 5,
-            "Excellent": avg_rating >= 4.0,
+            "Excellent": avg_rating > 3.9,
             "Community Contributor": completed_volunteering >= 5,
             "Student": email_is_student
         }

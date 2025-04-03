@@ -303,12 +303,7 @@ useEffect(() => {
         )}
 
       <View style={styles.nameAgeChatContainer}>
-        {averageRating && (
-          <View style={{ flexDirection: 'row', alignItems: 'center', marginRight: 6 }}>
-            <Ionicons name="star" size={28} color="#fbc02d" />
-            <Text style={{ fontWeight: 'bold',fontSize: 18, marginLeft: 4 }}>{averageRating.toFixed(1)}</Text>
-          </View>
-        )}
+       
         <Text style={styles.name}>{profile?.name}</Text>
         <Text style={styles.age}>{profile?.age}</Text>
         {accepted && (
@@ -317,6 +312,15 @@ useEffect(() => {
           </TouchableOpacity>
         )}
       </View>
+
+
+      {averageRating && (
+        <View style={{ flexDirection: 'row', alignItems: 'center', marginRight: 6 }}>
+          <Ionicons name="star" size={28} color="#fbc02d" />
+          <Text style={{ fontWeight: 'bold', fontSize: 18, marginLeft: 4 }}>{averageRating.toFixed(1)}</Text>
+        </View>
+      )}
+
 
 
       {/* XP + Level + Badge Row */}

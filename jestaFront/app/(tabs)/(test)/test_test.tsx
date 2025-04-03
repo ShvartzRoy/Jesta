@@ -105,18 +105,37 @@ export default function ExplorePage() {
 
 
 
+
+
   const fetchUserCity = async (manual = false) => {
     try {
+      setLoadingCity(true);
+  
+      const servicesEnabled = await Location.hasServicesEnabledAsync();
+      if (!servicesEnabled) {
+        if (manual) {
+          Alert.alert("Location Disabled", "Please enable location services (GPS) in your phone settings.");
+        }
+        setLoadingCity(false);
+        return;
+      }
+  
       const { status } = await Location.requestForegroundPermissionsAsync();
       const granted = status === 'granted';
       setLocationPermissionGranted(granted); 
   
       if (!granted) {
         if (manual) Alert.alert("Permission Denied", "Please enable location access in your phone settings.");
+        setLoadingCity(false);
         return;
       }
   
-      const location = await Location.getCurrentPositionAsync({});
+      const location = await Location.getCurrentPositionAsync({
+        accuracy: Location.Accuracy.High,
+        maximumAge: 5000,
+        timeout: 5000, 
+      });
+  
       const geocode = await Location.reverseGeocodeAsync(location.coords);
       const city = geocode?.[0]?.city;
   
@@ -130,9 +149,10 @@ export default function ExplorePage() {
       console.error("Manual location error:", err);
       if (manual) Alert.alert("Error", "Something went wrong detecting your location.");
     } finally {
-      setLoadingCity(false);
+      setLoadingCity(false); 
     }
   };
+  
   
   
 
