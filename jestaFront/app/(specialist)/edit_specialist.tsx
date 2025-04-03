@@ -69,7 +69,7 @@ const EditSpecialist = () => {
   return (
     <View style={styles.container}>
       {/* Back Button */}
-      <TouchableOpacity onPress={() => router.push('/profile')} style={styles.backButton}>
+      <TouchableOpacity onPress={() => router.push('/mainprofile')} style={styles.backButton}>
         <Ionicons name="arrow-back" size={24} color="#007bff" />
       </TouchableOpacity>
       <Text style={styles.title}>Create Specialist Profile</Text>

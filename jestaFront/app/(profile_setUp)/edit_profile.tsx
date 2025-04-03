@@ -180,7 +180,7 @@ const Edit_profile = () => {
           <View style={styles.container}>
             <TouchableOpacity
               style={styles.returnButton}
-              onPress={() => router.replace('/profile')}
+              onPress={() => router.replace('/mainprofile')}
             >
               <Ionicons name="arrow-back" size={24} color="blue" />
             </TouchableOpacity>

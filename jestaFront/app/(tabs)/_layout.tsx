@@ -67,7 +67,7 @@ export default function TabsLayout() {
         }}
       />
       <Tabs.Screen
-        name="(profile)/profile"
+        name="(mainprofile)/mainprofile"
         options={{
           headerTitle: 'Profile', // Title displayed in the header
           tabBarIcon: ({ color, focused }) => (

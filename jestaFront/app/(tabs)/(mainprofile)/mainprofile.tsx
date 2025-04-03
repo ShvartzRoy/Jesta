@@ -3,11 +3,13 @@ import { View, Text, Image, StyleSheet, ActivityIndicator, ScrollView, Touchable
 import { useLocalSearchParams, router } from 'expo-router';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import axios from 'axios';
-import SpecialistShowCard from '../components/serviceComponents/specialistShowCard';
-import { UserContext } from '../contexts/authContext';
-import ServiceCardLina from '../components/serviceComponents/ServiceCardLina';
-import RankBadgeSection from '../components/serviceComponents/RankBadgeSection';
-import AllBadgesModal from '../components/serviceComponents/AllBadgesModal';
+import SpecialistShowCard from '../../components/serviceComponents/specialistShowCard';
+import { UserContext } from '../../contexts/authContext';
+import ServiceCardLina from '../../components/serviceComponents/ServiceCardLina';
+import RankBadgeSection from '../../components/serviceComponents/RankBadgeSection';
+import AllBadgesModal from '../../components/serviceComponents/AllBadgesModal';
+import Menu from '../../components/profileComponents/menu';
+
 import ConfettiCannon from 'react-native-confetti-cannon';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
@@ -16,10 +18,12 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 
 
-const ServiceUserProfileScreen = () => {
-  const { id } = useLocalSearchParams();
-  const userId = id ? parseInt(id as string) : null;
+const ProfileScreen = () => {
+
+
   const { user } = useContext(UserContext);
+  const userId = user?.id;
+
 
   const [profile, setProfile] = useState(null);
   const [specialists, setSpecialists] = useState([]);
@@ -61,6 +65,9 @@ const ServiceUserProfileScreen = () => {
 
 
   const [averageRating, setAverageRating] = useState<number | null>(null);
+
+  const [isMenuVisible, setIsMenuVisible] = useState(false);
+
 
 
   const cleanBadgeArray = (badges: any[]) =>
@@ -127,71 +134,71 @@ useEffect(() => {
   
 
 useEffect(() => {
-  const fetchProfile = async () => {
-    try {
-      const res = await axios.get(`${process.env.EXPO_PUBLIC_HOST}/api/users/get_profile/${userId}`);
-      const profileData = res.data;
-
-      if (profileData.image) {
-        profileData.image = `${process.env.EXPO_PUBLIC_HOST}${profileData.image}`;
-      }
-
-      setProfile(profileData); 
-    } catch (err) {
-      console.error("Error fetching profile:", err.response?.data || err.message);
-      Alert.alert("Error", "Failed to load profile.");
-    }
-  };
-
-  if (userId) fetchProfile();
-}, [userId]);
-
-
-useEffect(() => {
-  const fetchExtras = async () => {
-    try {
-      const headers = { Authorization: `Bearer ${user.token}` };
-
-      const [servicesRes, reviewsRes, xpRes, levelRes] = await Promise.all([
-        axios.get(`${process.env.EXPO_PUBLIC_HOST}/api/services/get_list_of_all_completed_services_of_user/${userId}`, { headers }),
-        axios.get(`${process.env.EXPO_PUBLIC_HOST}/api/reviews/get_reviews/${userId}/`, { headers }),
-        axios.get(`${process.env.EXPO_PUBLIC_HOST}/api/ranks/get_xp/${userId}/`, { headers }),
-        axios.get(`${process.env.EXPO_PUBLIC_HOST}/api/ranks/get_level/${userId}/`, { headers }),
-      ]);
-
-      setCompletedServices(servicesRes.data);
-      setReceivedReviews(reviewsRes.data);
-      setUserXP(xpRes.data);
-      setUserLevel(levelRes.data);
-
-      if (userId === user?.id) {
-        const storedLevel = await AsyncStorage.getItem('lastSeenLevel');
-        const numericStoredLevel = parseInt(storedLevel || "0");
-
-        if (levelRes.data > numericStoredLevel) {
-          setShowConfetti(true);
-          setTimeout(() => setShowConfetti(false), 3000);
-          await AsyncStorage.setItem('lastSeenLevel', levelRes.data.toString());
+    const fetchProfile = async () => {
+      try {
+        const res = await axios.get(`${process.env.EXPO_PUBLIC_HOST}/api/users/get_profile/${userId}`);
+        const profileData = res.data;
+  
+        if (profileData.image) {
+          profileData.image = `${process.env.EXPO_PUBLIC_HOST}${profileData.image}`;
         }
+  
+        setProfile(profileData); 
+      } catch (err) {
+        console.error("Error fetching profile:", err.response?.data || err.message);
+        Alert.alert("Error", "Failed to load profile.");
       }
-    } catch (err) {
-      console.error("Error fetching profile extras:", err.response?.data || err.message);
-      Alert.alert("Error", "Failed to load extra profile info.");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  if (userId && user?.token) fetchExtras();
-}, [userId, refreshTrigger]);
-
+    };
+  
+    if (userId) fetchProfile();
+  }, [userId]);
+  
+  
+  useEffect(() => {
+    const fetchExtras = async () => {
+      try {
+        const headers = { Authorization: `Bearer ${user.token}` };
+  
+        const [servicesRes, reviewsRes, xpRes, levelRes] = await Promise.all([
+          axios.get(`${process.env.EXPO_PUBLIC_HOST}/api/services/get_list_of_all_completed_services_of_user/${userId}`, { headers }),
+          axios.get(`${process.env.EXPO_PUBLIC_HOST}/api/reviews/get_reviews/${userId}/`, { headers }),
+          axios.get(`${process.env.EXPO_PUBLIC_HOST}/api/ranks/get_xp/${userId}/`, { headers }),
+          axios.get(`${process.env.EXPO_PUBLIC_HOST}/api/ranks/get_level/${userId}/`, { headers }),
+        ]);
+  
+        setCompletedServices(servicesRes.data);
+        setReceivedReviews(reviewsRes.data);
+        setUserXP(xpRes.data);
+        setUserLevel(levelRes.data);
+  
+        if (userId === user?.id) {
+          const storedLevel = await AsyncStorage.getItem('lastSeenLevel');
+          const numericStoredLevel = parseInt(storedLevel || "0");
+  
+          if (levelRes.data > numericStoredLevel) {
+            setShowConfetti(true);
+            setTimeout(() => setShowConfetti(false), 3000);
+            await AsyncStorage.setItem('lastSeenLevel', levelRes.data.toString());
+          }
+        }
+      } catch (err) {
+        console.error("Error fetching profile extras:", err.response?.data || err.message);
+        Alert.alert("Error", "Failed to load extra profile info.");
+      } finally {
+        setLoading(false);
+      }
+    };
+  
+    if (userId && user?.token) fetchExtras();
+  }, [userId, refreshTrigger]);
+  
 
 
   useEffect(() => {
 
     const fetchData = async () => {
       try {
-        const profileRes = await axios.get(`${process.env.EXPO_PUBLIC_HOST}/api/users/get_profile/${id}`);
+        const profileRes = await axios.get(`${process.env.EXPO_PUBLIC_HOST}/api/users/get_profile/${userId}`);
         const profileData = profileRes.data;
         const { badges: _, ...profileWithoutBadges } = profileData;
 
@@ -204,7 +211,7 @@ useEffect(() => {
 
 
         try {
-          const specialistsResponse = await axios.get(`${process.env.EXPO_PUBLIC_HOST}/api/specialists/get_specialist/${id}/`);
+          const specialistsResponse = await axios.get(`${process.env.EXPO_PUBLIC_HOST}/api/specialists/get_specialist/${userId}/`);
           if (specialistsResponse.data && typeof specialistsResponse.data === 'object') {
             setSpecialists([specialistsResponse.data]);
           }
@@ -214,7 +221,7 @@ useEffect(() => {
 
         const allServicesResponse = await axios.get(`${process.env.EXPO_PUBLIC_HOST}/api/services/get_all_services`);
         const allServices = allServicesResponse.data;
-        const userServices = allServices.filter(service => service.user_id == id);
+        const userServices = allServices.filter(service => service.user_id == userId);
         setServices(userServices);
 
         const accepted = userServices.some(service =>
@@ -234,10 +241,10 @@ useEffect(() => {
       }
     };
 
-    if (id && user?.id) {
+    if (userId && user?.id) {
       fetchData();
     }
-  }, [id]);
+  }, [userId]);
 
   const toggleSave = async (serviceId) => {
     try {
@@ -254,6 +261,11 @@ useEffect(() => {
     const supported = await Linking.canOpenURL(url);
     if (supported) await Linking.openURL(url);
   };
+
+  const toggleMenu = () => {
+    setIsMenuVisible(!isMenuVisible);
+  };
+  
 
   if (loading) {
     return (
@@ -283,13 +295,62 @@ useEffect(() => {
 
   return (
     <View style={{ flex: 1, backgroundColor: '#f0f4f8' }}>
-      <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+      {/* <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
         <Ionicons name="arrow-back" size={24} color="#007bff" />
-      </TouchableOpacity>
+      </TouchableOpacity> */}
+
+
+
+{/* menu button */}
+
+      <TouchableOpacity onPress={toggleMenu} style={{
+            position: 'absolute',
+            top: 20,
+            right: 16,
+            zIndex: 10,
+            backgroundColor: '#f8f8f8',
+            borderRadius: 30,
+            padding: 10,
+            shadowColor: '#000',
+            shadowOffset: { width: 0, height: 2 },
+            shadowOpacity: 0.1,
+            shadowRadius: 4,
+            elevation: 5,
+            }}>
+            <Text style={{ fontSize: 24, fontWeight: 'bold' }}>☰</Text>
+            </TouchableOpacity>
+
+
+{/* create specialist button */}
+
+            {user?.id === userId && specialists.length === 0 && (
+            <TouchableOpacity
+                onPress={() => router.push('/create_specialist')}
+                style={{
+                position: 'absolute',
+                top: 20,
+                left: 16,
+                zIndex: 10,
+                backgroundColor: '#f8f8f8',
+                borderRadius: 30,
+                padding: 10,
+                shadowColor: '#000',
+                shadowOffset: { width: 0, height: 2 },
+                shadowOpacity: 0.1,
+                shadowRadius: 4,
+                elevation: 5,
+                }}
+            >
+                <Ionicons name="add" size={24} color="#007bff" />
+            </TouchableOpacity>
+            )}
+
+
 
       <ScrollView contentContainerStyle={styles.container}>
         {profile?.image ? (
-          <Image source={{ uri: profile.image }} style={styles.image} />
+            <Image source={{ uri: profile.image }} style={[styles.image, { top: 0 }]} />
+         
         ) : (
           <View style={styles.placeholderImage}>
             <Text style={styles.placeholderText}>No Image</Text>
@@ -518,13 +579,17 @@ useEffect(() => {
         </View>
       </Modal>
 
+
+      {isMenuVisible && <Menu onClose={() => setIsMenuVisible(false)} />}
+
+
     </View>
   );
 };
 
 const styles = StyleSheet.create({
   center: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: 'white' },
-  container: { paddingTop: 80, padding: 16, alignItems: 'center' },
+  container: { paddingTop: 30, padding: 16, alignItems: 'center' },
   image: { width: 150, height: 150, borderRadius: 100, marginBottom: 16 },
   placeholderImage: { width: 100, height: 100, borderRadius: 50, backgroundColor: '#ddd', justifyContent: 'center', alignItems: 'center', marginBottom: 16 },
   placeholderText: { color: '#888' },
@@ -541,6 +606,7 @@ const styles = StyleSheet.create({
   chatText: { color: 'white', fontWeight: 'bold', fontSize: 16, textAlign: 'center' },
   backButton: { position: 'absolute', top: 60, left: 16, zIndex: 10, backgroundColor: '#f8f8f8', borderRadius: 30, padding: 10, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 4, elevation: 5 },
   error: { color: 'red', fontSize: 16 },
+
 
   nameAgeChatContainer: {
     flexDirection: 'row',
@@ -661,4 +727,4 @@ const styles = StyleSheet.create({
   
 });
 
-export default ServiceUserProfileScreen;
+export default ProfileScreen;

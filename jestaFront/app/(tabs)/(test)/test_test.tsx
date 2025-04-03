@@ -602,7 +602,7 @@ export default function ExplorePage() {
   
 
   return (
-    <View style={{ flex: 1, padding: 10 }}>
+    <View style={{ flex: 1, padding: 10, backgroundColor: '#f0f4f8' , top : 20}}>
       {showSavedServices ? (
         <ScrollView>
   
@@ -819,10 +819,9 @@ export default function ExplorePage() {
           />
   
           {/* Services List */}
-          {loadingCity  ? (
+          { loading || loadingCity  ? (
             <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', paddingTop: 50 }}>
             <ActivityIndicator size="large" color="#007AFF" />
-            <Text>Loading location preferences...</Text>
             </View>
 
           ) : filteredServices.length > 0 ? (
