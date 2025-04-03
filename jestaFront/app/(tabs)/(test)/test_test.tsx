@@ -21,6 +21,15 @@ import { normalizeCityName } from '../../../hooks/cityUtils';
 import { getDistance } from 'geolib';
 import * as Location from 'expo-location';
 
+import {
+  scheduleServiceReminders,
+  updateReminders,
+  cancelReminders,
+  getReminderIds,
+  isReminderOutdated,
+} from '../../../hooks/reminderUtils';
+
+
 
 
 
@@ -101,6 +110,11 @@ export default function ExplorePage() {
 
   const [locationPermissionGranted, setLocationPermissionGranted] = useState(false);
 
+  const shownOutdatedReminderIds = useRef<Set<number>>(new Set());
+
+
+
+
 
 
 
@@ -152,6 +166,35 @@ export default function ExplorePage() {
       setLoadingCity(false); 
     }
   };
+
+
+  useEffect(() => {
+    const checkOutdatedReminders = async () => {
+      for (const service of services) {
+        const isAcceptedApplicant = service.applicants?.some(
+          (applicant: any) =>
+            applicant.user_id === user.id && applicant.applicant_state === 'accepted'
+        );
+  
+        const isCreator = service.user_id === user.id;
+  
+        if (!isAcceptedApplicant && !isCreator) continue;
+  
+        const reminder = await getReminderIds(service.id);
+        const isOutdated = await isReminderOutdated(service);
+  
+        if (reminder && isOutdated) {
+          await updateReminders(service);
+        }
+      }
+    };
+  
+    if (services.length > 0) {
+      checkOutdatedReminders();
+    }
+  }, [services]);
+  
+  
   
   
   
@@ -553,6 +596,10 @@ export default function ExplorePage() {
   const openServiceModal = (service: Service) => {
     console.log('Open Service:', service.id);
   };
+
+
+
+  
 
   return (
     <View style={{ flex: 1, padding: 10 }}>

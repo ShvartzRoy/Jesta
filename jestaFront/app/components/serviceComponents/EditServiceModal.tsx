@@ -43,18 +43,26 @@ export default function EditServiceModal({ visible, onClose, service, user, onSa
   const [durationDays, setDurationDays] = useState('');
   const [durationHours, setDurationHours] = useState('');
 
-  useEffect(() => {
-    if (visible && service) {
-      setTitle(service.title);
-      setDescription(service.description);
-      setLocation(service.location);
-      setLocationQuery(service.location);
-      setOfferedPayment(service.offered_payment.toString());
-      setSelectedTags(service.tags);
-      setStartDate(new Date(service.date_time_range[0]));
-      setEndDate(new Date(service.date_time_range[1]));
-    }
-  }, [visible, service]);
+  const [initialized, setInitialized] = useState(false);
+
+useEffect(() => {
+  if (visible && service && !initialized) {
+    setTitle(service.title);
+    setDescription(service.description);
+    setLocation(service.location);
+    setLocationQuery(service.location);
+    setOfferedPayment(service.offered_payment.toString());
+    setSelectedTags(service.tags);
+    setStartDate(new Date(service.date_time_range[0]));
+    setEndDate(new Date(service.date_time_range[1]));
+    setDurationDays(''); 
+    setDurationHours('');
+    setInitialized(true);
+  }
+}, [visible, service, initialized]);
+
+
+
 
   const formatDateTime = (date) => `${date.toLocaleDateString()} ${date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
   const convertToISO8601 = () => {
@@ -69,6 +77,7 @@ export default function EditServiceModal({ visible, onClose, service, user, onSa
     setLocation('');
     setSelectedTags([]);
     setLocationQuery('');
+    setInitialized(false); 
     onClose();
   };
 

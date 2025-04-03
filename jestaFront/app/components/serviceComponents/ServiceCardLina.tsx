@@ -7,8 +7,18 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { Share } from 'react-native';
 import ReviewModal from './ReviewModal';
-
+import * as Notifications from 'expo-notifications';
 import { Animated } from 'react-native';
+import {
+  scheduleServiceReminders,
+  updateReminders,
+  cancelReminders,
+  getReminderIds,
+  isReminderOutdated,
+} from '../../../hooks/reminderUtils';
+
+
+
 
 
 
@@ -25,6 +35,8 @@ const styles = StyleSheet.create({
     elevation: 3,
     alignItems: 'center',
     justifyContent: 'center',
+    marginBottom: 5,
+    marginTop: 5,
   },
 });
 
@@ -124,6 +136,41 @@ export default function ServiceCard({
   const [imageLoaded, setImageLoaded] = useState(false);
   const fadeAnim = useRef(new Animated.Value(0)).current;
 
+  const [reminderSet, setReminderSet] = useState(false);
+
+  const isCompleted = service.state === 'completed';
+
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
+
+
+
+
+
+  useEffect(() => {
+    if (applicantState === 'accepted' && !isCompleted && service.id && service.date_time_range?.length) {
+      console.log("Updating reminders for applicant...");
+      updateReminders(service);
+    }
+  }, [JSON.stringify(service.date_time_range), applicantState, isCompleted]);
+
+
+  useEffect(() => {
+    if (applicantState === 'accepted' && !isCompleted) {
+      updateReminders(service);
+    }
+  }, [refreshTrigger]);
+
+  
+  
+  useEffect(() => {
+    const checkReminder = async () => {
+      const data = await getReminderIds(service.id);
+      setReminderSet(!!data);
+    };
+    checkReminder();
+  }, [service.id]);
+  
+
 
 
   const handleImageLoad = () => {
@@ -141,6 +188,9 @@ export default function ServiceCard({
     const updated = service.applicants.find((applicant) => applicant.user_id === user.id);
     setApplicantState(updated?.applicant_state || null);
   }, [service.applicants, user.id]);
+
+
+  
   
 
   useEffect(() => {
@@ -185,9 +235,8 @@ export default function ServiceCard({
 
   const [hasReviewed, setHasReviewed] = useState(false);
 
-  const isCompleted = service.state === 'completed';
 
-  const [refreshTrigger, setRefreshTrigger] = useState(0);
+
 
 
   
@@ -257,7 +306,11 @@ export default function ServiceCard({
 
   const [acceptedApplicants, setAcceptedApplicants] = useState<any[]>([]);
 
-  
+
+
+ 
+
+
 
   useEffect(() => {
     if (isCompleted) {
@@ -351,10 +404,21 @@ export default function ServiceCard({
   
   
 
-  const handleServiceUpdate = (updatedService: Service) => {
+  const handleServiceUpdate = async (updatedService: Service) => {
     const updatedUserApplicant = updatedService.applicants.find(app => app.user_id === user.id);
     setApplicantState(updatedUserApplicant?.applicant_state || null);
     setIsApplied(!!updatedUserApplicant);
+
+
+    try {
+      await removeServiceReminders(updatedService.id);
+      await scheduleServiceReminders(updatedService);
+      await updateReminders(updatedService);
+
+      setReminderSet(true);
+    } catch (e) {
+      console.warn("Failed to update reminder after edit");
+    }
   
     if (onUpdateService) {
       onUpdateService(updatedService);
@@ -699,10 +763,10 @@ const shouldShowUnapplyButton =
           service.user_id === user.id &&
           service.applicants.length > 0 && (
         <>
-          <TouchableOpacity style={styles.actionButton} onPress={() => setApplicantsVisible(true)}>
+          <TouchableOpacity style={[styles.actionButton, {backgroundColor:'#28a745'}]} onPress={() => setApplicantsVisible(true)}>
             <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-            <Ionicons name="people-outline" size={22} color="#28a745" />
-            <Text style={{ marginLeft: 6, color: '#28a745', fontWeight: 'bold' }}>Applicants</Text>
+            <Ionicons name="people-outline" size={22} color="#ffffff" />
+            <Text style={{ marginLeft: 6, color: '#ffffff', fontWeight: 'bold' }}>Applicants</Text>
             </View>
 
           </TouchableOpacity>
@@ -738,10 +802,10 @@ const shouldShowUnapplyButton =
 
         {/* Mark as Completed */}
         {service.user_id === user.id && !isCompleted && (
-          <TouchableOpacity style={styles.actionButton} onPress={markServiceAsCompleted}>
+          <TouchableOpacity style={[styles.actionButton, {backgroundColor:'#0d98ba'}]} onPress={markServiceAsCompleted}>
             <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-            <Ionicons name="checkmark-done-outline" size={22} color="#6c63ff" />
-            <Text style={{ marginLeft: 6, color: '#6c63ff', fontWeight: 'bold' }}>Complete</Text>
+            <Ionicons name="checkmark-done-outline" size={22} color="#ffffff" />
+            <Text style={{ marginLeft: 6, color: '#ffffff', fontWeight: 'bold' }}>Complete</Text>
             </View>
           </TouchableOpacity>
         )}
@@ -755,7 +819,7 @@ const shouldShowUnapplyButton =
         (service.user_id !== user.id && applicantState === 'accepted')
       ) && (
         <TouchableOpacity
-          style={styles.actionButton}
+          style={[styles.actionButton,{backgroundColor: hasReviewed ? '#28a745' : '#FFA500'}]}
           onPress={() => {
             if (service.user_id === user.id) {
               setShowApplicantsForReview(true);
@@ -769,11 +833,11 @@ const shouldShowUnapplyButton =
           <Ionicons
             name={service.user_id !== user.id && hasReviewed ? "checkmark-circle-outline" : "star-outline"}
             size={22}
-            color={service.user_id !== user.id && hasReviewed ? "green" : "#FFA500"}
+            color={service.user_id !== user.id && hasReviewed ? "white" : "white"}
           />
           <Text style={{
             marginLeft: 6,
-            color: service.user_id !== user.id && hasReviewed ? "green" : "#FFA500",
+            color: service.user_id !== user.id && hasReviewed ? "white" : "white",
             fontWeight: 'bold',
           }}>
             {service.user_id !== user.id && hasReviewed ? "Reviewed" : "Review"}
@@ -785,17 +849,49 @@ const shouldShowUnapplyButton =
     )}
   
   
-          {/* Save */}
+
+      {/* Set Reminder */}
+        <TouchableOpacity
+        style={[
+          styles.actionButton,
+          { backgroundColor: reminderSet ? '#ff5252' : '#7e57c2' }
+        ]}
+        onPress={async () => {
+          try {
+            if (reminderSet) {
+              await cancelReminders(service.id);
+              Alert.alert('Removed', 'Reminder and calendar event removed.');
+              setReminderSet(false);
+            } else {
+              await scheduleServiceReminders(service);
+              Alert.alert('Reminder Set', 'Calendar event added!');
+              setReminderSet(true);
+            }
+          } catch (err) {
+            console.error('Reminder error:', err);
+            Alert.alert('Error', 'Failed to handle reminder');
+          }
+        }}
+      >
+        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+          <Ionicons name={reminderSet ? "close-circle-outline" : "alarm-outline"} size={22} color="white" />
+          <Text style={{ marginLeft: 6, color: 'white', fontWeight: 'bold' }}>
+            {reminderSet ? "Remove Reminder" : "Set Reminder"}
+          </Text>
+        </View>
+      </TouchableOpacity>
 
 
+
+   
 
         {/* Edit */}
         {service.user_id === user.id && !isCompleted && (
           <>
-          <TouchableOpacity style={styles.actionButton} onPress={() => setEditVisible(true)}>
+          <TouchableOpacity style={[styles.actionButton, {backgroundColor: '#FFA500'}]} onPress={() => setEditVisible(true)}>
             <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-            <Ionicons name="create-outline" size={22} color="#FFA500" />
-            <Text style={{ marginLeft: 6, color: '#FFA500', fontWeight: 'bold' }}>Edit</Text>
+            <Ionicons name="create-outline" size={22} color="#ffffff " />
+            <Text style={{ marginLeft: 6, color: 'white', fontWeight: 'bold' }}>Edit</Text>
             </View>
           </TouchableOpacity>
           <EditServiceModal
@@ -811,13 +907,19 @@ const shouldShowUnapplyButton =
 
         {/* Delete */}
         {service.user_id === user.id && (
-          <TouchableOpacity style={styles.actionButton} onPress={confirmDelete}>
+          <TouchableOpacity style={[styles.actionButton, {backgroundColor:'#dc3545'}]} onPress={confirmDelete}>
+            
             <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-            <Ionicons name="trash-outline" size={22} color="#dc3545" />
-            <Text style={{ marginLeft: 6, color: '#dc3545', fontWeight: 'bold' }}>Delete</Text>
+            <Ionicons name="trash-outline" size={22} color="#ffffff" />
+            <Text style={{ marginLeft: 6, color: 'white', fontWeight: 'bold' }}>Delete</Text>
             </View>
           </TouchableOpacity>
         )}
+
+
+
+
+
       </View>
 
 
