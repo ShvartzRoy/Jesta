@@ -38,6 +38,9 @@ interface FiltersBarProps {
   hideLocationInput?: boolean;
   radiusKm: string;
   setRadiusKm: (val: string) => void;
+  includeCompleted: boolean;
+  setIncludeCompleted: (val: boolean) => void;
+
 
 }
 
@@ -58,6 +61,8 @@ export default function FiltersBar({
   hideLocationInput = false,
   radiusKm,
   setRadiusKm,
+  includeCompleted,
+  setIncludeCompleted,
 }: FiltersBarProps) {
   const [days, setDays] = useState('');
   const [hours, setHours] = useState('');
@@ -229,6 +234,22 @@ export default function FiltersBar({
 
      
       </View>
+
+      <View style={styles.checkboxRow}>
+      <TouchableOpacity
+        onPress={() => setIncludeCompleted(!includeCompleted)}
+        style={styles.checkboxContainer}
+      >
+        <Ionicons
+          name={includeCompleted ? 'checkbox' : 'square-outline'}
+          size={24}
+          color={includeCompleted ? '#28a745' : '#aaa'}
+        />
+        <Text style={styles.checkboxLabel}>Include Completed Services</Text>
+      </TouchableOpacity>
+    </View>
+
+
     </View>
   );
 }
@@ -333,6 +354,14 @@ const styles = StyleSheet.create({
     marginLeft: 6,
     fontSize: 14,
   },
+
+  checkboxRow: {
+    marginTop: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  
+  
   
   
   

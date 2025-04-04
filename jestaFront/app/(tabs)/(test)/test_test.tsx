@@ -112,6 +112,9 @@ export default function ExplorePage() {
 
   const shownOutdatedReminderIds = useRef<Set<number>>(new Set());
 
+  const [includeCompleted, setIncludeCompleted] = useState(false);
+
+
 
 
 
@@ -341,6 +344,12 @@ export default function ExplorePage() {
     if (!filterMine) result = result.filter(service => service.user_id !== user.id);
     else result = result.filter(service => service.user_id === user.id);
 
+
+    if (!includeCompleted) {
+      result = result.filter(service => service.state !== 'completed');
+    }
+    
+
     //Location
     // if (location.trim() !== '') {
     //   result = result.filter(service => service.location.toLowerCase().includes(location.toLowerCase()));
@@ -436,6 +445,8 @@ export default function ExplorePage() {
     setNearby(false);            
     setRadiusKm('');            
     setUseGpsNearby(false); 
+    setIncludeCompleted(false);
+
 
 
   };
@@ -781,6 +792,8 @@ export default function ExplorePage() {
                 radiusKm={radiusKm}
                 setRadiusKm={setRadiusKm}
                 hideLocationInput={useGpsNearby} 
+                includeCompleted={includeCompleted}
+                setIncludeCompleted={setIncludeCompleted}
               />
   
               <TagBar

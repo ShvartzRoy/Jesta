@@ -864,6 +864,7 @@ const shouldShowUnapplyButton =
   
 
       {/* Set Reminder */}
+      {!isCompleted && (
         <TouchableOpacity
         style={[
           styles.actionButton,
@@ -893,6 +894,8 @@ const shouldShowUnapplyButton =
           </Text>
         </View>
       </TouchableOpacity>
+
+      )}
 
 
 
