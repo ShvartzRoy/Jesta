@@ -12,7 +12,8 @@ from django.contrib.auth.hashers import check_password
 # from django.core.mail import send_mail
 # from django.conf import settings
 import requests
-from new_ranks.xp_service import add_xp_for_referral
+from new_ranks.xp_service import XPService
+
 
 
 
@@ -43,13 +44,9 @@ class userController:
         
         if user is not None:
             login(request, user)
-            
-            
-        if user.is_authenticated:
-            send_push_notification_to_user(user, "Hello again!", "You are logged in.")
             return user
         
-            return user
+        
         raise AuthenticationError("Invalid credentials")
         
         
@@ -108,13 +105,25 @@ class userController:
         
         # Hash the password before saving
         payload.password = make_password(payload.password)
+        
+        
         user = CustomUser.objects.create(
             username= email, email = email, password=payload.password,  referred_by=referred_by,
         )
         user.save()
         
+
+        
         if referred_by:
-            add_xp_for_referral(referred_by.id)
+            xp_service = XPService()
+            xp_service.add_xp_for_referral(referred_by.id)
+            xp_service.add_xp_for_referral(user.id) 
+            
+
+
+            
+        login(request, user)
+
 
         return user
     

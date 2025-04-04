@@ -841,7 +841,7 @@ export default function ExplorePage() {
               />
             ))
           ) : (
-            <Text style={{ textAlign: 'center', marginTop: 20 }}>No services available.</Text>
+            <Text style={{ textAlign: 'center', marginTop: 20 }}></Text>
           )}
         </ScrollView>
       )}

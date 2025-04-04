@@ -8,7 +8,7 @@ export default function TabsLayout() {
         tabBarActiveTintColor: '#0056d6', // Blue theme for active icon
         tabBarInactiveTintColor: 'rgb(63, 63, 63)', // Light gray for inactive icons
         headerStyle: {
-          backgroundColor: 'rgba(0,122,255,1)', // Blue header background
+          backgroundColor: '#1e3a8a', // Blue header background
         },
         headerShadowVisible: false, // No shadow for a cleaner look
         headerTintColor: '#fff', // White header text

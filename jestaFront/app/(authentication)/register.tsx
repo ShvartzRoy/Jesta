@@ -13,6 +13,9 @@ export default function RegisterScreen() {
   const [isError, setError] = useState([false, '']);
   const router = useRouter();
 
+  const [referralCode, setReferralCode] = useState("");
+
+
   const handleRegister = async () => {
     setError([false, '']);
     if (!email || !password) {
@@ -26,24 +29,39 @@ export default function RegisterScreen() {
       const response = await axios.post(`${process.env.EXPO_PUBLIC_HOST}/api/users/register`, {
         email: email.trim(),
         password: password.trim(),
+        referral_code: referralCode.trim() || null,
+
+
       });
       // Handle success
       console.log("User registered:", response.data);
       // Log into new account
-      const loginResponse = await axios.post(`${process.env.EXPO_PUBLIC_HOST}/api/users/login`, {
-        email: email.trim(),
-        password: password.trim(),
-      });
+
+
+
+      // const loginResponse = await axios.post(`${process.env.EXPO_PUBLIC_HOST}/api/users/login`, {
+      //   email: email.trim(),
+      //   password: password.trim(),
+      // }, {withCredentials: true}
+    //);
+
+
+
       // Handle success
       console.log("User logged in:", response.data);
       // Set current user
       setUser({ loggedIn: true, userName: response.data.username, id: response.data.id });
+
+
+      
       // Navigate to the set profile page
       router.push("/set_profile");
       setEmail("");
       setPassword("");
     } catch (error) {
+      
       setError([true, error.response?.data || error.message]);
+
     } finally {
       setLoading(false);
     }
@@ -65,6 +83,7 @@ export default function RegisterScreen() {
         <TextInput
           style={styles.input}
           placeholder="Email"
+          placeholderTextColor={"#888"}
           value={email}
           onChangeText={setEmail}
           keyboardType="email-address"
@@ -72,11 +91,24 @@ export default function RegisterScreen() {
         <TextInput
           style={styles.input}
           placeholder="Password"
+          placeholderTextColor={"#888"}
+
           value={password}
           onChangeText={setPassword}
           secureTextEntry
           
         />
+
+      <TextInput
+        style={styles.input}
+        placeholder="Referral Code (optional)"
+        placeholderTextColor={"#888"}
+
+        value={referralCode}
+        onChangeText={setReferralCode}
+        autoCapitalize="none"
+      />
+
 
         {isError[0] && (
           <Text style={styles.errorMessage}>

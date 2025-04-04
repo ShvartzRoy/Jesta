@@ -52,6 +52,7 @@ class ProfileSchema(ModelSchema):
 
 class GetProfileSchema(ModelSchema):
     badges: list[BadgeSchema]
+    referral_code: str | None = None
     #level: int
     class Meta:
         model = Profile

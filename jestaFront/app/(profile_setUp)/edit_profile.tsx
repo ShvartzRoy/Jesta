@@ -182,7 +182,7 @@ const Edit_profile = () => {
               style={styles.returnButton}
               onPress={() => router.replace('/mainprofile')}
             >
-              <Ionicons name="arrow-back" size={24} color="blue" />
+              <Ionicons name="arrow-back" size={24} color="#0000ff" />
             </TouchableOpacity>
             <Text style={styles.header}>Edit Profile</Text>
 
@@ -239,7 +239,7 @@ const Edit_profile = () => {
             />
 
             {/* Facebook Input */}
-            <Text style={styles.inputTitle}>Facebook Profile</Text>
+            <Text style={styles.inputTitle}>Facebook</Text>
             <TextInput
               style={[
                 styles.input,
@@ -255,7 +255,7 @@ const Edit_profile = () => {
             />
 
             {/* LinkedIn Input */}
-            <Text style={styles.inputTitle}>LinkedIn Profile</Text>
+            <Text style={styles.inputTitle}>LinkedIn</Text>
             <TextInput
               style={[
                 styles.input,
@@ -271,7 +271,7 @@ const Edit_profile = () => {
             />
 
             {/* Instagram Input */}
-            <Text style={styles.inputTitle}>Instagram Profile</Text>
+            <Text style={styles.inputTitle}>Instagram</Text>
             <TextInput
               style={[
                 styles.input,
@@ -322,16 +322,16 @@ const Edit_profile = () => {
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 16, backgroundColor: '#fff' },
+  container: { flex: 1, padding: 20, backgroundColor: '#fff' },
   header: {   fontSize: 32,
     fontWeight: 'bold',
     color: '#333',
-    marginBottom: 32,
+    marginBottom: 20,
     textAlign: 'center',},
   inputTitle: { fontSize: 14, fontWeight: '600', marginBottom: 4 },
   input: {
     width: "100%",
-    padding: 16,
+    padding: 14,
     marginBottom: 16,
     borderWidth: 1,
     borderColor: "#ccc",
@@ -359,9 +359,16 @@ const styles = StyleSheet.create({
   button: {
     backgroundColor: '#5dade2',
     padding: 12,
-    borderRadius: 8,
+    borderRadius: 30,
     marginBottom: 12,
     alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+    
   },
   buttonText: { color: '#fff', fontWeight: 'bold' },
   successMessage: {
@@ -377,7 +384,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
   },
   returnButton: {
-    backgroundColor: 'rgba(142,142,147,0.2)',
+    backgroundColor: '#d6eaf8',
     paddingVertical: 10,
     borderRadius: 100,
     width: 40,

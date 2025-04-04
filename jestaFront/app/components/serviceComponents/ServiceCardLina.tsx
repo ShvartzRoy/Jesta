@@ -19,6 +19,7 @@ import {
 
 
 
+const creatorCache = new Map<number, { name: string; image: string | null }>();
 
 
 
@@ -190,37 +191,49 @@ export default function ServiceCard({
   }, [service.applicants, user.id]);
 
 
-  
+
   
 
-  useEffect(() => {
-    const fetchCreatorName = async () => {
-      try {
-        const response = await axios.get(
-          `${process.env.EXPO_PUBLIC_HOST}/api/services/get_owner_profile/${service.id}`
-        );
-        setCreatorName(response.data.name || 'Unknown');
-    
-        const sanitizeImageUrl = (img: string | null) => {
-          if (!img) return null;
-          const trimmed = img.trim();
-          if (trimmed.startsWith('http')) return trimmed;
-          return `${process.env.EXPO_PUBLIC_HOST?.replace(/\/$/, '')}${trimmed}`;
-        };
-    
-        setCreatorImage(sanitizeImageUrl(response.data.image));
-    
-    
-      } catch (error) {
-        console.error("Error fetching creator name:", error);
-        setCreatorName('Unknown');
-        setCreatorImage(null);
-      }
-    };
-    
-    fetchCreatorName();
-  }, [service.id]);
+useEffect(() => {
+  const fetchCreatorName = async () => {
+    const cached = creatorCache.get(service.user_id);
+    if (cached) {
+      setCreatorName(cached.name);
+      setCreatorImage(cached.image);
+      return;
+    }
 
+    try {
+      const response = await axios.get(
+        `${process.env.EXPO_PUBLIC_HOST}/api/services/get_owner_profile/${service.id}`
+      );
+
+      const name = response.data.name || 'Unknown';
+
+      const sanitizeImageUrl = (img: string | null) => {
+        if (!img) return null;
+        const trimmed = img.trim();
+        if (trimmed.startsWith('http')) return trimmed;
+        return `${process.env.EXPO_PUBLIC_HOST?.replace(/\/$/, '')}${trimmed}`;
+      };
+
+      const image = sanitizeImageUrl(response.data.image);
+
+    
+      creatorCache.set(service.user_id, { name, image });
+
+      setCreatorName(name);
+      setCreatorImage(image);
+
+    } catch (error) {
+      console.error("Error fetching creator name:", error);
+      setCreatorName('Unknown');
+      setCreatorImage(null);
+    }
+  };
+
+  fetchCreatorName();
+}, [service.user_id, service.id]); 
 
   
 

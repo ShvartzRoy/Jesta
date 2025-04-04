@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useContext, useRef } from 'react';
-import { View, Text, Image, StyleSheet, ActivityIndicator, ScrollView, TouchableOpacity, Linking, Alert, FlatList, Modal } from 'react-native';
+import { View, Text, Image, StyleSheet, ActivityIndicator, ScrollView, TouchableOpacity, Linking, Alert, FlatList, Modal, Animated } from 'react-native';
 import { useLocalSearchParams, router } from 'expo-router';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import axios from 'axios';
@@ -20,11 +20,26 @@ import { ToastAndroid, Platform } from 'react-native';
 
 
 
+const profileCache = new Map<number, string>(); // userId -> image URL
+
 
 
 
 
 const ProfileScreen = () => {
+
+const fadeAnim = useRef(new Animated.Value(0)).current;
+const [imageLoaded, setImageLoaded] = useState(false);
+
+const handleImageLoad = () => {
+  setImageLoaded(true);
+  Animated.timing(fadeAnim, {
+    toValue: 1,
+    duration: 300,
+    useNativeDriver: true,
+  }).start();
+};
+
 
 
   const { user } = useContext(UserContext);
@@ -155,14 +170,26 @@ useEffect(() => {
 
 useEffect(() => {
     const fetchProfile = async () => {
+
+      if (profileCache.has(userId)) {
+        setProfile((prev) => ({
+          ...prev,
+          image: profileCache.get(userId),
+        }));
+      }
+
       try {
         const res = await axios.get(`${process.env.EXPO_PUBLIC_HOST}/api/users/get_profile/${userId}`);
         const profileData = res.data;
   
         if (profileData.image) {
-          profileData.image = `${process.env.EXPO_PUBLIC_HOST}${profileData.image}`;
+          const fullImageUrl = `${process.env.EXPO_PUBLIC_HOST}${profileData.image}`;
+          profileData.image = fullImageUrl;
+
+          profileCache.set(userId, fullImageUrl);   
+        
         }
-  
+    
         //setProfile(profileData); 
 
         setProfile({ ...profileData, referral_code: profileData.referral_code });
@@ -397,14 +424,21 @@ useEffect(() => {
 
 
       <ScrollView contentContainerStyle={styles.container}>
-        {profile?.image ? (
-            <Image source={{ uri: profile.image }} style={[styles.image, { top: 0 }]} />
-         
-        ) : (
-          <View style={styles.placeholderImage}>
-            <Text style={styles.placeholderText}>No Image</Text>
-          </View>
-        )}
+      {profile?.image ? (
+        <Animated.Image
+          source={{ uri: profile.image }}
+          onLoad={handleImageLoad}
+          style={[
+            styles.image,
+            { top: 0, opacity: fadeAnim },
+          ]}
+        />
+      ) : (
+        <View style={styles.placeholderImage}>
+          <Text style={styles.placeholderText}>No Image</Text>
+        </View>
+      )}
+
 
 {/* Referral Code Section */} 
       {profile?.referral_code && (
