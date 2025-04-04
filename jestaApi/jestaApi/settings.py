@@ -46,6 +46,7 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'channels',
     'chat',
     'services',
     'users',
@@ -86,6 +87,7 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = 'jestaApi.wsgi.application'
+ASGI_APPLICATION = 'jestaApi.asgi.application'  # 👈 ADD THIS
 
 
 # Database
@@ -156,3 +158,9 @@ MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 # EMAIL_HOST_USER = 'itsjesta@gmail.com'
 # EMAIL_HOST_PASSWORD = 'lina2024'
 # DEFAULT_FROM_EMAIL = 'itsjesta@gmail.com'
+
+CHANNEL_LAYERS = {
+    'default': {
+        'BACKEND': 'channels.layers.InMemoryChannelLayer',
+    },
+}

@@ -32,7 +32,7 @@ services:
       - DATABASE_PASSWORD=user123
     volumes:
       - .:/app
-    command: python /app/manage.py runserver 0.0.0.0:8000
+    command: daphne -b 0.0.0.0 -p 8000 jestaApi.asgi:application
 
 volumes:
   db_data:

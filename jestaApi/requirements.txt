@@ -1,9 +1,16 @@
 Django==5.0.6
 django-ninja==1.1.0
+channels>=4.0.0
+daphne>=3.0.0
+
 psycopg2-binary
 django-cors-headers
 pillow
 python-dateutil
 djangorestframework-simplejwt
+
+django-cleanup
+django-allauth
+django-htmx
 
 #pydantic[email]>=1.10.0
