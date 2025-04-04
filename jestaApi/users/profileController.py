@@ -122,6 +122,11 @@ class profileController:
         badge_list = profile.badges.all()
         data["badges"] = [BadgeSchema.from_orm(badge).dict() for badge in badge_list]
         data["level"] = level
+        
+        data["referral_code"] = user.referral_code 
+        
+
+        
 
         return data
 

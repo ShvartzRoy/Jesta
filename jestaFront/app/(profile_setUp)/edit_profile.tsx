@@ -197,6 +197,8 @@ const Edit_profile = () => {
               placeholder={name || 'Enter your name'}
               value={name}
               onFocus={() => setFocusedField('name')}
+              placeholderTextColor={"#888"}
+
               onBlur={() => setFocusedField(null)}
               onChangeText={setName}
             />
@@ -210,6 +212,8 @@ const Edit_profile = () => {
                 { height: 70 }, // Multiline styling
               ]}
               placeholder={bio || 'Enter your bio'}
+              placeholderTextColor={"#888"}
+
               value={bio}
               onFocus={() => setFocusedField('bio')}
               onBlur={() => setFocusedField(null)}
@@ -225,6 +229,8 @@ const Edit_profile = () => {
                 focusedField === 'age' && styles.focusedInput,
               ]}
               placeholder={age || 'Enter your age'}
+              placeholderTextColor={"#888"}
+
               value={age}
               onFocus={() => setFocusedField('age')}
               onBlur={() => setFocusedField(null)}
@@ -240,6 +246,8 @@ const Edit_profile = () => {
                 focusedField === 'facebook' && styles.focusedInput,
               ]}
               placeholder={facebook || 'Enter your Facebook profile link'}
+              placeholderTextColor={"#888"}
+
               value={facebook}
               onFocus={() => setFocusedField('facebook')}
               onBlur={() => setFocusedField(null)}
@@ -254,6 +262,8 @@ const Edit_profile = () => {
                 focusedField === 'linkedin' && styles.focusedInput,
               ]}
               placeholder={linkedin || 'Enter your LinkedIn profile link'}
+              placeholderTextColor={"#888"}
+
               value={linkedin}
               onFocus={() => setFocusedField('linkedin')}
               onBlur={() => setFocusedField(null)}
@@ -268,6 +278,8 @@ const Edit_profile = () => {
                 focusedField === 'instagram' && styles.focusedInput,
               ]}
               placeholder={instagram || 'Enter your Instagram profile link'}
+              placeholderTextColor={"#888"}
+
               value={instagram}
               onFocus={() => setFocusedField('instagram')}
               onBlur={() => setFocusedField(null)}
@@ -311,27 +323,41 @@ const Edit_profile = () => {
 
 const styles = StyleSheet.create({
   container: { flex: 1, padding: 16, backgroundColor: '#fff' },
-  header: { fontSize: 24, fontWeight: 'bold', marginBottom: 16 },
+  header: {   fontSize: 32,
+    fontWeight: 'bold',
+    color: '#333',
+    marginBottom: 32,
+    textAlign: 'center',},
   inputTitle: { fontSize: 14, fontWeight: '600', marginBottom: 4 },
   input: {
+    width: "100%",
+    padding: 16,
+    marginBottom: 16,
     borderWidth: 1,
-    borderColor: '#ccc',
-    borderRadius: 8,
-    padding: 12,
-    marginBottom: 12,
+    borderColor: "#ccc",
+    borderRadius: 14,
+    backgroundColor: "#fff",
+    fontSize: 16,
+    elevation: 2,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 3,
+    textAlign: 'left', 
+    writingDirection: 'ltr',
   },
   focusedInput: {
-    borderColor: '#007bff',
+    borderColor: '#5dade2',
     borderWidth: 2,
     backgroundColor: '#f9f9ff',
-    shadowColor: '#007bff',
+    shadowColor: '#5dade2',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.2,
     shadowRadius: 4,
     elevation: 4, // For Android
   },
   button: {
-    backgroundColor: '#007bff',
+    backgroundColor: '#5dade2',
     padding: 12,
     borderRadius: 8,
     marginBottom: 12,

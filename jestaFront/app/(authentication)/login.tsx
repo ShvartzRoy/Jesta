@@ -35,7 +35,6 @@ export default function LoginScreen() {
       // If the user has not set up their profile, redirect to set_profile page
       // Check user profile
       try {
-        console.log("checking profile context for:", user.id);
         const response = await axios.get(`${process.env.EXPO_PUBLIC_HOST}/api/users/get_profile/${user.id}`, {
           headers: { "Content-Type": "application/json" },
           withCredentials: true,
@@ -82,6 +81,8 @@ export default function LoginScreen() {
         <TextInput
           style={styles.input}
           placeholder="Email"
+          placeholderTextColor={"#888"}
+
           value={email}
           onChangeText={setEmail}
           keyboardType="email-address"
@@ -89,6 +90,8 @@ export default function LoginScreen() {
         <TextInput
           style={styles.input}
           placeholder="Password"
+          placeholderTextColor={"#888"}
+
           value={password}
           onChangeText={setPassword}
           secureTextEntry

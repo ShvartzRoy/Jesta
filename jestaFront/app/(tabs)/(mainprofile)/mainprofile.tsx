@@ -13,6 +13,12 @@ import Menu from '../../components/profileComponents/menu';
 import ConfettiCannon from 'react-native-confetti-cannon';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
+import * as Clipboard from 'expo-clipboard';
+import { ToastAndroid, Platform } from 'react-native'; 
+
+
+
+
 
 
 
@@ -68,7 +74,21 @@ const ProfileScreen = () => {
 
   const [isMenuVisible, setIsMenuVisible] = useState(false);
 
+  const [showReferralInfo, setShowReferralInfo] = useState(false);
 
+
+
+
+  const copyReferralCode = (code: string) => {
+    Clipboard.setStringAsync(code);
+    
+    if (Platform.OS === 'android') {
+      ToastAndroid.show('Referral code copied!', ToastAndroid.SHORT);
+    } else {
+      Alert.alert('Copied!', 'Referral code has been copied to clipboard.');
+    }
+  };
+  
 
   const cleanBadgeArray = (badges: any[]) =>
     badges.map(({ id, name, description }) => ({
@@ -143,7 +163,10 @@ useEffect(() => {
           profileData.image = `${process.env.EXPO_PUBLIC_HOST}${profileData.image}`;
         }
   
-        setProfile(profileData); 
+        //setProfile(profileData); 
+
+        setProfile({ ...profileData, referral_code: profileData.referral_code });
+
       } catch (err) {
         console.error("Error fetching profile:", err.response?.data || err.message);
         Alert.alert("Error", "Failed to load profile.");
@@ -383,6 +406,24 @@ useEffect(() => {
           </View>
         )}
 
+{/* Referral Code Section */} 
+      {profile?.referral_code && (
+        <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 10 }}>
+          <TouchableOpacity onPress={() => copyReferralCode(profile.referral_code)}>
+            <Text style={{ fontSize: 12, color: '#007bff', textDecorationLine: 'underline' }}>
+              Referral: {profile.referral_code}
+            </Text>
+          </TouchableOpacity>
+          
+          <TouchableOpacity onPress={() => setShowReferralInfo(true)} style={{ marginLeft: 6 }}>
+            <Ionicons name="information-circle-outline" size={20} color="#007bff" />
+          </TouchableOpacity>
+        </View>
+      )}
+
+
+
+
       <View style={styles.nameAgeChatContainer}>
        
         <Text style={styles.name}>{profile?.name}</Text>
@@ -596,6 +637,7 @@ useEffect(() => {
       </ScrollView>
 
 
+{/* confetti */}
       <Modal visible={showConfetti} transparent animationType="fade">
         <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: 'rgba(0,0,0,0.4)' }}>
           <View style={{ backgroundColor: 'white', padding: 24, borderRadius: 16, elevation: 10 }}>
@@ -606,7 +648,28 @@ useEffect(() => {
       </Modal>
 
 
+{/* menu */}
       {isMenuVisible && <Menu onClose={() => setIsMenuVisible(false)} />}
+
+
+
+        {/* Referral Info Modal */}
+        <Modal visible={showReferralInfo} transparent animationType="slide">
+        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: 'rgba(0,0,0,0.5)' }}>
+          <View style={{ backgroundColor: 'white', padding: 24, borderRadius: 16, width: '80%' }}>
+            <Text style={{ fontSize: 18, fontWeight: 'bold', marginBottom: 10 }}>Referral Code</Text>
+            <Text style={{ fontSize: 16, marginBottom: 20 }}>
+              Share this code with friends. When they register using your code, you’ll both earn XP and help grow the community!
+            </Text>
+            <TouchableOpacity
+              style={{ backgroundColor: '#007bff', padding: 12, borderRadius: 8 }}
+              onPress={() => setShowReferralInfo(false)}
+            >
+              <Text style={{ color: 'white', textAlign: 'center', fontWeight: 'bold' }}>Got it!</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
 
 
     </View>

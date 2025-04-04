@@ -25,6 +25,20 @@ class XPService:
         if new_level > rank.level:
             rank.level = new_level
             
+            
+            
+    def add_xp_for_referral(self, referrer_id: int):
+        User = get_user_model()
+        referrer = get_object_or_404(User, id=referrer_id)
+
+        rank, created = Rank.objects.get_or_create(user=referrer)
+        rank.xp += self.XP_REFERRAL
+        self.update_level(rank)
+        rank.save()
+
+        print(f"{referrer.email} earned XP for a referral!")
+
+            
 def add_xp_for_positive_review(self, reviewed_user_id: int, rating: float):
     if rating >= 4.0:
         user = get_object_or_404(settings.AUTH_USER_MODEL, id=reviewed_user_id)
@@ -40,14 +54,4 @@ def add_xp_for_completed_service(self, user_id: int, is_volunteering=False):
     self.update_level(rank)
     rank.save()
             
-def add_xp_for_referral(self, referrer_id: int):
-    User = get_user_model()
-    referrer = get_object_or_404(User, id=referrer_id)
-
-    rank, created = Rank.objects.get_or_create(user=referrer)
-    rank.xp += self.XP_REFERRAL
-    self.update_level(rank)
-    rank.save()
-
-    print(f"{referrer.email} earned XP for a referral!")
 

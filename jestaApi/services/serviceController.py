@@ -14,7 +14,7 @@ from users.models import CustomUser
 from notifications.models import Notification
 import requests
 from django.utils import timezone
-from new_ranks.xp_service import add_xp_for_completed_service, add_xp_for_referral  
+from new_ranks.xp_service import add_xp_for_completed_service  
 from new_ranks.rankController import RankController
 from new_badges.badgeController import BadgeController
 
@@ -383,8 +383,8 @@ class ServiceController:
                             state="completed"
                         ).count()
 
-                        if completed_count == 1:
-                            rc.add_xp_for_referral(user.referred_by.id)
+                        #if completed_count == 1:
+                            #rc.add_xp_for_referral(user.referred_by.id)
 
                     self.send_notification(
                         user,
