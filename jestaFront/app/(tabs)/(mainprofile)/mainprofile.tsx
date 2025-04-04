@@ -155,44 +155,70 @@ useEffect(() => {
   
   
   useEffect(() => {
-    const fetchExtras = async () => {
+
+    const fetchProfileData = async () => {
       try {
         const headers = { Authorization: `Bearer ${user.token}` };
-  
-        const [servicesRes, reviewsRes, xpRes, levelRes] = await Promise.all([
+
+        const [servicesRes, reviewsRes, xpRes, levelRes, profileRes] = await Promise.all([
           axios.get(`${process.env.EXPO_PUBLIC_HOST}/api/services/get_list_of_all_completed_services_of_user/${userId}`, { headers }),
           axios.get(`${process.env.EXPO_PUBLIC_HOST}/api/reviews/get_reviews/${userId}/`, { headers }),
           axios.get(`${process.env.EXPO_PUBLIC_HOST}/api/ranks/get_xp/${userId}/`, { headers }),
           axios.get(`${process.env.EXPO_PUBLIC_HOST}/api/ranks/get_level/${userId}/`, { headers }),
+          axios.get(`${process.env.EXPO_PUBLIC_HOST}/api/users/get_profile/${userId}`, { headers }),
+          
         ]);
-  
+
         setCompletedServices(servicesRes.data);
         setReceivedReviews(reviewsRes.data);
         setUserXP(xpRes.data);
         setUserLevel(levelRes.data);
-  
+
+    
+
         if (userId === user?.id) {
           const storedLevel = await AsyncStorage.getItem('lastSeenLevel');
           const numericStoredLevel = parseInt(storedLevel || "0");
-  
+        
           if (levelRes.data > numericStoredLevel) {
             setShowConfetti(true);
             setTimeout(() => setShowConfetti(false), 3000);
+        
             await AsyncStorage.setItem('lastSeenLevel', levelRes.data.toString());
           }
         }
+        
+
+
+
+        const profileData = profileRes.data;
+
+        if (profileData.image) {
+          profileData.image = `${process.env.EXPO_PUBLIC_HOST}${profileData.image}`;
+        }
+        
+        setProfile(profileData);
+
+        const cleanedBadges = profileData.badges.map(({ id, name, description }) => ({
+          id,
+          name,
+          description,
+        }));
+        setBadges(cleanBadgeArray(profileData.badges));
+
+        console.log("Initial badge fetch (one-time):", profileData.badges);
+        
+
       } catch (err) {
-        console.error("Error fetching profile extras:", err.response?.data || err.message);
-        Alert.alert("Error", "Failed to load extra profile info.");
+        console.error("Error fetching profile data:", err.response?.data || err.message);
+        Alert.alert("Error", "Failed to load profile info.");
       } finally {
         setLoading(false);
       }
     };
-  
-    if (userId && user?.token) fetchExtras();
-  }, [userId, refreshTrigger]);
-  
 
+    fetchProfileData();
+  }, [userId,refreshTrigger]);
 
   useEffect(() => {
 
