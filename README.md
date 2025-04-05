@@ -315,6 +315,10 @@ Verify:
 ```bash
 \l
 ```
+Create the database:
+```bash
+CREATE DATABASE jesta_db;
+```
 Exit:
 ```bash
 \q
