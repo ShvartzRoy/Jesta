@@ -19,7 +19,6 @@ const RankBadgeSection = ({
   const progressPercent = Math.min((xp % xpToNextLevel) / xpToNextLevel, 1);
 
   useEffect(() => {
-    console.log("RankBadgeSection received badges:", badges);
   }, [badges]);
   
 

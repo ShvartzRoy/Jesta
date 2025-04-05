@@ -52,10 +52,12 @@ export default function RegisterScreen() {
       // Set current user
       setUser({ loggedIn: true, userName: response.data.username, id: response.data.id });
 
+      router.push(`/set_profile?referralCode=${referralCode.trim()}`);
+
+
 
       
-      // Navigate to the set profile page
-      router.push("/set_profile");
+      //router.push("/set_profile");
       setEmail("");
       setPassword("");
     } catch (error) {

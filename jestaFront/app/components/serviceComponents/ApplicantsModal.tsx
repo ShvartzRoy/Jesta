@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Modal, View, Text, TouchableOpacity, FlatList, Alert } from 'react-native';
 import axios from 'axios';
+import { useRouter } from 'expo-router';
+
 
 export default function ApplicantsModal({
   visible,
@@ -22,8 +24,8 @@ export default function ApplicantsModal({
   isCompleted?: boolean;
 }) {
   const [applicantList, setApplicantList] = useState<any[]>([]);
-  const [selectedProfile, setSelectedProfile] = useState<any>(null);
-  const [profileVisible, setProfileVisible] = useState(false);
+  //const [selectedProfile, setSelectedProfile] = useState<any>(null);
+  //const [profileVisible, setProfileVisible] = useState(false);
 
   useEffect(() => {
     if (visible) {
@@ -110,26 +112,46 @@ export default function ApplicantsModal({
     }
   };
 
+  // const openProfile = async (email: string) => {
+  //   try {
+  //     const encodedEmail = encodeURIComponent(email);
+  //     const response = await axios.get(
+  //       `${process.env.EXPO_PUBLIC_HOST}/api/services/get_user_id_by_email/${encodedEmail}`,
+  //       { headers: { Authorization: `Bearer ${user.token}` } }
+  //     );
+
+  //     const user_id = response.data["user_id"];
+  //     const profileResponse = await axios.get(
+  //       `${process.env.EXPO_PUBLIC_HOST}/api/users/get_profile/${user_id}`,
+  //       { headers: { Authorization: `Bearer ${user.token}` } }
+  //     );
+  //     setSelectedProfile(profileResponse.data);
+  //     setProfileVisible(true);
+  //   } catch (error) {
+  //     console.error('Error fetching profile:', error.response?.data || error.message);
+  //     Alert.alert('Error', 'Failed to load profile.');
+  //   }
+  // };
+
+
   const openProfile = async (email: string) => {
     try {
       const encodedEmail = encodeURIComponent(email);
       const response = await axios.get(
         `${process.env.EXPO_PUBLIC_HOST}/api/services/get_user_id_by_email/${encodedEmail}`,
-        { headers: { Authorization: `Bearer ${user.token}` } }
+        {
+          headers: { Authorization: `Bearer ${user.token}` },
+        }
       );
-
-      const user_id = response.data["user_id"];
-      const profileResponse = await axios.get(
-        `${process.env.EXPO_PUBLIC_HOST}/api/users/get_profile/${user_id}`,
-        { headers: { Authorization: `Bearer ${user.token}` } }
-      );
-      setSelectedProfile(profileResponse.data);
-      setProfileVisible(true);
+  
+      const user_id = response.data.user_id;
+      router.push(`/service_user_profile/${user_id}`);
     } catch (error) {
-      console.error('Error fetching profile:', error.response?.data || error.message);
-      Alert.alert('Error', 'Failed to load profile.');
+      console.error('Error opening profile:', error.response?.data || error.message);
+      Alert.alert('Error', 'Unable to open profile.');
     }
   };
+  
 
   const renderApplicant = ({ item }: { item: any }) => (
     <View
@@ -140,12 +162,18 @@ export default function ApplicantsModal({
         paddingBottom: 10,
       }}
     >
-      <Text
-        style={{ fontWeight: 'bold', color: '#007AFF', marginBottom: 5 }}
-        onPress={() => openProfile(item.email)}
-      >
+
+
+    <TouchableOpacity onPress={() => openProfile(item.email)}>
+      <Text style={{ fontWeight: 'bold', color: '#007AFF', marginBottom: 5 }}>
         Email: {item.email}
       </Text>
+    </TouchableOpacity>
+
+
+
+
+
       <Text style={{ marginBottom: 5 }}>
         Status:{' '}
         <Text
@@ -188,6 +216,10 @@ export default function ApplicantsModal({
     </View>
   );
 
+
+  const router = useRouter();
+
+
   return (
     <Modal visible={visible} transparent animationType="slide">
       <View style={{ flex: 1, backgroundColor: '#00000099', justifyContent: 'center', alignItems: 'center' }}>
@@ -215,7 +247,7 @@ export default function ApplicantsModal({
         </View>
       </View>
 
-      {/* Profile Modal */}
+      {/* Profile Modal }
       <Modal visible={profileVisible} transparent animationType="slide">
         <View style={{ flex: 1, backgroundColor: '#00000099', justifyContent: 'center', alignItems: 'center' }}>
           <View style={{ backgroundColor: 'white', padding: 20, borderRadius: 10, width: '90%' }}>
@@ -240,7 +272,13 @@ export default function ApplicantsModal({
             </TouchableOpacity>
           </View>
         </View>
-      </Modal>
+      </Modal> */}
+
+
+
+
+
+
     </Modal>
   );
 }

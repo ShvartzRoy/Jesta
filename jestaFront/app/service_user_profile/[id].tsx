@@ -13,6 +13,7 @@ import ConfettiCannon from 'react-native-confetti-cannon';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 
+// this file is for the profiles opened from the explore page
 
 
 
@@ -63,6 +64,10 @@ const ServiceUserProfileScreen = () => {
 
   const [averageRating, setAverageRating] = useState<number | null>(null);
 
+  const [isCreatorOfAcceptedApplicant, setIsCreatorOfAcceptedApplicant] = useState(false);
+
+//-------------------------------
+
 
   const cleanBadgeArray = (badges: any[]) =>
     badges.map(({ id, name, description }) => ({
@@ -71,6 +76,7 @@ const ServiceUserProfileScreen = () => {
       description,
     }));
   
+//-------------------------------
 
 useEffect(() => {
   const fetchAverageRating = async () => {
@@ -87,6 +93,7 @@ useEffect(() => {
   }
 }, [userId,refreshTrigger]);
 
+//-------------------------------
 
   
   useEffect(() => {
@@ -112,12 +119,16 @@ useEffect(() => {
   
     fetchBadges();
   }, [userId]);
+//-------------------------------
 
 
   const handleReviewSuccess = () => {
     setRefreshTrigger(prev => prev + 1);
   };
+ 
   
+  //-------------------------------
+
   useEffect(() => {
     const interval = setInterval(() => {
       setRefreshTrigger((prev) => prev + 1);
@@ -126,6 +137,7 @@ useEffect(() => {
     return () => clearInterval(interval); 
   }, []);
   
+//-------------------------------
 
   useEffect(() => {
 
@@ -179,11 +191,9 @@ useEffect(() => {
         }));
         setBadges(cleanBadgeArray(profileData.badges));
 
-        console.log("Initial badge fetch (one-time):", profileData.badges);
         
 
       } catch (err) {
-        console.error("Error fetching profile data:", err.response?.data || err.message);
         Alert.alert("Error", "Failed to load profile info.");
       } finally {
         setLoading(false);
@@ -193,6 +203,11 @@ useEffect(() => {
     fetchProfileData();
   }, [userId,refreshTrigger]);
 
+
+
+
+
+  //-------------------------------
 
   useEffect(() => {
 
@@ -207,7 +222,6 @@ useEffect(() => {
         }
         
         setProfile(profileWithoutBadges);
-        console.log("Skipped profile.badges overwrite:", profileData.badges);
 
 
         try {
@@ -219,11 +233,17 @@ useEffect(() => {
           setSpecialists([]);
         }
 
+
+ //-------------------------------
+       
         const allServicesResponse = await axios.get(`${process.env.EXPO_PUBLIC_HOST}/api/services/get_all_services`);
         const allServices = allServicesResponse.data;
         const userServices = allServices.filter(service => service.user_id == id);
         setServices(userServices);
 
+
+ //-------------------------------
+       
         const accepted = userServices.some(service =>
           service.applicants?.some(
             applicant => applicant.user_id === user.id && applicant.applicant_state === 'accepted'
@@ -231,6 +251,18 @@ useEffect(() => {
         );
         setAccepted(accepted);
 
+//-------------------------------
+
+    const creatorHasThisUserAsApplicant = allServices.some(service =>
+      service.user_id === user.id &&
+      service.applicants?.some(
+        applicant => applicant.user_id === parseInt(id) 
+      )
+    );
+    setIsCreatorOfAcceptedApplicant(creatorHasThisUserAsApplicant);
+
+        
+//-------------------------------
         const savedRes = await axios.get(`${process.env.EXPO_PUBLIC_HOST}/api/users/get_saved_services/${user.id}`);
         setSaved(savedRes.data.map(service => service.id));
       } catch (err) {
@@ -246,6 +278,10 @@ useEffect(() => {
     }
   }, [id]);
 
+
+  //-------------------------------
+
+
   const toggleSave = async (serviceId) => {
     try {
       const isAlreadySaved = saved.includes(serviceId);
@@ -257,10 +293,20 @@ useEffect(() => {
     }
   };
 
+
+  //-------------------------------
+
+
+
+
   const openLink = async (url) => {
     const supported = await Linking.canOpenURL(url);
     if (supported) await Linking.openURL(url);
   };
+
+
+  //-------------------------------
+
 
   if (loading) {
     return (
@@ -282,6 +328,10 @@ useEffect(() => {
     );
   }
 
+
+  //-------------------------------
+
+
   const filteredServices = services.filter(service => {
     if (activeTab === 'request') return service.service_from === 'publisher';
     if (activeTab === 'offer') return service.service_from === 'provider';
@@ -290,11 +340,17 @@ useEffect(() => {
 
   return (
     <View style={{ flex: 1, backgroundColor: '#f0f4f8' }}>
+
+
+      {/* Back Button */}
       <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
         <Ionicons name="arrow-back" size={24} color="#007bff" />
       </TouchableOpacity>
 
       <ScrollView contentContainerStyle={styles.container}>
+
+
+        {/* Profile Image */}
         {profile?.image ? (
           <Image source={{ uri: profile.image }} style={styles.image} />
         ) : (
@@ -303,18 +359,57 @@ useEffect(() => {
           </View>
         )}
 
+        {/* Name and Age and chats Row */}
+
       <View style={styles.nameAgeChatContainer}>
        
         <Text style={styles.name}>{profile?.name}</Text>
         <Text style={styles.age}>{profile?.age}</Text>
-        {accepted && (
+
+
+
+      {/* Chat Icons */}
+      {(accepted || isCreatorOfAcceptedApplicant) && (
+        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+         
+         
+         {/* regular chat icon */}
+         
           <TouchableOpacity onPress={() => Alert.alert('Open private chat')} style={styles.chatIconButton}>
             <Ionicons name="chatbubble-ellipses-outline" size={28} color="#007bff" />
           </TouchableOpacity>
-        )}
+
+
+          {/* WhatsApp chat */}
+
+          {profile?.phone_number && (
+            <TouchableOpacity
+              onPress={() => {
+                const phone = profile.phone_number.replace(/\D/g, '');
+                const url = `https://wa.me/${phone}`;
+                Linking.canOpenURL(url)
+                  .then((supported) => {
+                    if (supported) {
+                      Linking.openURL(url);
+                    } else {
+                      Alert.alert("Error", "WhatsApp is not installed or phone number is invalid.");
+                    }
+                  });
+              }}
+              style={styles.chatIconButton}
+            >
+              <Ionicons name="logo-whatsapp" size={28} color="#25D366" />
+            </TouchableOpacity>
+          )}
+        </View>
+      )}
+
+
+
       </View>
 
 
+      { /* Average Rating */}
       {averageRating && (
         <View style={{ flexDirection: 'row', alignItems: 'center', marginRight: 6 }}>
           <Ionicons name="star" size={28} color="#fbc02d" />
@@ -334,6 +429,7 @@ useEffect(() => {
       />
 
 
+{/*show Confetti if level increased*/}
       {showConfetti && (
         <ConfettiCannon
           count={100}
@@ -348,9 +444,11 @@ useEffect(() => {
       
 
 
-
+{/* Bio */}
 
         <Text style={styles.bio}>{profile?.bio}</Text>
+
+        {/* Social Links */}
 
         <View style={styles.socialLinks}>
           {profile?.facebook && (
@@ -369,6 +467,9 @@ useEffect(() => {
             </TouchableOpacity>
           )}
         </View>
+
+
+        {/*specialists */}
 
         {specialists.length > 0 && (
           <>
@@ -411,6 +512,7 @@ useEffect(() => {
       )}
     </ScrollView>
 
+{/* all badges */}
 
     <AllBadgesModal
       visible={showAllBadges}
@@ -515,7 +617,7 @@ useEffect(() => {
         )}
       </ScrollView>
 
-
+{/* confetti modal */}
       <Modal visible={showConfetti} transparent animationType="fade">
         <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: 'rgba(0,0,0,0.4)' }}>
           <View style={{ backgroundColor: 'white', padding: 24, borderRadius: 16, elevation: 10 }}>

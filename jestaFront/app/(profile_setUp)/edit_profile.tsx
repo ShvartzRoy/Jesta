@@ -1,4 +1,4 @@
-import React, { useContext, useState, useEffect } from 'react';
+import React, { useContext, useState, useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -12,6 +12,7 @@ import {
   KeyboardAvoidingView,
   ScrollView,
   Platform,
+  Alert,
 } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import * as DocumentPicker from 'expo-document-picker';
@@ -19,6 +20,9 @@ import axios from 'axios';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { UserContext } from '../contexts/authContext';
+import PhoneInput from 'react-native-phone-number-input';
+
+
 
 const Edit_profile = () => {
   const { user } = useContext(UserContext);
@@ -35,8 +39,14 @@ const Edit_profile = () => {
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   const [isError, setError] = useState([false, '']);
-  const [focusedField, setFocusedField] = useState(null);
 
+  const [phoneNumber, setPhoneNumber] = useState('');
+  const [formattedPhone, setFormattedPhone] = useState('');
+  const phoneInput = useRef(null);
+
+  const [focusedField, setFocusedField] = useState(null);
+ 
+  
   // Handle image upload
   const handleImageUpload = async () => {
     const result = await ImagePicker.launchImageLibraryAsync({
@@ -96,6 +106,14 @@ const Edit_profile = () => {
     setSuccess(false);
     setError([false, '']);
 
+
+    if (!phoneInput.current?.isValidNumber(phoneNumber)) {
+      Alert.alert("Invalid Phone", "Please enter a valid WhatsApp number.");
+      setLoading(false);
+      return;
+    }
+    
+
     const formData = new FormData();
     formData.append(
       'payload',
@@ -106,7 +124,8 @@ const Edit_profile = () => {
         facebook,
         linkedin,
         instagram,
-      })
+        phone_number: formattedPhone,
+   })
     );
 
     // Append image
@@ -159,6 +178,9 @@ const Edit_profile = () => {
           setFacebook(response.data.facebook);
           setLinkedin(response.data.linkedin);
           setInstagram(response.data.instagram);
+          setPhoneNumber(response.data.phone_number || '');
+          setFormattedPhone(response.data.phone_number || '');
+
         } catch (error) {
           //console.error('Error fetching profile:', error);
         } finally {
@@ -287,22 +309,51 @@ const Edit_profile = () => {
             />
 
 
-            <TouchableOpacity onPress={handleImageUpload} style={styles.button}>
-              <Text style={styles.buttonText}>
-                {image ? `Image: ${image.fileName}` : 'Upload Profile Image'}
+            {/* Phone Number for WhatsApp */}
+            <Text style={styles.inputTitle}>Phone Number (WhatsApp)</Text>
+            <PhoneInput
+              ref={phoneInput}
+              defaultValue={phoneNumber}
+              defaultCode="IL" 
+              layout="first"
+              onChangeText={(text) => {
+                setPhoneNumber(text);
+              }}
+              onChangeFormattedText={(text) => {
+                setFormattedPhone(text); 
+              }}
+              withShadow
+              autoFocus={false}
+              containerStyle={{ marginBottom: 16 }}
+            />
+
+
+
+
+{/* Image Upload Button + resume */}
+          <View style={styles.buttonRow}>
+            <TouchableOpacity onPress={handleImageUpload} style={[styles.button, { flex: 1, marginRight: 8 }]}>
+              <Text style={styles.buttonText} numberOfLines={1}>
+                {image ? `Image: ${image.fileName}` : 'Upload Image'}
               </Text>
             </TouchableOpacity>
 
-            <TouchableOpacity onPress={handleResumeUpload} style={styles.button}>
-              <Text style={styles.buttonText}>
-                {resume ? `Resume: ${resume.name}` : 'Upload Resume (PDF)'}
+            <TouchableOpacity onPress={handleResumeUpload} style={[styles.button, { flex: 1, marginLeft: 8 }]}>
+              <Text style={styles.buttonText} numberOfLines={1}>
+                {resume ? `Resume: ${resume.name}` : 'Upload Resume'}
               </Text>
             </TouchableOpacity>
+          </View>
 
+
+
+  {/* Submit Button */}
             {loading ? (
               <ActivityIndicator size="large" color="#0000ff" />
             ) : (
-              <Button title="Save Changes" onPress={handleSubmit} />
+              <Button title="Save Changes" onPress={handleSubmit}
+               />
+
             )}
             {isError[0] && (
               <Text style={styles.errorMessage}>
@@ -331,8 +382,8 @@ const styles = StyleSheet.create({
   inputTitle: { fontSize: 14, fontWeight: '600', marginBottom: 4 },
   input: {
     width: "100%",
-    padding: 14,
-    marginBottom: 16,
+    padding: 12,
+    marginBottom: 12,
     borderWidth: 1,
     borderColor: "#ccc",
     borderRadius: 14,
@@ -360,7 +411,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#5dade2',
     padding: 12,
     borderRadius: 30,
-    marginBottom: 12,
+    marginBottom: 10,
     alignItems: 'center',
     justifyContent: 'center',
     shadowColor: '#000',
@@ -373,7 +424,7 @@ const styles = StyleSheet.create({
   buttonText: { color: '#fff', fontWeight: 'bold' },
   successMessage: {
     color: 'green',
-    marginTop: 16,
+    marginTop: 7,
     textAlign: 'center',
     fontSize: 16,
   },
@@ -393,6 +444,16 @@ const styles = StyleSheet.create({
     marginBottom: 16,
     alignItems: 'center',
   },
+
+
+  buttonRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+
+  
 });
 
 export default Edit_profile;

@@ -73,6 +73,7 @@ class Profile(models.Model):
     city = models.CharField(max_length=100, null=True, blank=True)
     badges = models.ManyToManyField(Badge, blank=True)
     referral_code = models.CharField(max_length=20, unique=True, null=True, blank=True)
+    phone_number = models.CharField(max_length=20, null=True, blank=True)
 
     
 

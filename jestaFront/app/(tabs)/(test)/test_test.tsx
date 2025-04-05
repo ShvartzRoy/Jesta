@@ -21,6 +21,9 @@ import { normalizeCityName } from '../../../hooks/cityUtils';
 import { getDistance } from 'geolib';
 import * as Location from 'expo-location';
 
+import { useLocalSearchParams } from 'expo-router';
+
+
 import {
   scheduleServiceReminders,
   updateReminders,
@@ -113,6 +116,16 @@ export default function ExplorePage() {
   const shownOutdatedReminderIds = useRef<Set<number>>(new Set());
 
   const [includeCompleted, setIncludeCompleted] = useState(false);
+
+
+  const { referralCode } = useLocalSearchParams();
+
+  useEffect(() => {
+    if (referralCode) {
+      Alert.alert("🎉 Referral Bonus", "You earned XP for signing up with a referral code!");
+    }
+  }, [referralCode]);
+
 
 
 

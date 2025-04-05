@@ -48,7 +48,7 @@ class ProfileSchema(ModelSchema):
     badges: list[BadgeSchema]
     class Meta:
         model = Profile
-        fields = ["name", "bio", "age", "facebook", "linkedin", "instagram", "city", "badges"]
+        fields = ["name", "bio", "age", "facebook", "linkedin", "instagram", "city", "badges", "phone_number"]
 
 class GetProfileSchema(ModelSchema):
     badges: list[BadgeSchema]
@@ -56,7 +56,7 @@ class GetProfileSchema(ModelSchema):
     #level: int
     class Meta:
         model = Profile
-        fields = ["name", "bio", "age","image","resume", "facebook", "linkedin", "instagram", "city", "badges"]
+        fields = ["name", "bio", "age","image","resume", "facebook", "linkedin", "instagram", "city", "badges", "phone_number"]
         
         
 class CitySchema(Schema):
