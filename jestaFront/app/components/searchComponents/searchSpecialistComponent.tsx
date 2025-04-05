@@ -16,7 +16,7 @@ const SpecialistTagSearch = ({ onSelectTag, onClose }) => {
         setCategories(allTags);
         setFilteredTags(allTags); // Initialize filtered tags with all tags
       } catch (error) {
-        console.error('Error fetching categories:', error);
+        //console.error('Error fetching categories:', error);
       }
     };
 
