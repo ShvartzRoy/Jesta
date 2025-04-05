@@ -1,4 +1,4 @@
-import React, { useContext, useState, useEffect } from 'react';
+import React, { useContext, useState, useEffect , useRef} from 'react';
 import {
   View,
   Text,
@@ -12,6 +12,7 @@ import {
   KeyboardAvoidingView,
   ScrollView,
   Platform,
+  Alert,
 } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import * as DocumentPicker from 'expo-document-picker';
@@ -19,6 +20,13 @@ import axios from 'axios';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { UserContext } from '../contexts/authContext';
+import PhoneInput from 'react-native-phone-number-input';
+
+import { useLocalSearchParams } from 'expo-router';
+
+
+
+
 
 const Set_profile = () => {
   const { user } = useContext(UserContext);
@@ -35,7 +43,26 @@ const Set_profile = () => {
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   const [isError, setError] = useState([false, '']);
+
+  const [phoneNumber, setPhoneNumber] = useState('');
+  const [formattedPhone, setFormattedPhone] = useState('');
+  const phoneInput = useRef(null);
+
   const [focusedField, setFocusedField] = useState(null);
+
+//--------------------
+  const { referralCode } = useLocalSearchParams();
+  // useEffect(() => {
+  //   if (referralCode) {
+  //     Alert.alert(
+  //       "🎉 Referral Bonus!",
+  //       "You earned XP for signing up with a referral code!"
+  //     );
+  //   }
+  // }, [referralCode]);
+//--------------------
+
+
 
   // Handle image upload
   const handleImageUpload = async () => {
@@ -92,9 +119,21 @@ const Set_profile = () => {
 
   // Handle form submission
   const handleSubmit = async () => {
+
+
+    
     setLoading(true);
     setSuccess(false);
     setError([false, '']);
+
+    if (!phoneInput.current?.isValidNumber(phoneNumber)) {
+      Alert.alert("Invalid Phone", "Please enter a valid WhatsApp number.");
+      setLoading(false);
+      return;
+    }
+    
+
+    
 
     const formData = new FormData();
     formData.append(
@@ -106,6 +145,7 @@ const Set_profile = () => {
         facebook,
         linkedin,
         instagram,
+        phone_number: formattedPhone,
       })
     );
 
@@ -159,6 +199,9 @@ const Set_profile = () => {
           setFacebook(response.data.facebook);
           setLinkedin(response.data.linkedin);
           setInstagram(response.data.instagram);
+          setPhoneNumber(response.data.phone_number || '');
+          setFormattedPhone(response.data.phone_number || '');
+
         } catch (error) {
           //console.error('Error fetching profile:', error);
         } finally {
@@ -178,12 +221,16 @@ const Set_profile = () => {
       <ScrollView contentContainerStyle={{ flexGrow: 1 }}>
         <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
           <View style={styles.container}>
+
+
             {success && (
-              <TouchableOpacity style={styles.topRightButton} onPress={() => router.replace('/test_test')}>
+              <TouchableOpacity style={styles.topRightButton} onPress={() => router.replace(`/test_test${referralCode ? `?referralCode=${referralCode}&refreshed=true` : '?refreshed=true'}`)}>
                 <Text style={styles.topRightButtonText}>Advance</Text>
                 <Ionicons name="arrow-forward-outline" style={styles.topRightButtonText} size={24} color="blue" />
               </TouchableOpacity>
             )}
+
+
             <Text style={styles.header}>Create Profile</Text>
 
             {/* Name Input */}
@@ -285,18 +332,41 @@ const Set_profile = () => {
             />
 
 
-            <TouchableOpacity onPress={handleImageUpload} style={styles.button}>
-              <Text style={styles.buttonText}>
-                {image ? `Image: ${image.fileName}` : 'Upload Profile Image'}
+            {/* Phone Number for WhatsApp */}
+            <Text style={styles.inputTitle}>Phone Number *</Text>
+            <PhoneInput
+              ref={phoneInput}
+              defaultValue={phoneNumber}
+              defaultCode="IL" 
+              layout="first"
+              onChangeText={(text) => {
+                setPhoneNumber(text);
+              }}
+              onChangeFormattedText={(text) => {
+                setFormattedPhone(text); 
+              }}
+              withShadow
+              autoFocus={false}
+              containerStyle={{ marginBottom: 16 }}
+            />
+
+
+{/* Image Upload Button + resume */}
+          <View style={styles.buttonRow}>
+            <TouchableOpacity onPress={handleImageUpload} style={[styles.button, { flex: 1, marginRight: 8 }]}>
+              <Text style={styles.buttonText} numberOfLines={1}>
+                {image ? `Image: ${image.fileName}` : 'Upload Image'}
               </Text>
             </TouchableOpacity>
 
-            <TouchableOpacity onPress={handleResumeUpload} style={styles.button}>
-              <Text style={styles.buttonText}>
-                {resume ? `Resume: ${resume.name}` : 'Upload Resume (PDF)'}
+            <TouchableOpacity onPress={handleResumeUpload} style={[styles.button, { flex: 1, marginLeft: 8 }]}>
+              <Text style={styles.buttonText} numberOfLines={1}>
+                {resume ? `Resume: ${resume.name}` : 'Upload Resume'}
               </Text>
             </TouchableOpacity>
+          </View>
 
+{ /* Save Changes Button */}
             {loading ? (
               <ActivityIndicator size="large" color="#0000ff" />
             ) : (
@@ -328,8 +398,8 @@ const styles = StyleSheet.create({
     textAlign: 'center',},  inputTitle: { fontSize: 14, fontWeight: '600', marginBottom: 4 },
     input: {
       width: "100%",
-      padding: 14,
-      marginBottom: 16,
+      padding: 12,
+      marginBottom: 12,
       borderWidth: 1,
       borderColor: "#ccc",
       borderRadius: 14,
@@ -357,7 +427,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#5dade2',
     padding: 12,
     borderRadius: 30,
-    marginBottom: 12,
+    marginBottom: 10,
     alignItems: 'center',
     justifyContent: 'center',
     shadowColor: '#000',
@@ -404,6 +474,15 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontWeight: 'bold',
   },
+
+  buttonRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+
+  
 });
 
 export default Set_profile;

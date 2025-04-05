@@ -364,6 +364,15 @@ class ServiceController:
         bc = BadgeController()
 
         rc.add_xp_for_completed_service(service.user_id, is_volunteer=service.is_volunteering)
+        
+        self.send_notification(
+            service.user,
+            "XP Earned!",
+            f"You earned XP for completing your service '{service.title}' 🎉",
+            data={"type": "xp_earned", "service_id": service.id}
+        )
+
+        
         bc.check_and_assign_all_badges(service.user)
 
 
@@ -373,6 +382,14 @@ class ServiceController:
                     user = CustomUser.objects.get(id=applicant["user_id"])
 
                     rc.add_xp_for_completed_service(user.id, is_volunteer=service.is_volunteering)
+                    
+                    self.send_notification(
+                    user,
+                    "XP Earned!",
+                    f"You earned XP for completing the service '{service.title}' 🎉",
+                    data={"type": "xp_earned", "service_id": service.id}
+                )
+
 
                     bc.check_and_assign_all_badges(user)
 

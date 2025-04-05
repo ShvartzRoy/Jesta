@@ -13,6 +13,10 @@ from django.contrib.auth.hashers import check_password
 # from django.conf import settings
 import requests
 from new_ranks.xp_service import XPService
+from ninja.errors import HttpError
+from notifications.models import Notification
+
+
 
 
 
@@ -21,6 +25,14 @@ def send_push_notification_to_user(user, title, body, data={}):
     if not isinstance(user.expo_push_tokens, list):
         print("expo_push_tokens is not a list!")
         return
+    
+    
+    Notification.objects.create(
+        user=user,
+        title=title,
+        body=body,
+        data=data,
+    )
 
     for token in user.expo_push_tokens:
             print(f"Sending notification to: {token}")
@@ -119,9 +131,7 @@ class userController:
             xp_service.add_xp_for_referral(referred_by.id)
             xp_service.add_xp_for_referral(user.id) 
             
-
-
-            
+   
         login(request, user)
 
 
@@ -193,6 +203,25 @@ class userController:
             request.user.expo_push_tokens.append(token_data)
             request.user.save()
             print(f"Saved token for device {payload.device_id}: {payload.token}")
+            
+            #Send XP notification if user was just registered!!!
+            from notifications.models import Notification
+            recent_notifications = Notification.objects.filter(
+                user=request.user,
+                data__type="xp_earned",
+                data__reason="referred_signup"
+            )
+
+            if not recent_notifications.exists():
+                from .userController import send_push_notification_to_user
+                send_push_notification_to_user(
+                    request.user,
+                    "Welcome Bonus 🎁",
+                    "You earned XP for signing up with a referral code!",
+                    data={"type": "xp_earned", "reason": "referred_signup"}
+                )
+         
+            
         else:
             print(f"Token already exists for device {payload.device_id}")
 

@@ -13,6 +13,7 @@ import ConfettiCannon from 'react-native-confetti-cannon';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 
+// this file is for the profiles opened from the explore page
 
 
 
@@ -179,11 +180,9 @@ useEffect(() => {
         }));
         setBadges(cleanBadgeArray(profileData.badges));
 
-        console.log("Initial badge fetch (one-time):", profileData.badges);
         
 
       } catch (err) {
-        console.error("Error fetching profile data:", err.response?.data || err.message);
         Alert.alert("Error", "Failed to load profile info.");
       } finally {
         setLoading(false);
@@ -207,7 +206,6 @@ useEffect(() => {
         }
         
         setProfile(profileWithoutBadges);
-        console.log("Skipped profile.badges overwrite:", profileData.badges);
 
 
         try {
@@ -290,11 +288,17 @@ useEffect(() => {
 
   return (
     <View style={{ flex: 1, backgroundColor: '#f0f4f8' }}>
+
+
+      {/* Back Button */}
       <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
         <Ionicons name="arrow-back" size={24} color="#007bff" />
       </TouchableOpacity>
 
       <ScrollView contentContainerStyle={styles.container}>
+
+
+        {/* Profile Image */}
         {profile?.image ? (
           <Image source={{ uri: profile.image }} style={styles.image} />
         ) : (
@@ -303,18 +307,50 @@ useEffect(() => {
           </View>
         )}
 
+        {/* Name and Age and chats Row */}
+
       <View style={styles.nameAgeChatContainer}>
        
         <Text style={styles.name}>{profile?.name}</Text>
         <Text style={styles.age}>{profile?.age}</Text>
-        {accepted && (
+
+
+
+      {/* Chat Icons */}
+      {accepted && (
+        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
           <TouchableOpacity onPress={() => Alert.alert('Open private chat')} style={styles.chatIconButton}>
             <Ionicons name="chatbubble-ellipses-outline" size={28} color="#007bff" />
           </TouchableOpacity>
-        )}
+
+          {profile?.phone_number && (
+            <TouchableOpacity
+              onPress={() => {
+                const phone = profile.phone_number.replace(/\D/g, '');
+                const url = `https://wa.me/${phone}`;
+                Linking.canOpenURL(url)
+                  .then((supported) => {
+                    if (supported) {
+                      Linking.openURL(url);
+                    } else {
+                      Alert.alert("Error", "WhatsApp is not installed or phone number is invalid.");
+                    }
+                  });
+              }}
+              style={styles.chatIconButton}
+            >
+              <Ionicons name="logo-whatsapp" size={28} color="#25D366" />
+            </TouchableOpacity>
+          )}
+        </View>
+      )}
+
+
+
       </View>
 
 
+      { /* Average Rating */}
       {averageRating && (
         <View style={{ flexDirection: 'row', alignItems: 'center', marginRight: 6 }}>
           <Ionicons name="star" size={28} color="#fbc02d" />
@@ -334,6 +370,7 @@ useEffect(() => {
       />
 
 
+{/*show Confetti if level increased*/}
       {showConfetti && (
         <ConfettiCannon
           count={100}
@@ -348,9 +385,11 @@ useEffect(() => {
       
 
 
-
+{/* Bio */}
 
         <Text style={styles.bio}>{profile?.bio}</Text>
+
+        {/* Social Links */}
 
         <View style={styles.socialLinks}>
           {profile?.facebook && (
@@ -369,6 +408,9 @@ useEffect(() => {
             </TouchableOpacity>
           )}
         </View>
+
+
+        {/*specialists */}
 
         {specialists.length > 0 && (
           <>
@@ -411,6 +453,7 @@ useEffect(() => {
       )}
     </ScrollView>
 
+{/* all badges */}
 
     <AllBadgesModal
       visible={showAllBadges}
@@ -515,7 +558,7 @@ useEffect(() => {
         )}
       </ScrollView>
 
-
+{/* confetti modal */}
       <Modal visible={showConfetti} transparent animationType="fade">
         <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: 'rgba(0,0,0,0.4)' }}>
           <View style={{ backgroundColor: 'white', padding: 24, borderRadius: 16, elevation: 10 }}>

@@ -20,6 +20,16 @@ import {
   faCrown,
 } from '@fortawesome/free-solid-svg-icons';
 
+
+import { LogBox } from 'react-native';
+
+LogBox.ignoreLogs([
+  'Support for defaultProps will be removed from function components',
+]);
+
+
+
+
 library.add(faUserCheck, faUserGraduate, faUserTie, faHandsHelping, faCrown);
 
 

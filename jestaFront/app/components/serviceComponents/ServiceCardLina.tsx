@@ -149,7 +149,6 @@ export default function ServiceCard({
 
   useEffect(() => {
     if (applicantState === 'accepted' && !isCompleted && service.id && service.date_time_range?.length) {
-      console.log("Updating reminders for applicant...");
       updateReminders(service);
     }
   }, [JSON.stringify(service.date_time_range), applicantState, isCompleted]);

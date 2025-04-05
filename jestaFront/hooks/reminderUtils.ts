@@ -153,7 +153,6 @@ export const updateReminders = async (service: any) => {
 
   const currentHash = generateServiceHash(service);
   if (existing?.lastSeenServiceHash === currentHash) {
-    console.log("Reminder already matches current service — skipping update.");
     return; 
   }
 

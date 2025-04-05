@@ -15,13 +15,18 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import * as Clipboard from 'expo-clipboard';
 import { ToastAndroid, Platform } from 'react-native'; 
+//import RemoveImageModal from '../../components/profileComponents/RemoveImageModal';
 
 
 
+
+
+// this file is the main profile tab
 
 
 const profileCache = new Map<number, string>(); // userId -> image URL
 
+//const gray_placeholder = require('../../../assets/images/gray_placeholder.jpg');
 
 
 
@@ -186,7 +191,7 @@ useEffect(() => {
           const fullImageUrl = `${process.env.EXPO_PUBLIC_HOST}${profileData.image}`;
           profileData.image = fullImageUrl;
 
-          profileCache.set(userId, fullImageUrl);   
+          profileCache.set(userId, fullImageUrl);  
         
         }
     
@@ -256,11 +261,9 @@ useEffect(() => {
         }));
         setBadges(cleanBadgeArray(profileData.badges));
 
-        console.log("Initial badge fetch (one-time):", profileData.badges);
         
 
       } catch (err) {
-        console.error("Error fetching profile data:", err.response?.data || err.message);
         Alert.alert("Error", "Failed to load profile info.");
       } finally {
         setLoading(false);
@@ -283,7 +286,6 @@ useEffect(() => {
         }
         
         setProfile(profileWithoutBadges);
-        console.log("Skipped profile.badges overwrite:", profileData.badges);
 
 
         try {
@@ -422,7 +424,7 @@ useEffect(() => {
             )}
 
 
-
+{/* Profile Image Section */}
       <ScrollView contentContainerStyle={styles.container}>
       {profile?.image ? (
         <Animated.Image
@@ -438,7 +440,6 @@ useEffect(() => {
           <Text style={styles.placeholderText}>No Image</Text>
         </View>
       )}
-
 
 {/* Referral Code Section */} 
       {profile?.referral_code && (
@@ -457,18 +458,16 @@ useEffect(() => {
 
 
 
-
-      <View style={styles.nameAgeChatContainer}>
+{/* Name and Age Section */}
+      <View style={styles.nameAgeContainer}>
        
         <Text style={styles.name}>{profile?.name}</Text>
         <Text style={styles.age}>{profile?.age}</Text>
-        {accepted && (
-          <TouchableOpacity onPress={() => Alert.alert('Open private chat')} style={styles.chatIconButton}>
-            <Ionicons name="chatbubble-ellipses-outline" size={28} color="#007bff" />
-          </TouchableOpacity>
-        )}
+        
       </View>
 
+
+{/* Average Rating Section */}
 
       {averageRating && (
         <View style={{ flexDirection: 'row', alignItems: 'center', marginRight: 6 }}>
@@ -489,6 +488,7 @@ useEffect(() => {
       />
 
 
+{/* Show confetti if level increased */}
       {showConfetti && (
         <ConfettiCannon
           count={100}
@@ -503,10 +503,12 @@ useEffect(() => {
       
 
 
-
+{/* Bio Section */}
 
         <Text style={styles.bio}>{profile?.bio}</Text>
 
+
+{/* Social Links Section */}
         <View style={styles.socialLinks}>
           {profile?.facebook && (
             <TouchableOpacity style={styles.linkContainer} onPress={() => openLink(profile.facebook)}>
@@ -524,6 +526,8 @@ useEffect(() => {
             </TouchableOpacity>
           )}
         </View>
+
+{/* speciality Section */}
 
         {specialists.length > 0 && (
           <>
@@ -567,6 +571,7 @@ useEffect(() => {
     </ScrollView>
 
 
+{/* badges */}
     <AllBadgesModal
       visible={showAllBadges}
       onClose={() => setShowAllBadges(false)}
@@ -725,25 +730,18 @@ const styles = StyleSheet.create({
   linkLogo: { color: '#007bff', fontSize: 20, textAlign: 'center' },
   sectionTitle: { fontSize: 20, fontWeight: 'bold', marginTop: 20, marginBottom: 12, color: '#333' },
   noSpecialistsText: { fontSize: 16, color: '#888', textAlign: 'center', marginTop: 8 },
-  chatButton: { marginTop: 20, backgroundColor: '#007bff', padding: 12, borderRadius: 8 },
-  chatText: { color: 'white', fontWeight: 'bold', fontSize: 16, textAlign: 'center' },
   backButton: { position: 'absolute', top: 60, left: 16, zIndex: 10, backgroundColor: '#f8f8f8', borderRadius: 30, padding: 10, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 4, elevation: 5 },
   error: { color: 'red', fontSize: 16 },
 
 
-  nameAgeChatContainer: {
+  nameAgeContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
     marginBottom: 8,
   },
-  
-  chatIconButton: {
-    marginLeft: 8,
-    padding: 4,
-  },
-  
+
   
   shadowCard: {
     shadowColor: '#000',

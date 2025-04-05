@@ -81,6 +81,8 @@ class profileController:
         profile.linkedin = data.get("linkedin") or ""
         profile.instagram = data.get("instagram") or ""
         profile.city = data.get("city") or ""
+        profile.phone_number = data.get("phone_number") or ""
+
 
         if image:
             check_image(image)
