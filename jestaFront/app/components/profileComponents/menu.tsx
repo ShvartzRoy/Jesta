@@ -6,12 +6,12 @@ import { useRouter } from 'expo-router';
 
 const Menu = ({ onClose }) => {
   const { setUser } = useContext(UserContext);
+  const { logoutUser } = useContext(UserContext);
   const router = useRouter();
 
   const handleLogout = async () => {
     try {
-      await axios.post(`${process.env.EXPO_PUBLIC_HOST}/api/users/logout`); // Adjust the endpoint if necessary
-      setUser({ loggedIn: false, id: null }); // Clear user context
+      await logoutUser(); 
       router.replace('/register');
     } catch (error) {
       Alert.alert('Logout Failed', 'An error occurred while logging out. Please try again.');
@@ -73,7 +73,7 @@ const styles = StyleSheet.create({
   menuItem: {
     paddingVertical: 14,
     marginBottom: 12,
-    backgroundColor: '#e5f0ff', // Subtle blue shade for items
+    backgroundColor: '#d6eaf8', 
     borderRadius: 12,
     width: '100%',
     alignItems: 'center',
@@ -86,14 +86,14 @@ const styles = StyleSheet.create({
   menuText: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#1d4ed8', // Stronger blue for text
+    color: '#1d4ed8', 
   },
   closeButton: {
     marginTop: 16,
-    paddingVertical: 12,
-    backgroundColor: '#dbeafe', // Softer blue for the close button
+    paddingVertical: 12, 
+    backgroundColor: '#efd6f8', 
     borderRadius: 12,
-    width: '100%',
+    width: '70%',
     alignItems: 'center',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
@@ -102,9 +102,9 @@ const styles = StyleSheet.create({
     elevation: 3,
   },
   closeButtonText: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: '600',
-    color: '#1e3a8a', // Darker blue for close button text
+    color: '#1e3a8a', 
   },
 });
 

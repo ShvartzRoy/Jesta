@@ -10,14 +10,19 @@
     "newArchEnabled": true,
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.royshv.jesta"
+      "bundleIdentifier": "com.royshv.jesta",
+      "infoPlist": {
+        "NSCalendarsUsageDescription": "We use your calendar to schedule service reminders."
+      }
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "package": "com.royshv.jesta"
+      "package": "com.royshv.jesta",
+      "permissions": ["READ_CALENDAR", "WRITE_CALENDAR"]
+
     },
     "web": {
       "bundler": "metro",

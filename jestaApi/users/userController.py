@@ -11,22 +11,68 @@ from .check_fields import *
 from django.contrib.auth.hashers import check_password
 # from django.core.mail import send_mail
 # from django.conf import settings
+import requests
+from new_ranks.xp_service import XPService
+
+
+
+
+def send_push_notification_to_user(user, title, body, data={}):
+    if not isinstance(user.expo_push_tokens, list):
+        print("expo_push_tokens is not a list!")
+        return
+
+    for token in user.expo_push_tokens:
+            print(f"Sending notification to: {token}")
+            message = {
+                "to": token,
+                "sound": "default",
+                "title": title,
+                "body": body,
+                "data": data,
+            }
+            response = requests.post("https://exp.host/--/api/v2/push/send", json=message)
+            print("Expo Response:", response.status_code, response.text)
+
 
 
 
 class userController:
-
     
     def login(self, request, payload: LogInSchema) -> UserSchema:
         user = authenticate(request, username=payload.email, password=payload.password)
+        
         if user is not None:
             login(request, user)
             return user
+        
+        
         raise AuthenticationError("Invalid credentials")
-    
+        
+        
+        
+       
 
 
     def logout(self, request) -> any:
+        
+        user = request.user
+        token = request.headers.get('Expo-Push-Token')
+        device_id = request.headers.get('Device-Id')
+
+        if token and device_id:
+            original_len = len(user.expo_push_tokens)
+            user.expo_push_tokens = [
+                t for t in user.expo_push_tokens if not (
+                    t['token'] == token and t['device'] == device_id
+                )
+            ]
+            user.save()
+            print(f"Removed token {token} for device {device_id}, removed {original_len - len(user.expo_push_tokens)}")
+        else:
+            print("No valid token or device ID provided.")
+
+
         logout(request)
         return {"msg": "Logged out"}
 
@@ -45,12 +91,40 @@ class userController:
         # check if user exists
         if CustomUser.objects.filter(email= email).exists():
             raise HttpError(400, "Email already exists")
+        
+        
+        #Handle referral
+        referred_by = None
+        if payload.referral_code:
+            try:
+                referred_by = CustomUser.objects.get(referral_code=payload.referral_code)
+            except CustomUser.DoesNotExist:
+                raise HttpError(400, "Invalid referral code")
+            
+        
+        
         # Hash the password before saving
         payload.password = make_password(payload.password)
+        
+        
         user = CustomUser.objects.create(
-            username= email, email = email, password=payload.password
+            username= email, email = email, password=payload.password,  referred_by=referred_by,
         )
         user.save()
+        
+
+        
+        if referred_by:
+            xp_service = XPService()
+            xp_service.add_xp_for_referral(referred_by.id)
+            xp_service.add_xp_for_referral(user.id) 
+            
+
+
+            
+        login(request, user)
+
+
         return user
     
     
@@ -107,6 +181,24 @@ class userController:
             raise HttpError(401, "Unauthorized")
         return user.saved_services
    
+   
+   
+    def save_push_token(self, request, payload: PushTokenSchema) -> dict:
+        if not request.user.is_authenticated:
+            raise HttpError(401, "Unauthorized")
+
+        token_data = {"token": payload.token, "device": payload.device_id}
+
+        if token_data not in request.user.expo_push_tokens:
+            request.user.expo_push_tokens.append(token_data)
+            request.user.save()
+            print(f"Saved token for device {payload.device_id}: {payload.token}")
+        else:
+            print(f"Token already exists for device {payload.device_id}")
+
+        return {"msg": "Push token saved successfully"}
+
+
    
     '''
     #later make sharing possible, like open different platforms to share the saved servicess

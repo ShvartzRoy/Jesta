@@ -5,5 +5,7 @@ django-cors-headers
 pillow
 python-dateutil
 djangorestframework-simplejwt
+requests
+
 
 #pydantic[email]>=1.10.0

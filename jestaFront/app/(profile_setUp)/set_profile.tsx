@@ -179,14 +179,13 @@ const Set_profile = () => {
         <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
           <View style={styles.container}>
             {success && (
-              <TouchableOpacity style={styles.topRightButton} onPress={() => router.replace('/explore_page')}>
+              <TouchableOpacity style={styles.topRightButton} onPress={() => router.replace('/test_test')}>
                 <Text style={styles.topRightButtonText}>Advance</Text>
                 <Ionicons name="arrow-forward-outline" style={styles.topRightButtonText} size={24} color="blue" />
               </TouchableOpacity>
             )}
-            <Text style={styles.header}>Edit Profile</Text>
+            <Text style={styles.header}>Create Profile</Text>
 
-            {/* Name Input */}
             {/* Name Input */}
             <Text style={styles.inputTitle}>Name *</Text>
             <TextInput
@@ -195,6 +194,7 @@ const Set_profile = () => {
                 focusedField === 'name' && styles.focusedInput,
               ]}
               placeholder={name || 'Enter your name'}
+              placeholderTextColor={"#888"}
               value={name}
               onFocus={() => setFocusedField('name')}
               onBlur={() => setFocusedField(null)}
@@ -210,6 +210,8 @@ const Set_profile = () => {
                 { height: 70 }, // Multiline styling
               ]}
               placeholder={bio || 'Enter your bio'}
+              placeholderTextColor={"#888"}
+
               value={bio}
               onFocus={() => setFocusedField('bio')}
               onBlur={() => setFocusedField(null)}
@@ -225,6 +227,8 @@ const Set_profile = () => {
                 focusedField === 'age' && styles.focusedInput,
               ]}
               placeholder={age || 'Enter your age'}
+              placeholderTextColor={"#888"}
+
               value={age}
               onFocus={() => setFocusedField('age')}
               onBlur={() => setFocusedField(null)}
@@ -233,13 +237,15 @@ const Set_profile = () => {
             />
 
             {/* Facebook Input */}
-            <Text style={styles.inputTitle}>Facebook Profile</Text>
+            <Text style={styles.inputTitle}>Facebook</Text>
             <TextInput
               style={[
                 styles.input,
                 focusedField === 'facebook' && styles.focusedInput,
               ]}
               placeholder={facebook || 'Enter your Facebook profile link'}
+              placeholderTextColor={"#888"}
+
               value={facebook}
               onFocus={() => setFocusedField('facebook')}
               onBlur={() => setFocusedField(null)}
@@ -247,13 +253,15 @@ const Set_profile = () => {
             />
 
             {/* LinkedIn Input */}
-            <Text style={styles.inputTitle}>LinkedIn Profile</Text>
+            <Text style={styles.inputTitle}>LinkedIn</Text>
             <TextInput
               style={[
                 styles.input,
                 focusedField === 'linkedin' && styles.focusedInput,
               ]}
               placeholder={linkedin || 'Enter your LinkedIn profile link'}
+              placeholderTextColor={"#888"}
+
               value={linkedin}
               onFocus={() => setFocusedField('linkedin')}
               onBlur={() => setFocusedField(null)}
@@ -261,13 +269,15 @@ const Set_profile = () => {
             />
 
             {/* Instagram Input */}
-            <Text style={styles.inputTitle}>Instagram Profile</Text>
+            <Text style={styles.inputTitle}>Instagram</Text>
             <TextInput
               style={[
                 styles.input,
                 focusedField === 'instagram' && styles.focusedInput,
               ]}
               placeholder={instagram || 'Enter your Instagram profile link'}
+              placeholderTextColor={"#888"}
+
               value={instagram}
               onFocus={() => setFocusedField('instagram')}
               onBlur={() => setFocusedField(null)}
@@ -310,32 +320,51 @@ const Set_profile = () => {
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1, marginTop: 60 ,  padding: 16, backgroundColor: '#fff' },
-  header: { fontSize: 24, fontWeight: 'bold', marginBottom: 16 },
-  inputTitle: { fontSize: 14, fontWeight: '600', marginBottom: 4 },
-  input: {
-    borderWidth: 1,
-    borderColor: '#ccc',
-    borderRadius: 8,
-    padding: 12,
-    marginBottom: 12,
-  },
+  container: { flex: 1, marginTop: 60 ,  padding: 20, backgroundColor: '#fff' },
+  header: {   fontSize: 32,
+    fontWeight: 'bold',
+    color: '#333',
+    marginBottom: 32,
+    textAlign: 'center',},  inputTitle: { fontSize: 14, fontWeight: '600', marginBottom: 4 },
+    input: {
+      width: "100%",
+      padding: 14,
+      marginBottom: 16,
+      borderWidth: 1,
+      borderColor: "#ccc",
+      borderRadius: 14,
+      backgroundColor: "#fff",
+      fontSize: 16,
+      elevation: 2,
+      shadowColor: "#000",
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.06,
+      shadowRadius: 3,
+      textAlign: 'left', 
+      writingDirection: 'ltr',
+    },
   focusedInput: {
-    borderColor: '#007bff',
+    borderColor: '#5dade2',
     borderWidth: 2,
     backgroundColor: '#f9f9ff',
-    shadowColor: '#007bff',
+    shadowColor: '#5dade2',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.2,
     shadowRadius: 4,
     elevation: 4, // For Android
   },
   button: {
-    backgroundColor: '#007bff',
+    backgroundColor: '#5dade2',
     padding: 12,
-    borderRadius: 8,
+    borderRadius: 30,
     marginBottom: 12,
     alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
   },
   buttonText: { color: '#fff', fontWeight: 'bold' },
   successMessage: {
@@ -364,10 +393,12 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: 16,
     right: 16,
-    backgroundColor: 'rgba(48,209,88,1)',
-    padding: 8,
+    backgroundColor: '#5dade2',
+    padding: 12,
     borderRadius: 15,
     alignItems: 'center',
+    zIndex: 1000,
+    elevation: 5,
   },
   topRightButtonText: {
     color: '#fff',

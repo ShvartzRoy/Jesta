@@ -8,7 +8,7 @@ export default function TabsLayout() {
         tabBarActiveTintColor: '#0056d6', // Blue theme for active icon
         tabBarInactiveTintColor: 'rgb(63, 63, 63)', // Light gray for inactive icons
         headerStyle: {
-          backgroundColor: 'rgba(0,122,255,1)', // Blue header background
+          backgroundColor: '#1e3a8a', // Blue header background
         },
         headerShadowVisible: false, // No shadow for a cleaner look
         headerTintColor: '#fff', // White header text
@@ -20,21 +20,20 @@ export default function TabsLayout() {
       }}
     >
       <Tabs.Screen
-        name="(explore_page)/explore_page"
-        options={{
-          headerTitle: 'Explore', // Title displayed in the header
-          tabBarIcon: ({ color, focused }) => (
-            <Ionicons
-              name="briefcase-outline"
-              color={color}
-              size={focused ? 28 : 24} // Increase size when focused
-              style={{
-                transform: [{ scale: focused ? 1.1 : 1.1 }], // Slight zoom on press
-              }}
-            />
-          ),
-        }}
+  name="(test)/test_test"
+  options={{
+    headerTitle: 'Explore',
+    tabBarIcon: ({ color, focused }) => (
+      <Ionicons
+        name="briefcase-outline"
+        color={color}
+        size={focused ? 28 : 24}
+        style={{ transform: [{ scale: focused ? 1.1 : 1.1 }] }}
       />
+    ),
+  }}
+/>
+
       <Tabs.Screen
         name="(specialists_explore)/specialists_explore"
         options={{
@@ -68,7 +67,7 @@ export default function TabsLayout() {
         }}
       />
       <Tabs.Screen
-        name="(profile)/profile"
+        name="(mainprofile)/mainprofile"
         options={{
           headerTitle: 'Profile', // Title displayed in the header
           tabBarIcon: ({ color, focused }) => (

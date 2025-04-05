@@ -49,11 +49,14 @@ INSTALLED_APPS = [
     'chat',
     'services',
     'users',
+    'notifications',
     'reviews',
     'specialists',
     'tags',
     'ninja',
     'corsheaders',
+    'new_badges',
+    'new_ranks',
 ]
 
 MIDDLEWARE = [

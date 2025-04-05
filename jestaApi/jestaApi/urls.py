@@ -4,6 +4,12 @@ from .api import api
 from django.conf import settings
 from django.conf.urls.static import static
 
+
+#dont delete this!!! -------------
+from notifications.api import router as notifications_router
+api.add_router("/notifications/", notifications_router)
+#-------------------------
+
 urlpatterns = [
     path('admin/', admin.site.urls),
     path("api/", api.urls),

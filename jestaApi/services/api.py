@@ -14,9 +14,25 @@ from .models import JobService, Service
 from django.shortcuts import get_object_or_404
 from json import loads 
 
+from services.schemas import NotificationPayload
+
+
 
 router = Router(tags=["Services"])
 sc = ServiceController()
+
+
+
+@router.post("/send_notification", response={200: dict})
+def send_notification(request, payload: NotificationPayload):
+    return sc.send_notification(
+        user_id=payload.user_id,
+        title=payload.title,
+        body=payload.body,
+        data=payload.data
+    )
+
+
 
 #create (publish) a service
 @router.post("/create_service", response=ServiceSchema)
@@ -118,6 +134,14 @@ def validate_users_worked_together(request, user_id: int, participant_id: int):
     return {"worked_together": validated}
 
 
+
+
+@router.get("/get_list_of_all_completed_services_of_user/{user_id}", response={200: list[ServiceSchema]})
+def get_list_of_all_completed_services_of_user(request, user_id: int):
+    return sc.get_list_of_all_completed_services_of_user(request, user_id)
+
+
+
 @router.get("/get_service/{service_id}", response={200: ServiceSchema})
 def get_service(request, service_id: int):
     service = sc.get_service(service_id)
@@ -185,10 +209,18 @@ def get_list_of_all_user_volunteering_services_with_status(request, user_id: int
 def get_list_of_all_user_services_with_status(request, user_id: int):
     return sc.get_list_of_all_user_services_with_status(request, user_id)
 
+@router.get("/get_list_of_all_completed_services_of_user/{user_id}", response={200: list})
+def get_list_of_all_completed_services_of_user(request, user_id: int):
+    return sc.get_list_of_all_completed_services_of_user(request, user_id)
+
 
 @router.get("/get_applicant_state/{service_id}", response={200: dict})
 def get_applicant_state(request, service_id: int):
     return sc.get_applicant_state(request, service_id)
+
+@router.get("/get_service_info_for_sharing/{service_id}", response={200: dict})
+def get_service_info_for_sharing(request, service_id: int):
+    return sc.get_service_info_for_sharing(service_id, request.user)
 
 
 @router.get("/save_service/{service_id}", response={200: dict})
@@ -293,3 +325,12 @@ def get_all_volunteering_services(request):
 def get_completed_services(request, user_id: Optional[int] = None):
     services = sc.get_completed_services_of_user(user_id)
     return [ServiceSchema.from_model(service) for service in services]
+
+
+@router.get("/get_owner_profile/{service_id}", response={200: dict})
+def get_owner_profile(request, service_id: int):
+    return sc.get_owner_profile(service_id, request)
+
+@router.get("/get_all_accepted_applicants/{service_id}", response={200: list})
+def get_all_accepted_applicants(request, service_id: int):
+    return sc.get_all_accepted_applicants(request, service_id)

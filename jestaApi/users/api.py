@@ -1,12 +1,18 @@
-from ninja import NinjaAPI, Router
+from ninja import Form
+from ninja import NinjaAPI, Router, File
 from ninja.security import django_auth
 from .schemas import *
 from services.schemas import ServiceSchema
 from specialists.schemas import SpecialistSchema
 from .userController import userController
 from .profileController import profileController
-from ninja import File
 from ninja.files import UploadedFile
+from ninja.errors import HttpError
+from django.shortcuts import get_object_or_404
+from services.models import Service
+
+from .models import CustomUser
+from .schemas import PushTokenSchema
 
 
 router = Router(tags=["user"])
@@ -38,10 +44,18 @@ def register(request, payload: RegisterSchema):
 def delete_user(request, user_password: str):
     return uc.delete_user(request, user_password)
 
+# @router.post("/edit_profile", response={200: ProfileSchema, 401: Error})
+# def edit_profile(request, payload: ProfileSchema, image: UploadedFile = File(None), resume: UploadedFile = File(None)):
+#     user = pc.edit_profile(request, payload , image, resume)
+#     return user
+
+
 @router.post("/edit_profile", response={200: ProfileSchema, 401: Error})
-def edit_profile(request, payload: ProfileSchema, image: UploadedFile = File(None), resume: UploadedFile = File(None)):
-    user = pc.edit_profile(request, payload , image, resume)
+def edit_profile(request, image: UploadedFile = File(None), resume: UploadedFile = File(None)):
+    form_data = request.POST
+    user = pc.edit_profile(request, form_data, image, resume)
     return user
+
 
 @router.get("/get_profile/{user_id}", response={200: GetProfileSchema, 401: Error})
 def get_profile(request, user_id: int):
@@ -58,9 +72,24 @@ def update_password(request, old_password: str, new_password: str):
 
 
 
-@router.get("/get_saved_services", response=list)
-def get_saved_services(request):
-    return uc.get_saved_services(request)
+@router.get("/get_saved_services/{user_id}", response=list)
+def get_saved_services(request, user_id: int):
+    user = get_object_or_404(CustomUser, id=user_id)
+    return [service['id'] for service in user.saved_services]
+
+
+@router.post("/save_push_token", response={200: Msg, 401: Error})
+def save_push_token(request, payload: PushTokenSchema):
+    return userController().save_push_token(request, payload)
+
+@router.post("/set_user_city", response={200: Msg, 401: Error})
+def set_user_city(request, data: CitySchema):
+    if not request.user.is_authenticated:
+        raise HttpError(401, "Unauthorized")
+    profile, _ = Profile.objects.get_or_create(user=request.user)
+    profile.city = data.city
+    profile.save()
+    return {"msg": f"City set to {data.city}"}
 
 '''
 @router.post("/share_saved_services_listing", response={200: dict, 400: dict})

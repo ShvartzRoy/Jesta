@@ -10,11 +10,61 @@ from tags.models import Tag
 from ninja.errors import HttpError
 from dateutil.parser import isoparse
 from datetime import timedelta
+from users.models import CustomUser
+from notifications.models import Notification
+import requests
+from django.utils import timezone
+from new_ranks.xp_service import add_xp_for_completed_service  
+from new_ranks.rankController import RankController
+from new_badges.badgeController import BadgeController
+
+
+
+
 
 
 class ServiceController:
     
-    
+    def send_notification(self, user_or_id, title, body, data={}):       
+        if isinstance(user_or_id, int):
+            try:
+                user = CustomUser.objects.get(id=user_or_id)
+            except CustomUser.DoesNotExist:
+                print(f"No user found with ID {user_or_id}")
+                return
+        else:
+            user = user_or_id
+            
+            
+        Notification.objects.create(
+            user=user,
+            title=title,
+            body=body,
+            data=data,
+    )
+
+        if not isinstance(user.expo_push_tokens, list) or len(user.expo_push_tokens) == 0:
+            print(f"No tokens for user {user.id}")
+            return
+
+        for token_data in user.expo_push_tokens:
+            token = token_data.get("token")
+            if not token:
+                print(f"Malformed token data: {token_data}")
+                continue
+
+            print(f"Sending notification to: {token}")
+            message = {
+                "to": token,
+                "sound": "default",
+                "title": title,
+                "body": body,
+                "data": data,
+            }
+            response = requests.post("https://exp.host/--/api/v2/push/send", json=message)
+            print("Expo Response:", response.status_code, response.text)
+
+        
     def create_service(self, request, payload):
         if isinstance(payload.estimated_duration, str):
             try:
@@ -90,9 +140,22 @@ class ServiceController:
         service = get_object_or_404(Service, id=service_id)
         if service.user != request.user:
             raise HttpError(403, "You do not have permission to delete this service!")
+        
+        for applicant in service.applicants:
+            try:
+                applicant_user = CustomUser.objects.get(id=applicant["user_id"])
+                self.send_notification(
+                    applicant_user,
+                    "Service Removed",
+                    f"The service '{service.title}' has been deleted by the creator.",
+                    data={"type": "service_deleted", "service_id": service.id}
+                )
+            except CustomUser.DoesNotExist:
+                print(f"Could not find user with ID {applicant['user_id']} to notify about service deletion")
+
         service.delete()
-        return {"message": "Service deleted"}
-    
+        return {"message": "Service deleted and all applicants were notified."}
+        
 
 
 
@@ -159,32 +222,56 @@ class ServiceController:
 
     def apply_to_service(self, request, service_id: int) -> dict:
         service = get_object_or_404(Service, id=service_id)
+
         if service.user == request.user:
             raise HttpError(400, "You cannot apply to your own service!")
-        
-        if {"user_id":request.user, "applicant_state": "pending"} in service.applicants:
+
+        if {"user_id": request.user, "applicant_state": "pending"} in service.applicants:
             raise HttpError(400, "You have already applied to this service!")
-        
-        if service.state != "pending" and service.state != "accepted":
+
+        if service.state not in ["pending", "accepted"]:
             raise HttpError(400, "Service is not available for application!")
-        
+
         service.applicants = [
-        applicant for applicant in service.applicants 
-        if not (applicant["user_id"] == request.user.id and applicant["applicant_state"] == "rejected")]
-        
+            applicant for applicant in service.applicants
+            if not (applicant["user_id"] == request.user.id and applicant["applicant_state"] == "rejected")
+        ]
+
         service.applicants.append({"user_id": request.user.id, "applicant_state": "pending"})
         service.save()
+
+        from notifications.models import Notification
+        recent_time_threshold = timezone.now() - timedelta(minutes=3)
+        recent_similar = Notification.objects.filter(
+            user=service.user,
+            title="New Application!",
+            data__service_id=service.id,
+            read=False,
+            created_at__gte=recent_time_threshold
+        ).exists()
+
+        if not recent_similar:
+            user_name = getattr(request.user.profile, "name", request.user.username)
+            self.send_notification(
+                service.user,
+                "New Application!",
+                f"{user_name} applied to your service '{service.title}'.",
+                data={"type": "new_applicant", "service_id": service.id}
+            )
+
         return {"message": "Application successful!"}
-    
-   
 
 
     def remove_from_service(self, request, service_id: int) -> dict:
         service = get_object_or_404(Service, id=service_id)
         applicants = service.applicants
 
+        was_accepted = False
+
         for applicant in applicants:
             if applicant["user_id"] == request.user.id:
+                if applicant["applicant_state"] == "accepted":
+                    was_accepted = True
                 applicants.remove(applicant)
                 break
         else:
@@ -192,9 +279,19 @@ class ServiceController:
 
         service.applicants = applicants
         service.save()
+
+        if was_accepted:
+            user_name = getattr(request.user.profile, "name", request.user.username)
+            self.send_notification(
+                service.user,
+                "Accepted Applicant Unapplied",
+                f"{user_name} was accepted to your service '{service.title}' but has now unapplied.",
+                data={"type": "applicant_unapplied", "service_id": service.id}
+            )
+
         return {"message": "Removed from service successfully!"}
 
-        
+            
     def get_applicants(self, request, service_id: int) -> list:
         service = get_object_or_404(Service, id=service_id)
         return service.applicants
@@ -245,14 +342,63 @@ class ServiceController:
 
         
     def mark_service_completed(self, request, service_id: int) -> dict:
-        service = get_object_or_404(Service, id=service_id, user=request.user)
+        
+        service = get_object_or_404(Service, id=service_id)
         if service.state == "completed":
             raise HttpError(400, "Service is already completed!")
+
+        if request.user != service.user:
+            raise HttpError(403, "Only the creator can mark this service as completed.")
+
+
+        if service.state == "completed":
+            raise HttpError(400, "Service is already completed!")
+        
+        print(f"Checking creator badges for {service.user.email}")
+
+
         service.state = "completed"
         service.save()
-        
+
+        rc = RankController()
+        bc = BadgeController()
+
+        rc.add_xp_for_completed_service(service.user_id, is_volunteer=service.is_volunteering)
+        bc.check_and_assign_all_badges(service.user)
+
+
+        for applicant in service.applicants:
+            if applicant.get("applicant_state") == "accepted":
+                try:
+                    user = CustomUser.objects.get(id=applicant["user_id"])
+
+                    rc.add_xp_for_completed_service(user.id, is_volunteer=service.is_volunteering)
+
+                    bc.check_and_assign_all_badges(user)
+
+
+                    if user.referred_by:
+                        completed_count = Service.objects.filter(
+                            applicants__contains=[{"user_id": user.id, "applicant_state": "accepted"}],
+                            state="completed"
+                        ).count()
+
+                        #if completed_count == 1:
+                            #rc.add_xp_for_referral(user.referred_by.id)
+
+                    self.send_notification(
+                        user,
+                        "Service Completed",
+                        f"The service '{service.title}' you participated in is now marked as completed.",
+                        data={"type": "service_completed", "service_id": service.id}
+                    )
+
+                except CustomUser.DoesNotExist:
+                    print(f"Applicant with ID {applicant['user_id']} not found")
+
         return {"message": f"Service '{service.title}' marked as completed!"}
-    
+
+        
     def get_progress_status_of_service(self, request, service_id: int) -> dict:
             service = get_object_or_404(Service, id=service_id, user=request.user)
             return {"state": service.state}
@@ -299,9 +445,41 @@ class ServiceController:
         res.extend(self.get_list_of_all_user_free_services_with_status(request, user_id))
         res.extend(self.get_list_of_all_user_volunteering_services_with_status(request, user_id))
         return res
-
-        
     
+    # def get_list_of_all_completed_services_of_user(self, request, user_id) -> list:
+    #     services = Service.objects.filter(user=user_id, state="completed")
+    #     res = []
+    #     for service in services:
+    #         res.append({'title': service.title, 'state': service.state})
+    #     return res
+    
+    
+  
+    # def get_list_of_all_completed_services_of_user(self, request, user_id) -> list[ServiceSchema]:
+    #     services_as_applicant = Service.objects.filter(
+    #         state="completed",
+    #         applicants__contains=[{"user_id": user_id, "applicant_state": "accepted"}]
+    #     )
+
+    #     services_as_creator = Service.objects.filter(user=user_id, state="completed")
+
+    #     all_services = services_as_applicant | services_as_creator
+    #     all_services = all_services.distinct()
+
+    #     return [ServiceSchema.from_model(service) for service in all_services]
+    
+    
+    def get_list_of_all_completed_services_of_user(self, request, user_id) -> list[ServiceSchema]:
+        created_services = Service.objects.filter(user=user_id, state="completed")
+        participated_services = Service.objects.filter(
+            applicants__contains=[{"user_id": user_id, "applicant_state": "accepted"}],
+            state="completed"
+        )
+        all_services = (created_services | participated_services).distinct()
+        return [ServiceSchema.from_model(service) for service in all_services]
+
+    
+        
     def get_applicant_state(self, request, service_id: int) -> dict:
         user= request.user
         
@@ -317,6 +495,35 @@ class ServiceController:
         owner = service.user  
         return {"name": owner.profile.name if hasattr(owner, "profile") and owner.profile.name else "Unknown"}
         
+    def get_owner_profile(self, service_id: int, request=None) -> dict:
+        service = get_object_or_404(Service, id=service_id)
+        owner = service.user
+        profile = getattr(owner, "profile", None)
+
+        return {
+            "name": profile.name if profile and profile.name else "Unknown",
+            "image": request.build_absolute_uri(profile.image.url) if profile and profile.image else ""
+        }
+        
+    def get_all_accepted_applicants(self, request, service_id: int) -> list:
+        service = get_object_or_404(Service, id=service_id)
+        accepted_applicants = []
+
+        for app in service.applicants:
+            if app.get("applicant_state") == "accepted":
+                try:
+                    user = CustomUser.objects.get(id=app["user_id"])
+                    accepted_applicants.append({
+                        "user_id": user.id,
+                        "email": user.email,
+                        "name": user.profile.name if hasattr(user, "profile") and user.profile and user.profile.name else None,
+                        "applicant_state": app["applicant_state"]
+                    })
+                except CustomUser.DoesNotExist:
+                    continue
+
+        return accepted_applicants
+
 
     def update_service_state(self, request, service_id: int, new_state: str) -> dict:
         allowed_states = ["pending", "accepted", "inProgress", "completed"]
@@ -358,6 +565,19 @@ class ServiceController:
 
         service.applicants = applicants
         service.save()
+        
+       
+        applicant_user = CustomUser.objects.get(id=user_id)
+        
+        user = CustomUser.objects.get(id=user_id)
+
+        self.send_notification(
+            user,  
+            "Application Rejected",
+            f"Your application to '{service.title}' has been rejected."
+        )
+
+
         return {"message": f"Applicant '{user_id}' rejected from service '{service.title}'."}
     
     def accept_applicant(self, request, service_id: int, user_id: int) -> dict:
@@ -379,6 +599,19 @@ class ServiceController:
 
         service.applicants = applicants
         service.save()
+        
+        applicant_user = CustomUser.objects.get(id=user_id)
+        
+        
+        user = CustomUser.objects.get(id=user_id)
+
+        self.send_notification(
+            user, 
+            "Application Accepted",
+            f"Your application to '{service.title}' has been accepted."
+        )
+
+    
         return {"message": f"Applicant '{user_id}' accepted to service '{service.title}'."}
 
 
@@ -457,6 +690,25 @@ class ServiceController:
 
     def get_services_by_state(self, state: str) -> list[Service]:
         return Service.objects.filter(state=state)
+    
+    def get_service_info_for_sharing(self, service_id: int, user) -> dict:
+        service = get_object_or_404(Service, id=service_id)
+        user_name = getattr(user.profile, "name", user.username)
+
+
+        return {
+            "shared_by": user_name,
+            "title": service.title,
+            "description": service.description,
+            "location": service.location,
+            "date_time_range": service.date_time_range,
+            "estimated_duration": service.estimated_duration,
+            "offered_payment": service.offered_payment,
+            "state": service.state,
+            "tags": [tag.name for tag in service.tags.all()],
+        }
+
+        
 
 
 
