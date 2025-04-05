@@ -76,11 +76,7 @@
     "react-native-get-random-values": "^1.11.0",
     "react-native-image-picker": "^7.2.3",
     "react-native-paper": "^5.13.1",
-<<<<<<< HEAD
     "react-native-phone-number-input": "^2.1.0",
-=======
-    "react-native-paper": "^5.13.1",
->>>>>>> 50e6fd88508bfa4fd987478da0f0e472ddc3fa5d
     "react-native-reanimated": "~3.16.1",
     "react-native-safe-area-context": "^4.14.1",
     "react-native-screens": "~4.4.0",
