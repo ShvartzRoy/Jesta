@@ -42,7 +42,7 @@ const CreateSpecialistScreen = () => {
       Alert.alert('Success', 'Specialist profile created successfully!');
       router.back(); // Navigate back to the previous screen
     } catch (error) {
-      console.error('Error creating specialist:', error);
+      //console.error('Error creating specialist:', error);
       Alert.alert('Error', 'Failed to create specialist profile.');
     } finally {
       setLoading(false);

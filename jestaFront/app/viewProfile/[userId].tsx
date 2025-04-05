@@ -26,13 +26,17 @@ const ViewProfileScreen = () => {
         setProfile(profileData);
 
         // Fetch specialists
-        const specialistsResponse = await axios.get(`${process.env.EXPO_PUBLIC_HOST}/api/specialists/get_specialist/${userId}/`);
-        console.log('specialistsResponse', specialistsResponse.data);
+        try{
+          const specialistsResponse = await axios.get(`${process.env.EXPO_PUBLIC_HOST}/api/specialists/get_specialist/${userId}/`);
+          console.log('specialistsResponse', specialistsResponse.data);
 
-        // Process the specialist object
-        if (specialistsResponse.data && typeof specialistsResponse.data === 'object' && !Array.isArray(specialistsResponse.data)) {
-          setSpecialists([specialistsResponse.data]);
-        } else {
+          // Process the specialist object
+          if (specialistsResponse.data && typeof specialistsResponse.data === 'object' && !Array.isArray(specialistsResponse.data)) {
+            setSpecialists([specialistsResponse.data]);
+          } else {
+            setSpecialists([]);
+          }
+        } catch (err) {
           setSpecialists([]);
         }
       } catch (err) {
