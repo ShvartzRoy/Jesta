@@ -76,12 +76,16 @@ const handleImageLoad = () => {
 
   const previousLevelRef = useRef(userLevel); 
 
+  //-------------------------------
+
 
   interface Badge {
     id: number;
     name: string;
     description: string;
   }
+
+  //-------------------------------
 
 
   const [badges, setBadges] = useState<Badge[]>([]);
@@ -97,6 +101,7 @@ const handleImageLoad = () => {
   const [showReferralInfo, setShowReferralInfo] = useState(false);
 
 
+//-------------------------------
 
 
   const copyReferralCode = (code: string) => {
@@ -110,6 +115,9 @@ const handleImageLoad = () => {
   };
   
 
+  //-------------------------------
+
+
   const cleanBadgeArray = (badges: any[]) =>
     badges.map(({ id, name, description }) => ({
       id,
@@ -117,6 +125,9 @@ const handleImageLoad = () => {
       description,
     }));
   
+
+    //-------------------------------
+
 
 useEffect(() => {
   const fetchAverageRating = async () => {
@@ -133,6 +144,7 @@ useEffect(() => {
   }
 }, [userId,refreshTrigger]);
 
+//-------------------------------
 
   
   useEffect(() => {
@@ -160,9 +172,18 @@ useEffect(() => {
   }, [userId]);
 
 
+
+  //-------------------------------
+
+
+
   const handleReviewSuccess = () => {
     setRefreshTrigger(prev => prev + 1);
   };
+
+
+  //-------------------------------
+
   
   useEffect(() => {
     const interval = setInterval(() => {
@@ -172,6 +193,9 @@ useEffect(() => {
     return () => clearInterval(interval); 
   }, []);
   
+
+  //-------------------------------
+
 
 useEffect(() => {
     const fetchProfile = async () => {
@@ -208,6 +232,9 @@ useEffect(() => {
     if (userId) fetchProfile();
   }, [userId]);
   
+
+  //-------------------------------
+
   
   useEffect(() => {
 
@@ -273,6 +300,10 @@ useEffect(() => {
     fetchProfileData();
   }, [userId,refreshTrigger]);
 
+
+  //-------------------------------
+
+
   useEffect(() => {
 
     const fetchData = async () => {
@@ -324,6 +355,10 @@ useEffect(() => {
     }
   }, [userId]);
 
+
+  //-------------------------------
+
+
   const toggleSave = async (serviceId) => {
     try {
       const isAlreadySaved = saved.includes(serviceId);
@@ -335,14 +370,27 @@ useEffect(() => {
     }
   };
 
+
+  //-------------------------------
+
+
+
   const openLink = async (url) => {
     const supported = await Linking.canOpenURL(url);
     if (supported) await Linking.openURL(url);
   };
 
+
+  //-------------------------------
+
+
   const toggleMenu = () => {
     setIsMenuVisible(!isMenuVisible);
   };
+
+
+  //-------------------------------
+
   
 
   if (loading) {
@@ -353,6 +401,7 @@ useEffect(() => {
       </View>
     );
   }
+//-------------------------------
 
   if (error) {
     return (
@@ -365,11 +414,18 @@ useEffect(() => {
     );
   }
 
+  //-------------------------------
+
+
   const filteredServices = services.filter(service => {
     if (activeTab === 'request') return service.service_from === 'publisher';
     if (activeTab === 'offer') return service.service_from === 'provider';
     return false;
   });
+
+
+  //-------------------------------
+
 
   return (
     <View style={{ flex: 1, backgroundColor: '#f0f4f8' }}>

@@ -64,6 +64,10 @@ const ServiceUserProfileScreen = () => {
 
   const [averageRating, setAverageRating] = useState<number | null>(null);
 
+  const [isCreatorOfAcceptedApplicant, setIsCreatorOfAcceptedApplicant] = useState(false);
+
+//-------------------------------
+
 
   const cleanBadgeArray = (badges: any[]) =>
     badges.map(({ id, name, description }) => ({
@@ -72,6 +76,7 @@ const ServiceUserProfileScreen = () => {
       description,
     }));
   
+//-------------------------------
 
 useEffect(() => {
   const fetchAverageRating = async () => {
@@ -88,6 +93,7 @@ useEffect(() => {
   }
 }, [userId,refreshTrigger]);
 
+//-------------------------------
 
   
   useEffect(() => {
@@ -113,12 +119,16 @@ useEffect(() => {
   
     fetchBadges();
   }, [userId]);
+//-------------------------------
 
 
   const handleReviewSuccess = () => {
     setRefreshTrigger(prev => prev + 1);
   };
+ 
   
+  //-------------------------------
+
   useEffect(() => {
     const interval = setInterval(() => {
       setRefreshTrigger((prev) => prev + 1);
@@ -127,6 +137,7 @@ useEffect(() => {
     return () => clearInterval(interval); 
   }, []);
   
+//-------------------------------
 
   useEffect(() => {
 
@@ -193,6 +204,11 @@ useEffect(() => {
   }, [userId,refreshTrigger]);
 
 
+
+
+
+  //-------------------------------
+
   useEffect(() => {
 
     const fetchData = async () => {
@@ -217,11 +233,17 @@ useEffect(() => {
           setSpecialists([]);
         }
 
+
+ //-------------------------------
+       
         const allServicesResponse = await axios.get(`${process.env.EXPO_PUBLIC_HOST}/api/services/get_all_services`);
         const allServices = allServicesResponse.data;
         const userServices = allServices.filter(service => service.user_id == id);
         setServices(userServices);
 
+
+ //-------------------------------
+       
         const accepted = userServices.some(service =>
           service.applicants?.some(
             applicant => applicant.user_id === user.id && applicant.applicant_state === 'accepted'
@@ -229,6 +251,18 @@ useEffect(() => {
         );
         setAccepted(accepted);
 
+//-------------------------------
+
+    const creatorHasThisUserAsApplicant = allServices.some(service =>
+      service.user_id === user.id &&
+      service.applicants?.some(
+        applicant => applicant.user_id === parseInt(id) 
+      )
+    );
+    setIsCreatorOfAcceptedApplicant(creatorHasThisUserAsApplicant);
+
+        
+//-------------------------------
         const savedRes = await axios.get(`${process.env.EXPO_PUBLIC_HOST}/api/users/get_saved_services/${user.id}`);
         setSaved(savedRes.data.map(service => service.id));
       } catch (err) {
@@ -244,6 +278,10 @@ useEffect(() => {
     }
   }, [id]);
 
+
+  //-------------------------------
+
+
   const toggleSave = async (serviceId) => {
     try {
       const isAlreadySaved = saved.includes(serviceId);
@@ -255,10 +293,20 @@ useEffect(() => {
     }
   };
 
+
+  //-------------------------------
+
+
+
+
   const openLink = async (url) => {
     const supported = await Linking.canOpenURL(url);
     if (supported) await Linking.openURL(url);
   };
+
+
+  //-------------------------------
+
 
   if (loading) {
     return (
@@ -279,6 +327,10 @@ useEffect(() => {
       </View>
     );
   }
+
+
+  //-------------------------------
+
 
   const filteredServices = services.filter(service => {
     if (activeTab === 'request') return service.service_from === 'publisher';
@@ -317,11 +369,18 @@ useEffect(() => {
 
 
       {/* Chat Icons */}
-      {accepted && (
+      {(accepted || isCreatorOfAcceptedApplicant) && (
         <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+         
+         
+         {/* regular chat icon */}
+         
           <TouchableOpacity onPress={() => Alert.alert('Open private chat')} style={styles.chatIconButton}>
             <Ionicons name="chatbubble-ellipses-outline" size={28} color="#007bff" />
           </TouchableOpacity>
+
+
+          {/* WhatsApp chat */}
 
           {profile?.phone_number && (
             <TouchableOpacity
