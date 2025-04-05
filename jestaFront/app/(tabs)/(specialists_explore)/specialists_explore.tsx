@@ -13,138 +13,61 @@ import {
   SafeAreaView,
 } from "react-native";
 import axios from "axios";
-import {  useRouter } from 'expo-router';
+import { useRouter } from "expo-router";
 
 export default function SpecialistsExplore() {
-  const [categories, setCategories] = useState([]);
-  const [otherTags, setOtherTags] = useState([]);
+  const [tags, setTags] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [refreshing, setRefreshing] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
-  const [showSpecialistTags, setShowSpecialistTags] = useState(true);
   const router = useRouter();
 
-  // Fetch categories and tags from the API
-  const fetchCategoriesAndTags = async () => {
+  // Fetch tags from the API
+  const fetchTags = async () => {
     try {
-      const categoryResponse = await axios.get(
-        `${process.env.EXPO_PUBLIC_HOST}/api/tags/get_categories`
-      );
-      const allTagsResponse = await axios.get(
+      const response = await axios.get(
         `${process.env.EXPO_PUBLIC_HOST}/api/tags/get_all_tags`
       );
-
-      const categoriesWithTags = categoryResponse.data.categories.map(
-        (category) => ({
-          id: category.id,
-          name: category.name,
-          tags: category.tags,
-          specialist_tags: category.specialist_tags,
-        })
-      );
-
-      const uncategorizedTags = allTagsResponse.data.tags.filter(
-        (tag) =>
-          !categoriesWithTags.some((category) =>
-            category.tags.some((categoryTag) => categoryTag.id === tag.id)
-          )
-      );
-
-      setCategories(categoriesWithTags);
-      setOtherTags(uncategorizedTags);
+      // The API returns an object with a "tags" property (list of TagSchema)
+      setTags(response.data.tags);
     } catch (error) {
-      //console.error("Error fetching categories or tags:", error);
-      setError("Failed to fetch data. Please try again later.");
+      setError("Failed to fetch tags. Please try again later.");
     } finally {
       setLoading(false);
       setRefreshing(false);
     }
   };
 
-  // Fetch data on initial load
   useEffect(() => {
-    fetchCategoriesAndTags();
+    fetchTags();
   }, []);
 
   // Handle pull-to-refresh
   const onRefresh = () => {
     setRefreshing(true);
-    fetchCategoriesAndTags();
+    fetchTags();
   };
 
-  // Filter categories and tags based on the search query
-  const filteredCategories = categories
-    .map((category) => {
-      const allTags = showSpecialistTags
-        ? category.specialist_tags
-        : [...category.tags, ...category.specialist_tags];
+  // Filter tags based on search query (by tag name)
+  const filteredTags = tags.filter((tag) =>
+    tag.name.toLowerCase().includes(searchQuery.toLowerCase())
+  );
 
-      // Check if the category name matches the search query
-      const isCategoryMatch = category.name
-        .toLowerCase()
-        .includes(searchQuery.toLowerCase());
-
-      // Filter tags if the category name doesn't match
-      const filteredTags = isCategoryMatch
-        ? allTags // Show all tags if the category name matches
-        : allTags.filter((tag) =>
-            tag.name.toLowerCase().includes(searchQuery.toLowerCase())
-          );
-
-      return {
-        ...category,
-        tags: filteredTags,
-        showCategory: isCategoryMatch || filteredTags.length > 0,
-      };
-    })
-    .filter((category) => category.showCategory && category.tags.length > 0); // Ensure categories with no tags are not shown
-
-  // Check if the search query matches "Other"
-  const isOtherCategory = "other".toLowerCase().includes(searchQuery.toLowerCase());
-
-  // Filter uncategorized tags
-  const filteredOtherTags = isOtherCategory
-    ? otherTags // Show all uncategorized tags if searching for "Other"
-    : otherTags.filter((tag) =>
-        tag.name.toLowerCase().includes(searchQuery.toLowerCase())
-      );
-
-  // Render tags for a given category
-  const renderTags = (tags) => {
-    return tags.map((tag) => (
+  // Render each tag as a clickable card
+  const renderTags = () => {
+    return filteredTags.map((tag) => (
       <TouchableOpacity
         key={tag.id.toString()}
         style={styles.tagCard}
-        onPress={() => {console.log(tag.name); router.replace(`/${tag.name}`);}} // Navigate to TagResultsScreen
+        onPress={() => {
+          console.log(tag.name);
+          router.replace(`/${tag.name}`);
+        }}
       >
         <Text style={styles.tagText}>{tag.name}</Text>
       </TouchableOpacity>
     ));
-  };
-
-  // Render category sections
-  const renderCategories = () => {
-    return (
-      <>
-        {filteredCategories.map((category) => (
-          <View key={category.id} style={styles.categorySection}>
-            <Text style={styles.categoryHeader}>{category.name}</Text>
-            <View style={styles.tagsContainer}>{renderTags(category.tags)}</View>
-          </View>
-        ))}
-
-        {/* Render "Other" category for uncategorized tags */}
-        {!showSpecialistTags && (filteredOtherTags.length > 0 || isOtherCategory) && (
-          <View style={styles.categorySection}>
-            <Text style={styles.categoryHeader}>Other</Text>
-            <View style={styles.tagsContainer}>
-              {renderTags(filteredOtherTags)}
-            </View>
-          </View>
-        )}
-      </>
-    );
   };
 
   if (loading) {
@@ -167,31 +90,20 @@ export default function SpecialistsExplore() {
     <SafeAreaView style={styles.safeArea}>
       <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
         <View style={styles.container}>
-          <Text style={styles.title}>Explore Services</Text>
+          <Text style={styles.title}>Explore Specialists</Text>
           <Text style={styles.subtitle}>
-            Choose a category to find the right service provider
+            Choose a tag to find the right service provider
           </Text>
 
           {/* Search Bar */}
           <TextInput
             style={styles.searchBar}
-            placeholder="Search for a service..."
+            placeholder="Search for a tag..."
             placeholderTextColor="#888"
             value={searchQuery}
             onChangeText={setSearchQuery}
           />
 
-          {/* Toggle Button enable when needed
-          <TouchableOpacity
-            style={styles.toggleButton}
-            onPress={() => setShowSpecialistTags((prev) => !prev)}
-          >
-            <Text style={styles.toggleButtonText}>
-              {showSpecialistTags ? "Show All Tags" : "Show Specialist Tags"}
-            </Text>
-          </TouchableOpacity> */}
-
-          {/* Scrollable List */}
           <ScrollView
             contentContainerStyle={styles.scrollViewContent}
             refreshControl={
@@ -203,7 +115,7 @@ export default function SpecialistsExplore() {
               />
             }
           >
-            {renderCategories()}
+            {renderTags()}
           </ScrollView>
         </View>
       </TouchableWithoutFeedback>
@@ -219,7 +131,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: 16,
-    paddingBottom: 0,
     backgroundColor: "#F0F4F8",
   },
   title: {
@@ -251,42 +162,10 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 3,
   },
-  toggleButton: {
-    backgroundColor: "#007BFF",
-    paddingVertical: 10,
-    paddingHorizontal: 16,
-    borderRadius: 20,
-    alignSelf: "center",
-    marginBottom: 16,
-  },
-  toggleButtonText: {
-    fontSize: 14,
-    color: "#FFFFFF",
-    fontWeight: "bold",
-  },
   scrollViewContent: {
     flexGrow: 1,
-    paddingBottom: 0, // Remove padding to extend to the navbar
+    paddingBottom: 0,
     marginBottom: 0,
-  },
-  categorySection: {
-    marginBottom: 16,
-    width: "100%",
-    alignItems: "center",
-  },
-  categoryHeader: {
-    fontSize: 20,
-    fontWeight: "bold",
-    color: "#333",
-    marginBottom: 8,
-    textAlign: "center",
-  },
-  tagsContainer: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    justifyContent: "center",
-    paddingHorizontal: 16,
-    width: "100%",
   },
   tagCard: {
     paddingVertical: 12,
@@ -313,3 +192,5 @@ const styles = StyleSheet.create({
     textAlign: "center",
   },
 });
+
+export default SpecialistsExplore;

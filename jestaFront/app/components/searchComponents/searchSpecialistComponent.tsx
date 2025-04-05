@@ -1,39 +1,63 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TextInput, FlatList, TouchableOpacity, StyleSheet, Modal } from 'react-native';
+import { 
+  View, 
+  Text, 
+  TextInput, 
+  FlatList, 
+  TouchableOpacity, 
+  StyleSheet, 
+  Modal 
+} from 'react-native';
 import axios from 'axios';
 
-const SpecialistTagSearch = ({ onSelectTag, onClose }) => {
-  const [categories, setCategories] = useState([]); // For fetching categories and tags
-  const [searchQuery, setSearchQuery] = useState(''); // For searching tags
-  const [filteredTags, setFilteredTags] = useState([]); // For filtered tags
+interface Tag {
+  id: number;
+  name: string;
+}
 
-  // Fetch categories and tags
+interface SpecialistTagSearchProps {
+  onSelectTag: (tag: Tag) => void;
+  onClose: () => void;
+  // Optionally pass tags as a prop if already fetched
+  tags?: Tag[];
+}
+
+const SpecialistTagSearch: React.FC<SpecialistTagSearchProps> = ({ onSelectTag, onClose, tags: tagsProp }) => {
+  const [tags, setTags] = useState<Tag[]>(tagsProp || []);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [filteredTags, setFilteredTags] = useState<Tag[]>([]);
+
+  // If tags are not provided via props, fetch them from the API
   useEffect(() => {
-    const fetchCategories = async () => {
-      try {
-        const response = await axios.get(`${process.env.EXPO_PUBLIC_HOST}/api/tags/get_categories`);
-        const allTags = response.data.categories.flatMap(category => category.specialist_tags);
-        setCategories(allTags);
-        setFilteredTags(allTags); // Initialize filtered tags with all tags
-      } catch (error) {
-        //console.error('Error fetching categories:', error);
-      }
-    };
+    if (!tagsProp) {
+      const fetchTags = async () => {
+        try {
+          const response = await axios.get(`${process.env.EXPO_PUBLIC_HOST}/api/tags/get_all_tags`);
+          // Assuming the API returns { tags: Tag[] }
+          setTags(response.data.tags);
+          setFilteredTags(response.data.tags);
+        } catch (error) {
+          console.error("Error fetching tags:", error);
+        }
+      };
+      fetchTags();
+    } else {
+      setTags(tagsProp);
+      setFilteredTags(tagsProp);
+    }
+  }, [tagsProp]);
 
-    fetchCategories();
-  }, []);
-
-  // Handle tag search
+  // Filter tags based on the search query
   useEffect(() => {
     if (searchQuery) {
-      const filtered = categories.filter(tag =>
+      const filtered = tags.filter(tag =>
         tag.name.toLowerCase().includes(searchQuery.toLowerCase())
       );
       setFilteredTags(filtered);
     } else {
-      setFilteredTags(categories);
+      setFilteredTags(tags);
     }
-  }, [searchQuery]);
+  }, [searchQuery, tags]);
 
   return (
     <Modal transparent={true} visible={true} animationType="slide" onRequestClose={onClose}>
@@ -77,7 +101,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
     borderRadius: 8,
     padding: 16,
-    maxHeight: '80%', // Limit height of the search container
+    maxHeight: '80%',
   },
   searchInput: {
     borderWidth: 1,
@@ -88,7 +112,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
   },
   tagList: {
-    maxHeight: 200, // Limit height of the tag list
+    maxHeight: 200,
   },
   tagItem: {
     padding: 12,

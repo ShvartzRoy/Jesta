@@ -1,9 +1,21 @@
-import React, { useState } from 'react';
-import { View, Text, TextInput, StyleSheet, ScrollView, Alert, TouchableOpacity } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { 
+  View, 
+  Text, 
+  TextInput, 
+  StyleSheet, 
+  ScrollView, 
+  Alert, 
+  TouchableOpacity, 
+  RefreshControl,
+  Keyboard,
+  TouchableWithoutFeedback,
+  SafeAreaView
+} from 'react-native';
 import axios from 'axios';
 import { router } from 'expo-router'; // Use expo-router for navigation
 import Ionicons from '@expo/vector-icons/Ionicons'; // For icons
-import SpecialistTagSearch from '../components/searchComponents/searchSpecialistComponent'; // Import the new component
+import SpecialistTagSearch from '../components/searchComponents/searchSpecialistComponent'; // Import the search component
 
 const CreateSpecialistScreen = () => {
   const [serviceTags, setServiceTags] = useState('');
@@ -13,6 +25,30 @@ const CreateSpecialistScreen = () => {
   const [priceRange, setPriceRange] = useState({ min: '', max: '' });
   const [loading, setLoading] = useState(false);
   const [isSearchVisible, setIsSearchVisible] = useState(false); // To show/hide search popup
+
+  // NEW: State for all tags fetched from API
+  const [allTags, setAllTags] = useState([]);
+  const [tagsError, setTagsError] = useState(null);
+  const [tagsLoading, setTagsLoading] = useState(true);
+
+  // Fetch the list of tags from the API (which now returns a list of TagSchema)
+  const fetchTags = async () => {
+    try {
+      const response = await axios.get(
+        `${process.env.EXPO_PUBLIC_HOST}/api/tags/get_all_tags`
+      );
+      // Assuming the API returns { tags: TagSchema[] }
+      setAllTags(response.data.tags);
+    } catch (error) {
+      setTagsError("Failed to fetch tags. Please try again later.");
+    } finally {
+      setTagsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchTags();
+  }, []);
 
   // Handle tag selection
   const handleTagSelect = (tag) => {
@@ -42,7 +78,6 @@ const CreateSpecialistScreen = () => {
       Alert.alert('Success', 'Specialist profile created successfully!');
       router.back(); // Navigate back to the previous screen
     } catch (error) {
-      //console.error('Error creating specialist:', error);
       Alert.alert('Error', 'Failed to create specialist profile.');
     } finally {
       setLoading(false);
@@ -50,85 +85,97 @@ const CreateSpecialistScreen = () => {
   };
 
   return (
-    <View style={{ flex: 1 }}>
-      {/* Back Button */}
-      <TouchableOpacity onPress={() => router.push('/mainprofile')} style={styles.backButton}>
-        <Ionicons name="arrow-back" size={24} color="#007bff" />
-      </TouchableOpacity>
-
-      <ScrollView contentContainerStyle={styles.container}>
-        <Text style={styles.title}>Create Specialist Profile</Text>
-
-        {/* Service Tags Input */}
-        <TouchableOpacity onPress={() => setIsSearchVisible(true)} style={styles.input}>
-          <Text style={serviceTags ? styles.inputText : styles.placeholderText}>
-            {serviceTags || 'Select Service Tag'}
-          </Text>
-        </TouchableOpacity>
-
-        {/* Description Input */}
-        <TextInput
-          style={styles.input}
-          placeholder="Description"
-          value={description}
-          onChangeText={setDescription}
-          multiline
-        />
-
-        {/* Portfolio Link Input */}
-        <TextInput
-          style={styles.input}
-          placeholder="Portfolio Link"
-          value={portfolioLink}
-          onChangeText={setPortfolioLink}
-        />
-
-        {/* Location Range Input */}
-        <TextInput
-          style={styles.input}
-          placeholder="Location Range"
-          value={locationRange}
-          onChangeText={setLocationRange}
-        />
-
-        {/* Price Range Inputs */}
-        <View style={styles.priceRangeContainer}>
-          <TextInput
-            style={[styles.input, styles.priceInput]}
-            placeholder="Min Price"
-            value={priceRange.min}
-            onChangeText={(text) => setPriceRange({ ...priceRange, min: text })}
-            keyboardType="numeric"
-          />
-          <TextInput
-            style={[styles.input, styles.priceInput]}
-            placeholder="Max Price"
-            value={priceRange.max}
-            onChangeText={(text) => setPriceRange({ ...priceRange, max: text })}
-            keyboardType="numeric"
-          />
-        </View>
-
-        {/* Submit Button */}
-        <TouchableOpacity
-          style={styles.submitButton}
-          onPress={handleCreateSpecialist}
-          disabled={loading}
+    <SafeAreaView style={{ flex: 1 }}>
+      <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
+        <ScrollView contentContainerStyle={styles.container} 
+          refreshControl={
+            <RefreshControl
+              refreshing={loading}
+              onRefresh={fetchTags}
+              colors={["#007BFF"]}
+              tintColor="#007BFF"
+            />
+          }
         >
-          <Text style={styles.submitButtonText}>
-            {loading ? 'Creating...' : 'Create Specialist'}
-          </Text>
-        </TouchableOpacity>
-      </ScrollView>
+          {/* Back Button */}
+          <TouchableOpacity onPress={() => router.push('/mainprofile')} style={styles.backButton}>
+            <Ionicons name="arrow-back" size={24} color="#007bff" />
+          </TouchableOpacity>
 
-      {/* Specialist Tag Search Popup */}
-      {isSearchVisible && (
-        <SpecialistTagSearch
-          onSelectTag={handleTagSelect}
-          onClose={() => setIsSearchVisible(false)}
-        />
-      )}
-    </View>
+          <Text style={styles.title}>Create Specialist Profile</Text>
+
+          {/* Service Tags Input */}
+          <TouchableOpacity onPress={() => setIsSearchVisible(true)} style={styles.input}>
+            <Text style={serviceTags ? styles.inputText : styles.placeholderText}>
+              {serviceTags || 'Select Service Tag'}
+            </Text>
+          </TouchableOpacity>
+
+          {/* Description Input */}
+          <TextInput
+            style={styles.input}
+            placeholder="Description"
+            value={description}
+            onChangeText={setDescription}
+            multiline
+          />
+
+          {/* Portfolio Link Input */}
+          <TextInput
+            style={styles.input}
+            placeholder="Portfolio Link"
+            value={portfolioLink}
+            onChangeText={setPortfolioLink}
+          />
+
+          {/* Location Range Input */}
+          <TextInput
+            style={styles.input}
+            placeholder="Location Range"
+            value={locationRange}
+            onChangeText={setLocationRange}
+          />
+
+          {/* Price Range Inputs */}
+          <View style={styles.priceRangeContainer}>
+            <TextInput
+              style={[styles.input, styles.priceInput]}
+              placeholder="Min Price"
+              value={priceRange.min}
+              onChangeText={(text) => setPriceRange({ ...priceRange, min: text })}
+              keyboardType="numeric"
+            />
+            <TextInput
+              style={[styles.input, styles.priceInput]}
+              placeholder="Max Price"
+              value={priceRange.max}
+              onChangeText={(text) => setPriceRange({ ...priceRange, max: text })}
+              keyboardType="numeric"
+            />
+          </View>
+
+          {/* Submit Button */}
+          <TouchableOpacity
+            style={styles.submitButton}
+            onPress={handleCreateSpecialist}
+            disabled={loading}
+          >
+            <Text style={styles.submitButtonText}>
+              {loading ? 'Creating...' : 'Create Specialist'}
+            </Text>
+          </TouchableOpacity>
+
+          {/* Specialist Tag Search Popup */}
+          {isSearchVisible && (
+            <SpecialistTagSearch
+              tags={allTags} // Pass the list of tags to the search component
+              onSelectTag={handleTagSelect}
+              onClose={() => setIsSearchVisible(false)}
+            />
+          )}
+        </ScrollView>
+      </TouchableWithoutFeedback>
+    </SafeAreaView>
   );
 };
 
