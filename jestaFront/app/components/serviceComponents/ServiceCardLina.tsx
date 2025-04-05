@@ -524,6 +524,22 @@ useEffect(() => {
           Alert.alert('Error', 'Failed to unapply. Please try again.');
         }
       };
+    const handleStartChat = async () => {
+      try {
+        const response = await axios.post(
+          `${process.env.EXPO_PUBLIC_HOST}/api/chats/initiate_chat`,
+          { other_user_id: service.user_id },
+          { headers: { Authorization: `Bearer ${user.token}` } }
+        );
+        if (response.status === 200) {
+          router.push("/chat");
+        }
+      } catch (err) {
+        console.error("Error initiating chat", err);
+        Alert.alert("Error", "Failed to start chat");
+      }
+    };
+
       
 
   const renderApplicantStatus = () => {
@@ -768,6 +784,16 @@ const shouldShowUnapplyButton =
             </View>
           </TouchableOpacity>
         )}
+        
+        {/* Chat */}
+        {applicantState === 'accepted' && service.user_id !== user.id && (
+        <TouchableOpacity style={[styles.actionButton, { backgroundColor: '#007AFF' }]} onPress={handleStartChat}>
+          <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+            <Ionicons name="chatbubble-ellipses-outline" size={22} color="white" />
+            <Text style={{ marginLeft: 6, color: 'white', fontWeight: 'bold' }}>Start Chat</Text>
+          </View>
+        </TouchableOpacity>
+      )}
 
 
 
@@ -893,8 +919,9 @@ const shouldShowUnapplyButton =
             {reminderSet ? "Remove Reminder" : "Set Reminder"}
           </Text>
         </View>
+        
       </TouchableOpacity>
-
+      
       )}
 
 

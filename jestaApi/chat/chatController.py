@@ -70,7 +70,6 @@ class ChatController:
             messages = chat.messages.filter(id__gt=last_message_id).order_by("timestamp")
         else:
             messages = chat.messages.all().order_by("timestamp")
-        
         return [MessageSchema.from_orm(msg) for msg in messages]
     
     def read_messages(self, request, chat_id: int) -> ChatResponseSchema:
@@ -80,7 +79,7 @@ class ChatController:
         chat = get_object_or_404(Chat, id=chat_id)
         if request.user not in [chat.user1, chat.user2]:
             raise HttpError(403, "You are not a participant of this chat.")
-        
+        print(f"User: {request.user}, Chat ID: {chat_id} reading messages")
         unread_messages = chat.messages.filter(is_read=False).exclude(sender=request.user)
         count = unread_messages.update(is_read=True)
         return ChatResponseSchema(message=f"Marked {count} messages as read.")
