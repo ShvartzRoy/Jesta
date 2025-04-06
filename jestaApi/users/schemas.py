@@ -1,4 +1,5 @@
 #from typing import List
+from typing import Optional
 from pydantic import BaseModel, EmailStr
 from ninja import Schema, ModelSchema
 from new_badges.schemas import BadgeSchema
@@ -61,3 +62,14 @@ class GetProfileSchema(ModelSchema):
         
 class CitySchema(Schema):
     city: str
+    
+    
+class EmailOnlySchema(Schema):
+    email: str
+    
+    
+class VerifyCodeSchema(BaseModel):
+    email: str
+    password: str
+    code: str
+    referral_code: Optional[str] = None

@@ -15,7 +15,9 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import * as Clipboard from 'expo-clipboard';
 import { ToastAndroid, Platform } from 'react-native'; 
-//import RemoveImageModal from '../../components/profileComponents/RemoveImageModal';
+import RemoveImageModal from '../../components/profileComponents/RemoveImageModal';
+import RemoveResumeModal from '../../components/profileComponents/RemoveResumeModal';
+
 
 
 
@@ -99,6 +101,11 @@ const handleImageLoad = () => {
   const [isMenuVisible, setIsMenuVisible] = useState(false);
 
   const [showReferralInfo, setShowReferralInfo] = useState(false);
+
+  const [showRemoveImageModal, setShowRemoveImageModal] = useState(false);
+  const [showRemoveResumeModal, setShowRemoveResumeModal] = useState(false);
+
+
 
 
 //-------------------------------
@@ -359,6 +366,8 @@ useEffect(() => {
   //-------------------------------
 
 
+  // Toggle save service
+
   const toggleSave = async (serviceId) => {
     try {
       const isAlreadySaved = saved.includes(serviceId);
@@ -373,6 +382,7 @@ useEffect(() => {
 
   //-------------------------------
 
+  // Copy referral code to clipboard
 
 
   const openLink = async (url) => {
@@ -383,6 +393,7 @@ useEffect(() => {
 
   //-------------------------------
 
+  
 
   const toggleMenu = () => {
     setIsMenuVisible(!isMenuVisible);
@@ -391,6 +402,8 @@ useEffect(() => {
 
   //-------------------------------
 
+
+  // Loading and error handling
   
 
   if (loading) {
@@ -402,6 +415,8 @@ useEffect(() => {
     );
   }
 //-------------------------------
+
+// Error handling
 
   if (error) {
     return (
@@ -417,12 +432,51 @@ useEffect(() => {
   //-------------------------------
 
 
+  // Filter services based on the active tab
+
   const filteredServices = services.filter(service => {
     if (activeTab === 'request') return service.service_from === 'publisher';
     if (activeTab === 'offer') return service.service_from === 'provider';
     return false;
   });
 
+
+  //-------------------------------
+
+
+  // Remove image modal
+
+  const handleRemoveImage = async () => {
+    try {
+      await axios.put(`${process.env.EXPO_PUBLIC_HOST}/api/users/remove_profile_image`, {}, {
+        headers: { Authorization: `Bearer ${user.token}` },
+      });
+  
+      setProfile(prev => ({ ...prev, image: null }));
+      setShowRemoveImageModal(false);
+      ToastAndroid.show('Profile image removed!', ToastAndroid.SHORT);
+    } catch (err) {
+      Alert.alert('Error', 'Failed to remove image');
+    }
+  };
+
+  //-------------------------------
+
+  // Remove resume modal
+
+  const handleRemoveResume = async () => {
+    try {
+      await axios.put(`${process.env.EXPO_PUBLIC_HOST}/api/users/remove_resume`, {}, {
+        headers: { Authorization: `Bearer ${user.token}` },
+      });
+  
+      setProfile(prev => ({ ...prev, resume: null }));
+      setShowRemoveResumeModal(false);
+      ToastAndroid.show('Resume removed!', ToastAndroid.SHORT);
+    } catch (err) {
+      Alert.alert('Error', 'Failed to remove resume');
+    }
+  };
 
   //-------------------------------
 
@@ -482,20 +536,22 @@ useEffect(() => {
 
 {/* Profile Image Section */}
       <ScrollView contentContainerStyle={styles.container}>
+
+
       {profile?.image ? (
-        <Animated.Image
-          source={{ uri: profile.image }}
-          onLoad={handleImageLoad}
-          style={[
-            styles.image,
-            { top: 0, opacity: fadeAnim },
-          ]}
-        />
+        <TouchableOpacity onPress={() => setShowRemoveImageModal(true)}>
+          <Animated.Image
+            source={{ uri: profile.image }}
+            onLoad={handleImageLoad}
+            style={[styles.image, { top: 0, opacity: fadeAnim }]}
+          />
+        </TouchableOpacity>
       ) : (
         <View style={styles.placeholderImage}>
           <Text style={styles.placeholderText}>No Image</Text>
         </View>
       )}
+
 
 {/* Referral Code Section */} 
       {profile?.referral_code && (
@@ -562,6 +618,36 @@ useEffect(() => {
 {/* Bio Section */}
 
         <Text style={styles.bio}>{profile?.bio}</Text>
+
+
+
+{/* Resume Section */}
+{profile?.resume && (
+  <View style={{ alignItems: 'center', marginBottom: 20 }}>
+
+  <View style={styles.resumeButtonRow}>
+    <TouchableOpacity
+      onPress={() => Linking.openURL(`${process.env.EXPO_PUBLIC_HOST}${profile.resume}`)}
+      style={[styles.resumeBtn, { backgroundColor: '#a5d6a7' }]} 
+    >
+      <Text style={styles.resumeBtnText}>🔍 View resume</Text>
+    </TouchableOpacity>
+
+    <TouchableOpacity
+      onPress={() => setShowRemoveResumeModal(true)}
+      style={[styles.resumeBtn, { backgroundColor: '#ef9a9a' }]} 
+    >
+      <Text style={styles.resumeBtnText}>❌ Remove resume</Text>
+    </TouchableOpacity>
+  </View>
+
+
+  </View>
+)}
+
+
+
+
 
 
 {/* Social Links Section */}
@@ -767,7 +853,27 @@ useEffect(() => {
       </Modal>
 
 
+{/* Remove Image Modal */}
+
+      <RemoveImageModal
+        visible={showRemoveImageModal}
+        onClose={() => setShowRemoveImageModal(false)}
+        onConfirm={handleRemoveImage}
+      />
+
+
+{/* Remove Resume Modal*/}
+    <RemoveResumeModal
+      visible={showRemoveResumeModal}
+      onClose={() => setShowRemoveResumeModal(false)}
+      onConfirm={handleRemoveResume}
+    />
+
+
+
     </View>
+
+
   );
 };
 
@@ -897,6 +1003,34 @@ const styles = StyleSheet.create({
   filterButtonText: {
     color: '#333',
     fontSize: 14,
+  },
+  
+  resumeButtonRow: {
+    flexDirection: 'row',
+    gap: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: 4,
+  },
+  
+  resumeBtn: {
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    borderRadius: 30,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.07,
+    shadowRadius: 6,
+    elevation: 2,
+    minWidth: 110,
+    alignItems: 'center',
+  },
+  
+  
+  resumeBtnText: {
+    color: '#333',
+    fontWeight: '600',
+    fontSize: 15,
   },
   
   
