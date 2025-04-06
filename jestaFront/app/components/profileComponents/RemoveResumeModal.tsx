@@ -1,24 +1,21 @@
-
 import React from 'react';
 import { Modal, View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 
-const RemoveImageModal = ({ visible, onClose, onConfirm, title = "Remove Profile Photo?", message = "Your profile photo will be removed." }) => {
+const RemoveResumeModal = ({ visible, onClose, onConfirm }) => {
   return (
-    <Modal
-      visible={visible}
-      transparent
-      animationType="fade"
-    >
+    <Modal visible={visible} transparent animationType="slide">
       <View style={styles.overlay}>
-        <View style={styles.modalContent}>
-          <Text style={styles.title}>Remove Profile Photo?</Text>
-          <Text style={styles.message}>Your profile photo will be removed</Text>
+        <View style={styles.modal}>
+          <Text style={styles.title}>Remove Resume?</Text>
+          <Text style={styles.description}>Are you sure you want to delete your uploaded resume?</Text>
+
           <View style={styles.buttonRow}>
             <TouchableOpacity onPress={onClose} style={styles.cancelBtn}>
               <Text style={styles.cancelText}>Cancel</Text>
             </TouchableOpacity>
+
             <TouchableOpacity onPress={onConfirm} style={styles.confirmBtn}>
-              <Text style={styles.confirmText}>Confirm</Text>
+              <Text style={styles.confirmText}>Delete</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -27,54 +24,58 @@ const RemoveImageModal = ({ visible, onClose, onConfirm, title = "Remove Profile
   );
 };
 
-export default RemoveImageModal;
+export default RemoveResumeModal;
 
 const styles = StyleSheet.create({
   overlay: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.5)',
+    backgroundColor: 'rgba(0,0,0,0.4)',
     justifyContent: 'center',
     alignItems: 'center',
   },
-  modalContent: {
+  modal: {
     backgroundColor: '#fff',
-    borderRadius: 12,
+    width: '85%',
     padding: 24,
-    width: '80%',
-    alignItems: 'center',
+    borderRadius: 16,
+    elevation: 5,
   },
   title: {
     fontSize: 20,
     fontWeight: 'bold',
-    marginBottom: 12,
+    marginBottom: 10,
+    textAlign: 'center',
   },
-  message: {
-    fontSize: 14,
+  description: {
+    fontSize: 16,
     color: '#555',
     textAlign: 'center',
-    marginBottom: 20,
+    marginBottom: 24,
   },
   buttonRow: {
     flexDirection: 'row',
-    gap: 20,
+    justifyContent: 'space-between',
   },
   cancelBtn: {
-    paddingVertical: 10,
-    paddingHorizontal: 20,
     backgroundColor: '#ccc',
-    borderRadius: 8,
+    padding: 12,
+    borderRadius: 10,
+    flex: 1,
+    marginRight: 8,
   },
   cancelText: {
-    color: '#333',
+    textAlign: 'center',
     fontWeight: 'bold',
   },
   confirmBtn: {
-    paddingVertical: 10,
-    paddingHorizontal: 20,
-    backgroundColor: '#007bff',
-    borderRadius: 8,
+    backgroundColor: '#e53935',
+    padding: 12,
+    borderRadius: 10,
+    flex: 1,
+    marginLeft: 8,
   },
   confirmText: {
+    textAlign: 'center',
     color: 'white',
     fontWeight: 'bold',
   },

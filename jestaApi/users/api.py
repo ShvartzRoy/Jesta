@@ -91,6 +91,38 @@ def set_user_city(request, data: CitySchema):
     profile.save()
     return {"msg": f"City set to {data.city}"}
 
+
+@router.put("/remove_profile_image", response={200: Msg, 401: Error})
+def remove_profile_image(request):
+    if not request.user.is_authenticated:
+        raise HttpError(401, "Unauthorized")
+    try:
+        profile = Profile.objects.get(user=request.user)
+        if profile.image:
+            profile.image.delete()
+            profile.image = None
+            profile.save()
+        return {"msg": "Profile image removed"}
+    except Profile.DoesNotExist:
+        raise HttpError(404, "Profile not found")
+    
+    
+@router.put("/remove_resume", response={200: Msg, 401: Error})
+def remove_resume(request):
+    if not request.user.is_authenticated:
+        raise HttpError(401, "Unauthorized")
+    try:
+        profile = Profile.objects.get(user=request.user)
+        if profile.resume:
+            profile.resume.delete()
+            profile.resume = None
+            profile.save()
+        return {"msg": "Resume removed"}
+    except Profile.DoesNotExist:
+        raise HttpError(404, "Profile not found")
+
+
+
 '''
 @router.post("/share_saved_services_listing", response={200: dict, 400: dict})
 def share_saved_services_listing_to_a_given_email(request, data: EmailSchema):

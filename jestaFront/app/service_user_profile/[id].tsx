@@ -448,6 +448,26 @@ useEffect(() => {
 
         <Text style={styles.bio}>{profile?.bio}</Text>
 
+
+ 
+ {/* Resume Section */}
+ {profile?.resume && (
+   <View style={{ alignItems: 'center', marginBottom: 20 }}>
+ 
+   <View style={styles.resumeButtonRow}>
+     <TouchableOpacity
+       onPress={() => Linking.openURL(`${process.env.EXPO_PUBLIC_HOST}${profile.resume}`)}
+       style={[styles.resumeBtn, { backgroundColor: '#a5d6a7' }]} 
+     >
+       <Text style={styles.resumeBtnText}>🔍 View resume</Text>
+     </TouchableOpacity>
+
+   </View>
+ 
+ 
+   </View>
+ )}       
+
         {/* Social Links */}
 
         <View style={styles.socialLinks}>
@@ -765,6 +785,33 @@ const styles = StyleSheet.create({
     fontSize: 14,
   },
   
+  resumeButtonRow: {
+    flexDirection: 'row',
+    gap: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: 4,
+  },
+  
+  resumeBtn: {
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    borderRadius: 30,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.07,
+    shadowRadius: 6,
+    elevation: 2,
+    minWidth: 110,
+    alignItems: 'center',
+  },
+  
+  
+  resumeBtnText: {
+    color: '#333',
+    fontWeight: '600',
+    fontSize: 15,
+  },
   
   
   
