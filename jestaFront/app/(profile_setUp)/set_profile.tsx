@@ -213,6 +213,19 @@ const Set_profile = () => {
     fetchProfile();
   }, [user.id]);
 
+
+
+  function getErrorMessage(error: any): string {
+    if (typeof error === 'string') return error;
+    if (typeof error?.msg === 'string') return error.msg;
+    if (typeof error?.detail === 'string') return error.detail;
+    if (typeof error?.error === 'string') return error.error;
+    if (Array.isArray(error?.errors) && error.errors[0]?.msg)
+      return error.errors[0].msg;
+    return JSON.stringify(error);
+  }
+  
+
   return (
     <KeyboardAvoidingView
       style={{ flex: 1 }}
@@ -372,11 +385,8 @@ const Set_profile = () => {
             ) : (
               <Button title="Save Changes" onPress={handleSubmit} />
             )}
-            {isError[0] && (
-              <Text style={styles.errorMessage}>
-                {isError[1].detail || isError[1]}
-              </Text>
-            )}
+  {isError[0] && <Text style={styles.errorMessage}>{getErrorMessage(isError[1])}</Text>}
+
             {success && (
               <Text style={styles.successMessage}>
                 Profile updated successfully!
