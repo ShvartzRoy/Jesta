@@ -9,6 +9,7 @@ from specialists.api import router as specialists_router
 from tags.api import router as tags_router
 from new_badges.api import router as badges_router
 from new_ranks.api import router as ranks_router
+from chat.api import router as chats_router
 
 api = NinjaAPI()
 
@@ -46,3 +47,4 @@ api.add_router("/specialists/", specialists_router)
 api.add_router("/tags/", tags_router)
 api.add_router("/badges/", badges_router)
 api.add_router("/ranks/", ranks_router)
+api.add_router("/chats/", chats_router)
