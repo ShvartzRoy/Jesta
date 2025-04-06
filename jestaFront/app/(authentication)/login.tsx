@@ -24,7 +24,7 @@ export default function LoginScreen() {
     }
     try {
       const response = await axios.post(`${process.env.EXPO_PUBLIC_HOST}/api/users/login`, {
-        email: email.trim(),
+        email: email.trim().toLowerCase(),
         password: password.trim(),
       });
       // Handle success

@@ -125,7 +125,22 @@ useEffect(() => {
   const handleReviewSuccess = () => {
     setRefreshTrigger(prev => prev + 1);
   };
- 
+
+  const handleStartChat = async () => {
+      try {
+        const response = await axios.post(
+          `${process.env.EXPO_PUBLIC_HOST}/api/chats/initiate_chat`,
+          { other_user_id: userId },
+          { headers: { Authorization: `Bearer ${user.token}` } }
+        );
+        if (response.status === 200) {
+          router.push("/chat");
+        }
+      } catch (err) {
+        console.error("Error initiating chat", err);
+        Alert.alert("Error", "Failed to start chat");
+      }
+    };
   
   //-------------------------------
 
@@ -369,13 +384,13 @@ useEffect(() => {
 
 
       {/* Chat Icons */}
-      {(accepted || isCreatorOfAcceptedApplicant) && (
+      {(accepted || isCreatorOfAcceptedApplicant || specialists.length > 0) && (
         <View style={{ flexDirection: 'row', alignItems: 'center' }}>
          
          
          {/* regular chat icon */}
          
-          <TouchableOpacity onPress={() => Alert.alert('Open private chat')} style={styles.chatIconButton}>
+          <TouchableOpacity onPress={() => handleStartChat()} style={styles.chatIconButton}>
             <Ionicons name="chatbubble-ellipses-outline" size={28} color="#007bff" />
           </TouchableOpacity>
 
@@ -493,9 +508,9 @@ useEffect(() => {
 
         {specialists.length > 0 && (
           <>
-            <Text style={styles.sectionTitle}>Specialty</Text>
+            <Text style={styles.sectionTitle}>Specialty </Text>
             {specialists.map((specialist) => (
-              <SpecialistShowCard key={specialist.id} specialist={specialist} />
+              <SpecialistShowCard key={specialist.id} specialist={specialist} userId={user.id} />
             ))}
           </>
         )}
