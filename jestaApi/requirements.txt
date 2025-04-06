@@ -6,6 +6,8 @@ pillow
 python-dateutil
 djangorestframework-simplejwt
 requests
-
+#Production
+whitenoise
+gunicorn
 
 #pydantic[email]>=1.10.0

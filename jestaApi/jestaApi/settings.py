@@ -24,7 +24,10 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = 'django-insecure-&$$d+&7g-9dw1vk%2)o!527o!lo-u-jxd8ibvmazh3dlv7ghnp'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+# Development settings
+#DEBUG = True
+# Production settings
+DEBUG = False
 
 ALLOWED_HOSTS = ["*"]
 
@@ -61,6 +64,8 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     "corsheaders.middleware.CorsMiddleware",
+    #Production Middleware below
+    'whitenoise.middleware.WhiteNoiseMiddleware', 
     "jestaApi.middleware.custom_exception_middleware.CustomExceptionMiddleware", 
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
@@ -95,18 +100,31 @@ WSGI_APPLICATION = 'jestaApi.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/5.0/ref/settings/#databases
 
+# Development database settings
+# DATABASES = {
+#     'default': {
+#         'ENGINE': 'django.db.backends.postgresql',
+#         'NAME': 'jesta_db',
+#         'USER': 'user',
+#         'PASSWORD': 'user123',
+#         'HOST': 'db',
+#         'PORT': '5432',
+#         "ATOMIC_REQUESTS": True,
+#     }
+# }
+
+# Production database settings
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'jesta_db',
-        'USER': 'user',
-        'PASSWORD': 'user123',
-        'HOST': 'db',
-        'PORT': '5432',
+        'NAME': os.environ.get('DATABASE_NAME'),
+        'USER': os.environ.get('DATABASE_USER'),
+        'PASSWORD': os.environ.get('DATABASE_PASSWORD'),
+        'HOST': os.environ.get('DATABASE_HOST'),
+        'PORT': os.environ.get('DATABASE_PORT', '5432'),
         "ATOMIC_REQUESTS": True,
     }
 }
-
 
 # Password validation
 # https://docs.djangoproject.com/en/5.0/ref/settings/#auth-password-validators
@@ -143,6 +161,11 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/5.0/howto/static-files/
 
 STATIC_URL = 'static/'
+# < Production
+STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
+STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
+STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
+# End of Production section>
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.0/ref/settings/#default-auto-field
