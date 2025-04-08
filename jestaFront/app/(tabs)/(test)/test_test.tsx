@@ -23,6 +23,9 @@ import * as Location from 'expo-location';
 
 import { useLocalSearchParams } from 'expo-router';
 
+import { RefreshControl } from 'react-native';
+
+
 
 import {
   scheduleServiceReminders,
@@ -121,6 +124,9 @@ export default function ExplorePage() {
   const shownOutdatedReminderIds = useRef<Set<number>>(new Set());
 
   const [includeCompleted, setIncludeCompleted] = useState(false);
+
+  const [refreshing, setRefreshing] = useState(false);
+
 
 
   const { referralCode } = useLocalSearchParams();
@@ -242,13 +248,13 @@ export default function ExplorePage() {
     "mover",
   ];
 
-  useEffect(() => {
-    const interval = setInterval(() => {
-      fetchServices();
-    }, 5000); 
+  // useEffect(() => {
+  //   const interval = setInterval(() => {
+  //     fetchServices();
+  //   }, 5000); 
   
-    return () => clearInterval(interval); 
-  }, []);
+  //   return () => clearInterval(interval); 
+  // }, []);
 
 
   useEffect(() => {
@@ -260,6 +266,28 @@ export default function ExplorePage() {
   // useEffect(() => {
   //   fetchUserCity(); 
   // }, []);
+
+
+  useEffect(() => {
+    fetchServices();
+  }, []);
+
+
+  useEffect(() => {
+    const tryRefreshCity = async () => {
+      try {
+        await refreshUserCity();
+      } catch (e) {
+        console.log("City detection error:", e);
+      } finally {
+        setLoadingCity(false);
+      }
+    };
+  
+    tryRefreshCity();
+  }, []);
+  
+  
   
   
   
@@ -267,6 +295,7 @@ export default function ExplorePage() {
   //Fetch services
   const fetchServices = async () => {
     try {
+      setRefreshing(true);
       const response = await axios.get(`${process.env.EXPO_PUBLIC_HOST}/api/services/get_all_services`, {
         headers: {
           Authorization: `Bearer ${user.token}`,
@@ -300,6 +329,7 @@ export default function ExplorePage() {
       setFilteredServices([]);
     } finally {
       setLoading(false);
+      setRefreshing(false);
     }
   };
   
@@ -707,8 +737,13 @@ export default function ExplorePage() {
           )}
 
         </ScrollView>
-      ) : (
-        <ScrollView>
+          ) : (
+            <ScrollView
+              refreshControl={
+                <RefreshControl refreshing={refreshing} onRefresh={fetchServices} />
+              }
+            >
+
   
           {/* Top Row Icons */}
           <View style={{ flexDirection: 'row', justifyContent: 'space-around', alignItems: 'center', marginBottom: 15 }}>
@@ -726,6 +761,18 @@ export default function ExplorePage() {
             <TouchableOpacity onPress={handleOpenNotifications}>
               <Ionicons name="notifications-outline" size={40} />
             </TouchableOpacity>
+
+
+            {/* Refresh Button */}
+            <TouchableOpacity onPress={fetchServices} disabled={refreshing}>
+              {refreshing ? (
+                <ActivityIndicator size={24} color="#007AFF" />
+              ) : (
+                <Ionicons name="refresh" size={40} color="#007AFF" />
+              )}
+            </TouchableOpacity>
+
+
   
             {/* Add New Service */}
             <TouchableOpacity onPress={() => setAddServiceVisible(true)}>
