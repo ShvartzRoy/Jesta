@@ -298,6 +298,28 @@ useEffect(() => {
   //-------------------------------
 
 
+  const handleStartChat = async () => {
+    try {
+      const response = await axios.post(
+        `${process.env.EXPO_PUBLIC_HOST}/api/chats/initiate_chat`,
+        { other_user_id: userId },
+        { headers: { Authorization: `Bearer ${user.token}` } }
+      );
+  
+      if (response.status === 200) {
+        router.push("/chat");
+      }
+      
+    } catch (err) {
+      console.error("Error initiating chat", err);
+      Alert.alert("Error", "Failed to start chat");
+    }
+  };
+
+  
+  //-------------------------------
+
+
   if (loading) {
     return (
       <View style={styles.center}>
@@ -365,8 +387,8 @@ useEffect(() => {
          
          {/* regular chat icon */}
          
-          <TouchableOpacity onPress={() => Alert.alert('Open private chat')} style={styles.chatIconButton}>
-            <Ionicons name="chatbubble-ellipses-outline" size={28} color="#007bff" />
+         <TouchableOpacity onPress={handleStartChat} style={styles.chatIconButton}>
+         <Ionicons name="chatbubble-ellipses-outline" size={28} color="#007bff" />
           </TouchableOpacity>
 
 
