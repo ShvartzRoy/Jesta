@@ -2,7 +2,7 @@ import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { router } from 'expo-router'; // Import the router
 
-const SpecialistShowCard = ({ specialist }) => {
+const SpecialistShowCard = ({ specialist, userId }) => {
   // Safely handle missing or invalid fields
   const serviceTags = specialist.service_tags
     ? Array.isArray(specialist.service_tags)
@@ -32,8 +32,10 @@ const SpecialistShowCard = ({ specialist }) => {
   // Function to handle navigation to the ViewProfileScreen
   const handlePress = () => {
     console.log('Navigating to viewProfile screen...', specialist.user);
-    if (specialist.id) {
-      router.push(`/viewProfile/${specialist.user}`);
+    console.log('User ID:', userId);
+    console.log('Specialist ID:', specialist.id);
+    if (specialist.user != userId && specialist.id) {
+      router.push(`/service_user_profile/${specialist.user}`);
     } else {
       console.warn('No user ID found for this specialist.');
     }

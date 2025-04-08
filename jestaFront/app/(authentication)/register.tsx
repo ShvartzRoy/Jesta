@@ -131,9 +131,9 @@ export default function RegisterScreen() {
     setLoading(true);
     try {
       const response = await axios.post(`${process.env.EXPO_PUBLIC_HOST}/api/users/send_verification_code`, {
-        email: email.trim(),
+        email: email.trim().toLowerCase(),
       });
-      setSentEmail(email.trim());
+      setSentEmail(email.trim().toLowerCase());
       setStep('verify');
       startResendCooldown();
 

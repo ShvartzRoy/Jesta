@@ -675,7 +675,7 @@ useEffect(() => {
           <>
             <Text style={styles.sectionTitle}>Specialty</Text>
             {specialists.map((specialist) => (
-              <SpecialistShowCard key={specialist.id} specialist={specialist} />
+              <SpecialistShowCard key={specialist.id} specialist={specialist} userId={user.id}/>
             ))}
           </>
         )}

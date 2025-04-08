@@ -25,9 +25,9 @@ SECRET_KEY = 'django-insecure-&$$d+&7g-9dw1vk%2)o!527o!lo-u-jxd8ibvmazh3dlv7ghnp
 
 # SECURITY WARNING: don't run with debug turned on in production!
 # Development settings
-#DEBUG = True
+DEBUG = True
 # Production settings
-DEBUG = False
+#DEBUG = False
 
 ALLOWED_HOSTS = ["*"]
 
@@ -65,7 +65,7 @@ INSTALLED_APPS = [
 MIDDLEWARE = [
     "corsheaders.middleware.CorsMiddleware",
     #Production Middleware below
-    'whitenoise.middleware.WhiteNoiseMiddleware', 
+    #'whitenoise.middleware.WhiteNoiseMiddleware', 
     "jestaApi.middleware.custom_exception_middleware.CustomExceptionMiddleware", 
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
@@ -162,9 +162,9 @@ USE_TZ = True
 
 STATIC_URL = 'static/'
 # < Production
-STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
-STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
-STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
+# STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
+# STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
+# STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
 # End of Production section>
 
 # Default primary key field type
