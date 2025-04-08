@@ -360,7 +360,7 @@ useEffect(() => {
     if (userId && user?.id) {
       fetchData();
     }
-  }, [userId]);
+  }, [userId, refreshTrigger]);
 
 
   //-------------------------------
