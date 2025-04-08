@@ -1,8 +1,17 @@
 export const hebrewToEnglishCities: Record<string, string> = {
   "ירושלים": "jerusalem",
+
   "תל אביב": "tel aviv",
+  "תל אביב-יפו": "tel aviv",
+  "תל אביב יפו": "tel aviv",
+  "תל־אביב": "tel aviv",
+  "ת״א": "tel aviv",
+
   "חיפה": "haifa",
   "באר שבע": "be'er sheva",
+  "באר־שבע": "be'er sheva",
+  "ב''ש": "be'er sheva",
+
   "יקנעם": "yokneam",
   "דימונה": "dimona",
   "ערד": "arad",
@@ -15,12 +24,14 @@ export const hebrewToEnglishCities: Record<string, string> = {
   "שדרות": "sderot",
   "אשקלון": "ashkelon",
   "אשדוד": "ashdod",
+
   "יבנה": "yavne",
   "רחובות": "rehovot",
   "נס ציונה": "ness ziona",
   "ראשון לציון": "rishon lezion",
   "חולון": "holon",
   "בת ים": "bat yam",
+
   "רמת גן": "ramat gan",
   "גבעתיים": "givatayim",
   "בני ברק": "bnei brak",
@@ -31,16 +42,19 @@ export const hebrewToEnglishCities: Record<string, string> = {
   "אור יהודה": "or yehuda",
   "לוד": "lod",
   "רמלה": "ramla",
+
   "באר יעקב": "be'er ya'akov",
   "מודיעין": "modi'in",
   "שוהם": "shoham",
   "אלעד": "el'ad",
   "ראש העין": "rosh haayin",
+
   "כפר סבא": "kfar saba",
   "רעננה": "ra'anana",
   "הרצליה": "herzliya",
   "רמת השרון": "ramat hasharon",
   "הוד השרון": "hod hasharon",
+
   "נתניה": "netanya",
   "אבן יהודה": "even yehuda",
   "כפר יונה": "kfar yona",
@@ -50,18 +64,21 @@ export const hebrewToEnglishCities: Record<string, string> = {
   "זכרון יעקב": "zikhron ya'akov",
   "קיסריה": "caesarea",
   "אור עקיבא": "or akiva",
+
   "טירת כרמל": "tirat carmel",
   "נשר": "nesher",
   "קריית מוצקין": "kiryat motzkin",
   "קריית ביאליק": "kiryat bialik",
   "קריית ים": "kiryat yam",
   "קריית אתא": "kiryat ata",
+
   "עכו": "acre (akko)",
   "נהריה": "nahariya",
   "מעלות תרשיחא": "ma'alot-tarshiha",
   "כרמיאל": "karmiel",
   "צפת": "tzfat (safed)",
   "ראש פינה": "rosh pina",
+
   "טבריה": "tiberias",
   "עפולה": "afula",
   "נצרת": "nazareth",
@@ -69,10 +86,12 @@ export const hebrewToEnglishCities: Record<string, string> = {
   "מגדל העמק": "migdal haemek",
   "בית שאן": "beit she'an",
   "מגדל": "migdal",
+
   "אילת": "eilat",
   "יטבתה": "yotvata",
   "באר אורה": "be’er ora",
   "תימנה": "timna",
+
   "בית שמש": "beit shemesh",
   "גבעת זאב": "giv'at ze'ev",
   "להבים": "lehavim",

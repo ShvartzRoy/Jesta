@@ -42,7 +42,9 @@ const AuthContext = ({ children }) => {
   
       const location = await Location.getCurrentPositionAsync({});
       const [place] = await Location.reverseGeocodeAsync(location.coords);
+      
       const city = place.city || place.subregion || place.region;
+      if (!city) return;
   
       console.log('Detected city:', city);
   
@@ -128,18 +130,44 @@ const AuthContext = ({ children }) => {
       const city = await getUserCity(); 
       setUserCity(city);
   
-      await axios.post(`${process.env.EXPO_PUBLIC_HOST}/api/users/set_user_city`, { city });
+      //await axios.post(`${process.env.EXPO_PUBLIC_HOST}/api/users/set_user_city`, { city });
   
       console.log("User city:", city);
     };
   
     initializeAuth();
   }, []);
+
+
+  const getUserCity = async () => {
+    try {
+      const res = await axios.get(`${process.env.EXPO_PUBLIC_HOST}/api/users/get_user_city`);
+      return res.data.city;
+    } catch (err) {
+      console.error("Failed to fetch user city:", err);
+      return null;
+    }
+  };
+  
+
+  const refreshUserCity = async () => {
+    try {
+      const token = expoPushToken; 
+      if (!token) return;
+      await getAndSaveUserCity(token);
+  
+      const updatedCity = await getUserCity(); 
+      setUserCity(updatedCity);
+    } catch (e) {
+      console.error("Failed to refresh city manually:", e);
+    }
+  };
+  
   
 
   return (
-    <UserContext.Provider value={{ user, setUser, logoutUser, userCity }}>
-      {children}
+    <UserContext.Provider value={{ user, setUser, logoutUser, userCity, refreshUserCity }}>
+    {children}
     </UserContext.Provider>
   );
 };
