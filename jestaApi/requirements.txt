@@ -7,5 +7,7 @@ python-dateutil
 djangorestframework-simplejwt
 requests
 
+pytest
+pytest-django
 
 #pydantic[email]>=1.10.0
