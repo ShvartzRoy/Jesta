@@ -483,7 +483,7 @@ export default function ExplorePage() {
 
   useEffect(() => {
     applyFilters();
-  }, [services, selectedTags, searchValue, filterRequests, filterMine, location, duration, priceRange, sortOption]);
+  }, [services, selectedTags, searchValue, filterRequests, filterMine, location, duration, priceRange, sortOption, nearby, radiusKm, useGpsNearby, userCity, includeCompleted,]);
 
   const resetFilters = () => {
     setPriceRange([0, 1000]);
@@ -848,9 +848,11 @@ export default function ExplorePage() {
                     value={useGpsNearby}
                     onValueChange={(value) => {
                       setUseGpsNearby(value);
-                      if (!value) {
-                        setRadiusKm('');    
-                      }
+                          if (value) {
+                          setRadiusKm('20'); //Default to 20 km when enabled
+                        } else {
+                          setRadiusKm('');
+                        }
                     }}
                   />
                 </View>

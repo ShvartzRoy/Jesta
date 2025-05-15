@@ -1,7 +1,7 @@
 import { cityAliases } from './cityAliases';
 import { hebrewToEnglishCities } from './hebrewToEnglishCities';
 
-export function normalizeCityName(city: string): string {
+export function normalizeCityName(city) {
   if (!city || typeof city !== 'string') return city;
 
   const trimmed = city.trim();
@@ -16,7 +16,7 @@ export function normalizeCityName(city: string): string {
     .replace(/\s+/g, ' ')         
     .trim();
 
-  const cityAliasOverrides: Record<string, string> = {
+  const cityAliasOverrides={ //: Record<string, string> = {
     "tel aviv yafo": "tel aviv",
     "tel avivyafo": "tel aviv",
     "telavivyafo": "tel aviv",
