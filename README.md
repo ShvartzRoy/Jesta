@@ -346,7 +346,13 @@ https://www.jetbrains.com/help/pycharm/creating-virtual-environment.html#python_
   npx expo start
 ```
 
-
+# Publish version to expo
+Make sure you are logged in to your expo account and have the eas cli installed.
+Than write in terminal:
+```bash
+  eas update:configure
+  eas update --branch main --message "First Publish"
+```
 
 # Must read docs for development
 
