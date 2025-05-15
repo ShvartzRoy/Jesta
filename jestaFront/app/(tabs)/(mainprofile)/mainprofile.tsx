@@ -1,3 +1,4 @@
+import { AppState } from 'react-native';
 import React, { useEffect, useState, useContext, useRef } from 'react';
 import { View, Text, Image, StyleSheet, ActivityIndicator, ScrollView, TouchableOpacity, Linking, Alert, FlatList, Modal, Animated } from 'react-native';
 import { useLocalSearchParams, router } from 'expo-router';
@@ -298,7 +299,8 @@ useEffect(() => {
         
 
       } catch (err) {
-        Alert.alert("Error", "Failed to load profile info.");
+        console.warn("Retrying profile fetch after failure...");
+        setTimeout(() => setRefreshTrigger(prev => prev + 1), 3000);
       } finally {
         setLoading(false);
       }
@@ -306,6 +308,20 @@ useEffect(() => {
 
     fetchProfileData();
   }, [userId,refreshTrigger]);
+
+
+
+  useEffect(() => {
+  const subscription = AppState.addEventListener('change', (nextAppState) => {
+    if (nextAppState === 'active') {
+      //App has come back to the foreground
+      setRefreshTrigger(prev => prev + 1);
+    }
+  });
+
+  return () => subscription.remove();
+}, []);
+
 
 
   //-------------------------------
