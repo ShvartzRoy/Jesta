@@ -54,4 +54,5 @@ class ReviewModelTest(TestCase):
                 service=self.service,
                 ranking=3,
                 info="Duplicate"
+                
             )
