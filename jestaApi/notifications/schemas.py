@@ -9,4 +9,9 @@ class NotificationSchema(Schema):
     data: Optional[dict]
     created_at: datetime
     read: bool
+    
+    
+    model_config = {
+        "from_attributes": True
+    }
 
