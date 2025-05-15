@@ -1,6 +1,6 @@
 #from typing import List
 from typing import Optional
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel, EmailStr, HttpUrl
 from ninja import Schema, ModelSchema
 from new_badges.schemas import BadgeSchema
 
@@ -73,3 +73,6 @@ class VerifyCodeSchema(BaseModel):
     password: str
     code: str
     referral_code: Optional[str] = None
+
+class ProfileImageUpdateSchema(BaseModel):
+    image_url: HttpUrl

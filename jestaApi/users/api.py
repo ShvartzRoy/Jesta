@@ -12,7 +12,7 @@ from django.shortcuts import get_object_or_404
 from services.models import Service
 from users.schemas import Error
 
-from .models import CustomUser
+from .models import CustomUser, Profile
 from .schemas import PushTokenSchema
 
 from django.core.mail import send_mail
@@ -110,6 +110,15 @@ def set_user_city(request, data: CitySchema):
     profile.save()
     return {"msg": f"City set to {data.city}"}
 
+@router.post("/profile-image")
+def update_profile_image(request, data: ProfileImageUpdateSchema):
+    if not request.user.is_authenticated:
+        raise HttpError(401, "Unauthorized")
+
+    profile, _ = Profile.objects.get_or_create(user=request.user)
+    profile.image = data.image_url
+    profile.save()
+    return {"status": "success", "image_url": profile.image}
 
 @router.put("/remove_profile_image", response={200: Msg, 401: Error})
 def remove_profile_image(request):

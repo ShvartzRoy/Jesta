@@ -6,6 +6,6 @@ pillow
 python-dateutil
 djangorestframework-simplejwt
 requests
-
+supabase
 
 #pydantic[email]>=1.10.0

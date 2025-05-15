@@ -21,6 +21,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { UserContext } from '../contexts/authContext';
 import PhoneInput from 'react-native-phone-number-input';
+import { uploadProfileImage } from '../../utils/image_uploader';
+
 
 import { useLocalSearchParams } from 'expo-router';
 
@@ -66,21 +68,16 @@ const Set_profile = () => {
 
   // Handle image upload
   const handleImageUpload = async () => {
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      allowsEditing: true,
-      quality: 1,
-    });
+    const authToken = user?.token; // adjust this based on how you store auth token
+    const uploadedUrl = await uploadProfileImage(user.id, authToken);
 
-    if (!result.canceled) {
-      const asset = result.assets[0];
-      setImage({
-        uri: asset.uri,
-        type: asset.type || 'image/jpeg',
-        fileName: asset.fileName || `image_${Date.now()}.jpg`,
-      });
+    if (uploadedUrl) {
+      setImage({ uri: uploadedUrl, fileName: uploadedUrl.split('/').pop() });
+    } else {
+      Alert.alert('Image upload failed. Please try again.');
     }
   };
+
 
   // Handle resume upload
   const handleResumeUpload = async () => {

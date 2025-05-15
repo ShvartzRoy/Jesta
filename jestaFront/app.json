@@ -21,8 +21,12 @@
         "backgroundColor": "#ffffff"
       },
       "package": "com.royshv.jesta",
-      "permissions": ["READ_CALENDAR", "WRITE_CALENDAR"]
-
+      "permissions": [
+        "READ_CALENDAR",
+        "WRITE_CALENDAR",
+        "READ_CALENDAR",
+        "WRITE_CALENDAR"
+      ]
     },
     "web": {
       "bundler": "metro",
@@ -53,6 +57,12 @@
         "projectId": "4257738a-6303-46ba-b3f3-fc61415c6e7c"
       }
     },
-    "owner": "royshv"
+    "owner": "royshv",
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/4257738a-6303-46ba-b3f3-fc61415c6e7c"
+    }
   }
 }
