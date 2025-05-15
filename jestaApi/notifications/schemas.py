@@ -11,7 +11,5 @@ class NotificationSchema(Schema):
     read: bool
     
     
-    model_config = {
-        "from_attributes": True
-    }
+    
 
