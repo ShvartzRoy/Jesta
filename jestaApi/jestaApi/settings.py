@@ -95,18 +95,28 @@ WSGI_APPLICATION = 'jestaApi.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/5.0/ref/settings/#databases
 
+# DATABASES = {
+#     'default': {
+#         'ENGINE': 'django.db.backends.postgresql',
+#         'NAME': 'jesta_db',
+#         'USER': 'user',
+#         'PASSWORD': 'user123',
+#         'HOST': 'db',
+#         'PORT': '5432',
+#         "ATOMIC_REQUESTS": True,
+#     }
+# }
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'jesta_db',
-        'USER': 'user',
-        'PASSWORD': 'user123',
-        'HOST': 'db',
-        'PORT': '5432',
+        'NAME': os.environ.get('DATABASE_NAME'),
+        'USER': os.environ.get('DATABASE_USER'),
+        'PASSWORD': os.environ.get('DATABASE_PASSWORD'),
+        'HOST': os.environ.get('DATABASE_HOST'),
+        'PORT': os.environ.get('DATABASE_PORT', '5432'),
         "ATOMIC_REQUESTS": True,
     }
 }
-
 
 # Password validation
 # https://docs.djangoproject.com/en/5.0/ref/settings/#auth-password-validators

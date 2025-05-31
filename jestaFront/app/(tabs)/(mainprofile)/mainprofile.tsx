@@ -366,8 +366,8 @@ useEffect(() => {
         const savedRes = await axios.get(`${process.env.EXPO_PUBLIC_HOST}/api/users/get_saved_services/${user.id}`);
         setSaved(savedRes.data.map(service => service.id));
       } catch (err) {
-        console.error('Error loading profile:', err);
-        setError('Failed to load profile');
+        // console.error('Error loading profile:', err);
+        // setError('Failed to load profile 1');
       } finally {
         setLoading(false);
       }
