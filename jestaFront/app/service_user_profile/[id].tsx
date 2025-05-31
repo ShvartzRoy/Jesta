@@ -1,4 +1,6 @@
 
+import { AppState } from 'react-native';
+
 import React, { useEffect, useState, useContext, useRef } from 'react';
 import { View, Text, Image, StyleSheet, ActivityIndicator, ScrollView, TouchableOpacity, Linking, Alert, FlatList, Modal } from 'react-native';
 import { useLocalSearchParams, router } from 'expo-router';
@@ -194,7 +196,8 @@ useEffect(() => {
         
 
       } catch (err) {
-        Alert.alert("Error", "Failed to load profile info.");
+        console.warn("Retrying profile fetch after failure...");
+        setTimeout(() => setRefreshTrigger(prev => prev + 1), 2000); //Auto retry after 2s
       } finally {
         setLoading(false);
       }
@@ -202,6 +205,20 @@ useEffect(() => {
 
     fetchProfileData();
   }, [userId,refreshTrigger]);
+
+
+
+  useEffect(() => {
+  const subscription = AppState.addEventListener('change', (nextAppState) => {
+    if (nextAppState === 'active') {
+      //App came to foreground, refresh data
+      setRefreshTrigger((prev) => prev + 1);
+    }
+  });
+
+  return () => subscription.remove();
+}, []);
+
 
 
 
@@ -232,17 +249,11 @@ useEffect(() => {
         } catch {
           setSpecialists([]);
         }
-
-
- //-------------------------------
        
         const allServicesResponse = await axios.get(`${process.env.EXPO_PUBLIC_HOST}/api/services/get_all_services`);
         const allServices = allServicesResponse.data;
         const userServices = allServices.filter(service => service.user_id == id);
         setServices(userServices);
-
-
- //-------------------------------
        
         const accepted = userServices.some(service =>
           service.applicants?.some(
@@ -250,8 +261,6 @@ useEffect(() => {
           )
         );
         setAccepted(accepted);
-
-//-------------------------------
 
     const creatorHasThisUserAsApplicant = allServices.some(service =>
       service.user_id === user.id &&
@@ -261,9 +270,7 @@ useEffect(() => {
     );
     setIsCreatorOfAcceptedApplicant(creatorHasThisUserAsApplicant);
 
-        
-//-------------------------------
-        const savedRes = await axios.get(`${process.env.EXPO_PUBLIC_HOST}/api/users/get_saved_services/${user.id}`);
+                const savedRes = await axios.get(`${process.env.EXPO_PUBLIC_HOST}/api/users/get_saved_services/${user.id}`);
         setSaved(savedRes.data.map(service => service.id));
       } catch (err) {
         console.error('Error loading profile:', err);
@@ -276,7 +283,7 @@ useEffect(() => {
     if (id && user?.id) {
       fetchData();
     }
-  }, [id]);
+  }, [id,refreshTrigger]);
 
 
   //-------------------------------
@@ -305,6 +312,28 @@ useEffect(() => {
   };
 
 
+  //-------------------------------
+
+
+  const handleStartChat = async () => {
+    try {
+      const response = await axios.post(
+        `${process.env.EXPO_PUBLIC_HOST}/api/chats/initiate_chat`,
+        { other_user_id: userId },
+        { headers: { Authorization: `Bearer ${user.token}` } }
+      );
+  
+      if (response.status === 200) {
+        router.push("/chat");
+      }
+      
+    } catch (err) {
+      console.error("Error initiating chat", err);
+      Alert.alert("Error", "Failed to start chat");
+    }
+  };
+
+  
   //-------------------------------
 
 
@@ -375,8 +404,8 @@ useEffect(() => {
          
          {/* regular chat icon */}
          
-          <TouchableOpacity onPress={() => Alert.alert('Open private chat')} style={styles.chatIconButton}>
-            <Ionicons name="chatbubble-ellipses-outline" size={28} color="#007bff" />
+         <TouchableOpacity onPress={handleStartChat} style={styles.chatIconButton}>
+         <Ionicons name="chatbubble-ellipses-outline" size={28} color="#007bff" />
           </TouchableOpacity>
 
 
