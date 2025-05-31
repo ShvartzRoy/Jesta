@@ -23,9 +23,6 @@ import * as Location from 'expo-location';
 
 import { useLocalSearchParams } from 'expo-router';
 
-import { RefreshControl } from 'react-native';
-
-
 
 import {
   scheduleServiceReminders,
@@ -105,12 +102,7 @@ export default function ExplorePage() {
   const [showAcceptedOnly, setShowAcceptedOnly] = useState(false);
 
   const [nearby, setNearby] = useState(false);
-
-
-  //const [userCity, setUserCity] = useState('');
-
-  const { userCity, refreshUserCity } = useContext(UserContext);
-
+  const [userCity, setUserCity] = useState('');
 
   const [loadingCity, setLoadingCity] = useState(true);
 
@@ -125,9 +117,6 @@ export default function ExplorePage() {
 
   const [includeCompleted, setIncludeCompleted] = useState(false);
 
-  const [refreshing, setRefreshing] = useState(false);
-
-
 
   const { referralCode } = useLocalSearchParams();
 
@@ -139,67 +128,60 @@ export default function ExplorePage() {
 
 
 
-  useEffect(() => {
-    (async () => {
-      const { status } = await Location.getForegroundPermissionsAsync();
+
+
+
+
+
+
+
+
+
+  const fetchUserCity = async (manual = false) => {
+    try {
+      setLoadingCity(true);
+  
+      const servicesEnabled = await Location.hasServicesEnabledAsync();
+      if (!servicesEnabled) {
+        if (manual) {
+          Alert.alert("Location Disabled", "Please enable location services (GPS) in your phone settings.");
+        }
+        setLoadingCity(false);
+        return;
+      }
+  
+      const { status } = await Location.requestForegroundPermissionsAsync();
       const granted = status === 'granted';
-      setLocationPermissionGranted(granted);
-    })();
-  }, []);
+      setLocationPermissionGranted(granted); 
   
-
-
-
-
-
-
-
-
-  // const fetchUserCity = async (manual = false) => {
-  //   try {
-  //     setLoadingCity(true);
+      if (!granted) {
+        if (manual) Alert.alert("Permission Denied", "Please enable location access in your phone settings.");
+        setLoadingCity(false);
+        return;
+      }
   
-  //     const servicesEnabled = await Location.hasServicesEnabledAsync();
-  //     if (!servicesEnabled) {
-  //       if (manual) {
-  //         Alert.alert("Location Disabled", "Please enable location services (GPS) in your phone settings.");
-  //       }
-  //       setLoadingCity(false);
-  //       return;
-  //     }
+      const location = await Location.getCurrentPositionAsync({
+        accuracy: Location.Accuracy.High,
+        maximumAge: 5000,
+        timeout: 5000, 
+      });
   
-  //     const { status } = await Location.requestForegroundPermissionsAsync();
-  //     const granted = status === 'granted';
-  //     setLocationPermissionGranted(granted); 
+      const geocode = await Location.reverseGeocodeAsync(location.coords);
+      const city = geocode?.[0]?.city;
   
-  //     if (!granted) {
-  //       if (manual) Alert.alert("Permission Denied", "Please enable location access in your phone settings.");
-  //       setLoadingCity(false);
-  //       return;
-  //     }
-  
-  //     const location = await Location.getCurrentPositionAsync({
-  //       accuracy: Location.Accuracy.High,
-  //       maximumAge: 5000,
-  //       timeout: 5000, 
-  //     });
-  
-  //     const geocode = await Location.reverseGeocodeAsync(location.coords);
-  //     const city = geocode?.[0]?.city;
-  
-  //     if (city) {
-  //       const normalized = normalizeCityName(city);
-  //       setUserCity(normalized);
-  //     } else if (manual) {
-  //       Alert.alert("Could not detect city", "Try again later or enter manually.");
-  //     }
-  //   } catch (err) {
-  //     console.error("Manual location error:", err);
-  //     if (manual) Alert.alert("Error", "Something went wrong detecting your location.");
-  //   } finally {
-  //     setLoadingCity(false); 
-  //   }
-  // };
+      if (city) {
+        const normalized = normalizeCityName(city);
+        setUserCity(normalized);
+      } else if (manual) {
+        Alert.alert("Could not detect city", "Try again later or enter manually.");
+      }
+    } catch (err) {
+      console.error("Manual location error:", err);
+      if (manual) Alert.alert("Error", "Something went wrong detecting your location.");
+    } finally {
+      setLoadingCity(false); 
+    }
+  };
 
 
   useEffect(() => {
@@ -248,13 +230,13 @@ export default function ExplorePage() {
     "mover",
   ];
 
-  // useEffect(() => {
-  //   const interval = setInterval(() => {
-  //     fetchServices();
-  //   }, 5000); 
+  useEffect(() => {
+    const interval = setInterval(() => {
+      fetchServices();
+    }, 5000); 
   
-  //   return () => clearInterval(interval); 
-  // }, []);
+    return () => clearInterval(interval); 
+  }, []);
 
 
   useEffect(() => {
@@ -263,31 +245,9 @@ export default function ExplorePage() {
     }
   }, [newNotification]);
 
-  // useEffect(() => {
-  //   fetchUserCity(); 
-  // }, []);
-
-
   useEffect(() => {
-    fetchServices();
+    fetchUserCity(); 
   }, []);
-
-
-  useEffect(() => {
-    const tryRefreshCity = async () => {
-      try {
-        await refreshUserCity();
-      } catch (e) {
-        console.log("City detection error:", e);
-      } finally {
-        setLoadingCity(false);
-      }
-    };
-  
-    tryRefreshCity();
-  }, []);
-  
-  
   
   
   
@@ -295,7 +255,6 @@ export default function ExplorePage() {
   //Fetch services
   const fetchServices = async () => {
     try {
-      setRefreshing(true);
       const response = await axios.get(`${process.env.EXPO_PUBLIC_HOST}/api/services/get_all_services`, {
         headers: {
           Authorization: `Bearer ${user.token}`,
@@ -329,7 +288,6 @@ export default function ExplorePage() {
       setFilteredServices([]);
     } finally {
       setLoading(false);
-      setRefreshing(false);
     }
   };
   
@@ -419,16 +377,15 @@ export default function ExplorePage() {
       const radiusInMeters = parseFloat(radiusKm) * 1000;
     
       result = result.filter(service => {
-        const serviceCoords = citiesWithCoords[normalizeCityName(service.location)];
+        const serviceCoords = citiesWithCoords[service.location];
         if (!serviceCoords) return false;
     
         const distance = getDistance(userCoords, serviceCoords);
         return distance <= radiusInMeters;
       });
     } else if (useGpsNearby && userCity) {
-      const normalizedCity = normalizeCityName(userCity);
-      const nearbyList = (nearbyCities[normalizedCity] || []).map(c => normalizeCityName(c));
-            result = result.filter(service =>
+      const nearbyList = (nearbyCities[userCity] || []).map(c => c.trim().toLowerCase());
+      result = result.filter(service =>
         nearbyList.includes(service.location.trim().toLowerCase())
       );
     } else if (nearby && location.trim() !== '') {
@@ -438,7 +395,7 @@ export default function ExplorePage() {
       );
     } else if (location.trim() !== '') {
       result = result.filter(service =>
-        normalizeCityName(service.location).includes(normalizeCityName(location))
+        service.location.toLowerCase().includes(location.toLowerCase())
       );
     }
     
@@ -483,7 +440,7 @@ export default function ExplorePage() {
 
   useEffect(() => {
     applyFilters();
-  }, [services, selectedTags, searchValue, filterRequests, filterMine, location, duration, priceRange, sortOption, nearby, radiusKm, useGpsNearby, userCity, includeCompleted,]);
+  }, [services, selectedTags, searchValue, filterRequests, filterMine, location, duration, priceRange, sortOption]);
 
   const resetFilters = () => {
     setPriceRange([0, 1000]);
@@ -737,13 +694,8 @@ export default function ExplorePage() {
           )}
 
         </ScrollView>
-          ) : (
-            <ScrollView
-              refreshControl={
-                <RefreshControl refreshing={refreshing} onRefresh={fetchServices} />
-              }
-            >
-
+      ) : (
+        <ScrollView>
   
           {/* Top Row Icons */}
           <View style={{ flexDirection: 'row', justifyContent: 'space-around', alignItems: 'center', marginBottom: 15 }}>
@@ -761,18 +713,6 @@ export default function ExplorePage() {
             <TouchableOpacity onPress={handleOpenNotifications}>
               <Ionicons name="notifications-outline" size={40} />
             </TouchableOpacity>
-
-
-            {/* Refresh Button */}
-            <TouchableOpacity onPress={fetchServices} disabled={refreshing}>
-              {refreshing ? (
-                <ActivityIndicator size={24} color="#007AFF" />
-              ) : (
-                <Ionicons name="refresh" size={40} color="#007AFF" />
-              )}
-            </TouchableOpacity>
-
-
   
             {/* Add New Service */}
             <TouchableOpacity onPress={() => setAddServiceVisible(true)}>
@@ -800,46 +740,28 @@ export default function ExplorePage() {
               <Ionicons name={showGpsPreferences ? 'chevron-up' : 'chevron-down'} size={20} />
             </TouchableOpacity>
 
-
-
-
             {showGpsPreferences && (
               <View style={{ marginTop: 10, padding: 10, backgroundColor: '#f9f9f9', borderRadius: 10 }}>
 
-
-
-            <Text style={{ marginBottom: 6 }}>
-              📍 Your detected city:{" "}
-              <Text style={{ fontWeight: 'bold' }}>
-                {userCity || 'Not detected yet'}
-              </Text>
-            </Text>
-
-            <TouchableOpacity
-                onPress={async () => {
-                  const { status } = await Location.requestForegroundPermissionsAsync();
-                  const granted = status === 'granted';
-                  setLocationPermissionGranted(granted);
-                  if (granted) {
-                    await refreshUserCity(); 
-                  } else {
-                    Alert.alert("Permission Denied", "Please allow location access to use this feature.");
-                  }
-                }}
-              style={{
-                backgroundColor: '#007AFF',
-                paddingVertical: 8,
-                paddingHorizontal: 12,
-                borderRadius: 8,
-                alignSelf: 'flex-start',
-                marginBottom: 8,
-              }}
-            >
-              <Text style={{ color: 'white', fontWeight: 'bold' }}>🔄 Detect My Location</Text>
-            </TouchableOpacity>
-
-
-
+                {userCity ? (
+                  <Text style={{ marginBottom: 6 }}>
+                    📍 Your detected city: <Text style={{ fontWeight: 'bold' }}>{userCity}</Text>
+                  </Text>
+                ) : (
+                  <TouchableOpacity
+                    onPress={() => fetchUserCity(true)}
+                    style={{
+                      backgroundColor: '#007AFF',
+                      paddingVertical: 8,
+                      paddingHorizontal: 12,
+                      borderRadius: 8,
+                      alignSelf: 'flex-start',
+                      marginBottom: 8,
+                    }}
+                  >
+                    <Text style={{ color: 'white', fontWeight: 'bold' }}>📍 Detect My Location</Text>
+                  </TouchableOpacity>
+                )}
 
               {locationPermissionGranted && (
                 <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
@@ -848,11 +770,9 @@ export default function ExplorePage() {
                     value={useGpsNearby}
                     onValueChange={(value) => {
                       setUseGpsNearby(value);
-                          if (value) {
-                          setRadiusKm('20'); //Default to 20 km when enabled
-                        } else {
-                          setRadiusKm('');
-                        }
+                      if (!value) {
+                        setRadiusKm('');    
+                      }
                     }}
                   />
                 </View>

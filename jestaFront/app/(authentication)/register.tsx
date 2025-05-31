@@ -1,4 +1,4 @@
-import React, { useState, useContext, useEffect } from "react";
+import React, { useState, useContext } from "react";
 import { View, Text, TextInput, StyleSheet, Alert, Keyboard, TouchableWithoutFeedback, TouchableOpacity } from "react-native";
 import { UserContext } from "../contexts/authContext";
 import { Link, useRouter } from 'expo-router';
@@ -19,28 +19,7 @@ export default function RegisterScreen() {
   const [verificationCode, setVerificationCode] = useState('');
   const [sentEmail, setSentEmail] = useState('');
 
-  const [resendDisabledUntil, setResendDisabledUntil] = useState<Date | null>(null);
-  //const [resendInfoMessage, setResendInfoMessage] = useState('');
 
-  const [tick, setTick] = useState(0);
-
-
-  //Forces a re-render every second to update the resend cooldown
-  useEffect(() => {
-    const interval = setInterval(() => {
-      if (resendDisabledUntil) {
-        const now = new Date();
-        if (now >= resendDisabledUntil) {
-          setResendDisabledUntil(null);
-        } else {
-          setTick(prev => prev + 1); //force re-render
-        }
-      }
-    }, 1000);
-  
-    return () => clearInterval(interval);
-  }, [resendDisabledUntil]);
-  
 
   // const handleRegister = async () => {
   //   setError([false, '']);
@@ -77,35 +56,8 @@ export default function RegisterScreen() {
   // };
 
 
-  const canResend = () => {
-    if (!resendDisabledUntil) return true;
-    return new Date() > resendDisabledUntil;
-  };
-  
-  const startResendCooldown = () => {
-    const nextAllowedTime = new Date(Date.now() + 60 * 1000); // 1minute
-    setResendDisabledUntil(nextAllowedTime);
-  };
-  
-
-  const getResendCountdown = () => {
-    if (!resendDisabledUntil) return '';
-    const secondsLeft = Math.ceil((resendDisabledUntil.getTime() - Date.now()) / 1000);
-    return secondsLeft > 0 ? `Please wait ${secondsLeft}s before resending, check your spam folder.` : '';
-  };
-  
-  
-
-
 
   const handleRegister = async () => {
-
-    if (!canResend()) {
-      Alert.alert("Wait", "Please wait before requesting another code.");
-      return;
-    }
-
-    
     setError([false, '']);
     if (!email || !password) {
       Alert.alert("Error", "Please enter both email and password.");
@@ -135,8 +87,6 @@ export default function RegisterScreen() {
       });
       setSentEmail(email.trim());
       setStep('verify');
-      startResendCooldown();
-
     } catch (error) {
       setError([true, error.response?.data || { msg: error.message }]);
     } finally {
@@ -281,30 +231,11 @@ export default function RegisterScreen() {
             <TouchableOpacity style={styles.registerButton} onPress={handleVerifyCode}>
               <Text style={styles.registerButtonText}>Verify & Register</Text>
             </TouchableOpacity>
-
-
-
   
-            <TouchableOpacity
-              style={[styles.resendButton, { opacity: canResend() ? 1 : 0.6 }]}
-              onPress={handleRegister}
-              disabled={!canResend()}
-            >
+            <TouchableOpacity style={styles.resendButton} onPress={handleRegister}>
               <Text style={styles.resendButtonText}>Resend Code</Text>
             </TouchableOpacity>
-
-            {!canResend() && (
-              <Text style={{ color: '#555', fontSize: 13, marginTop: 8 }}>
-                {getResendCountdown()}
-              </Text>
-            )}
-
-
-
-
   
-
-
             <TouchableOpacity style={styles.backButtonOutline} onPress={() => setStep('register')}>
               <Text style={styles.backButtonText}>← Back</Text>
             </TouchableOpacity>
