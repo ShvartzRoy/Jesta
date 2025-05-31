@@ -52,6 +52,7 @@ const Edit_profile = () => {
   // Handle image upload
   const handleImageUpload = async () => {
     const authToken = user?.token; // adjust this based on how you store auth token
+    console.log("authToken 1 :", authToken); // Add this BEFORE setAuth
     const uploadedUrl = await uploadProfileImage(user.id, authToken);
 
     if (uploadedUrl) {
@@ -349,11 +350,11 @@ const Edit_profile = () => {
               </Text>
             </TouchableOpacity>
 
-            <TouchableOpacity onPress={handleResumeUpload} style={[styles.button, { flex: 1, marginLeft: 8 }]}>
+            {/* <TouchableOpacity onPress={handleResumeUpload} style={[styles.button, { flex: 1, marginLeft: 8 }]}>
               <Text style={styles.buttonText} numberOfLines={1}>
                 {resume ? `Resume: ${resume.name}` : 'Upload Resume'}
               </Text>
-            </TouchableOpacity>
+            </TouchableOpacity> */}
           </View>
 
 

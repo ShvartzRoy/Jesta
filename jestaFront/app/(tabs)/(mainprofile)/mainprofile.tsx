@@ -204,40 +204,42 @@ useEffect(() => {
   //-------------------------------
 
 
-useEffect(() => {
+  useEffect(() => {
     const fetchProfile = async () => {
-
       if (profileCache.has(userId)) {
         setProfile((prev) => ({
           ...prev,
           image: profileCache.get(userId),
         }));
+        return;
       }
-
-      try {
-        const res = await axios.get(`${process.env.EXPO_PUBLIC_HOST}/api/users/get_profile/${userId}`);
-        const profileData = res.data;
   
-        if (profileData.image) {
-          const fullImageUrl = `${process.env.EXPO_PUBLIC_HOST}${profileData.image}`;
-          profileData.image = fullImageUrl;
-
-          profileCache.set(userId, fullImageUrl);  
-        
+      try {
+        const res = await axios.get(`${process.env.EXPO_PUBLIC_HOST}/api/users/get_profile_image`, {
+          headers: {
+            Authorization: `Bearer ${user?.token}`,
+          },
+        });
+  
+        const fullImageUrl = res.data?.image_url || null;
+  
+        if (fullImageUrl) {
+          profileCache.set(userId, fullImageUrl);
         }
-    
-        //setProfile(profileData); 
-
-        setProfile({ ...profileData, referral_code: profileData.referral_code });
-
+  
+        setProfile((prev) => ({
+          ...prev,
+          image: fullImageUrl,
+        }));
       } catch (err) {
-        console.error("Error fetching profile:", err.response?.data || err.message);
-        Alert.alert("Error", "Failed to load profile.");
+        console.error("Error fetching profile image:", err.response?.data || err.message);
+        Alert.alert("Error", "Failed to load profile image.");
       }
     };
   
     if (userId) fetchProfile();
   }, [userId]);
+  
   
 
   //-------------------------------

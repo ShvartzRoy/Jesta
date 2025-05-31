@@ -110,7 +110,7 @@ def set_user_city(request, data: CitySchema):
     profile.save()
     return {"msg": f"City set to {data.city}"}
 
-@router.post("/profile-image")
+@router.post("/update_profile_image")
 def update_profile_image(request, data: ProfileImageUpdateSchema):
     if not request.user.is_authenticated:
         raise HttpError(401, "Unauthorized")
@@ -119,6 +119,17 @@ def update_profile_image(request, data: ProfileImageUpdateSchema):
     profile.image = data.image_url
     profile.save()
     return {"status": "success", "image_url": profile.image}
+
+@router.get("/get_profile_image")
+def get_profile_image(request):
+    if not request.user.is_authenticated:
+        raise HttpError(401, "Unauthorized")
+
+    try:
+        profile = Profile.objects.get(user=request.user)
+        return {"image_url": profile.image}
+    except Profile.DoesNotExist:
+        return {"image_url": None}
 
 @router.put("/remove_profile_image", response={200: Msg, 401: Error})
 def remove_profile_image(request):
