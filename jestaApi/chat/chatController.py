@@ -6,33 +6,9 @@ from ninja.errors import HttpError
 from .models import Chat, Message
 from users.models import CustomUser
 from .schemas import *
-from notifications.models import Notification
-import requests
-
 
 class ChatController:
     
-    def send_notification(self, user, title, body, data={}):
-        Notification.objects.create(user=user, title=title, body=body, data=data)
-
-        if not isinstance(user.expo_push_tokens, list):
-            return
-
-        for token_data in user.expo_push_tokens:
-            token = token_data.get("token")
-            if not token:
-                continue
-
-            message = {
-                "to": token,
-                "sound": "default",
-                "title": title,
-                "body": body,
-                "data": data,
-            }
-            requests.post("https://exp.host/--/api/v2/push/send", json=message)
-
-        
     def initiate_chat(self, request, other_user_id: int) -> ChatResponseSchema:
         """
         Initiates a one-on-one chat between the request user and another user.
@@ -79,21 +55,6 @@ class ChatController:
         )
         # Optionally update the chat's updated_at timestamp by saving it.
         chat.save()
-        
-        # notify the other user:
-
-        recipient = chat.user2 if chat.user1 == request.user else chat.user1
-
-        sender_name = getattr(request.user.profile, "name", request.user.username)
-        self.send_notification(
-                recipient,
-                title="📨 New Message",
-                body=f"New message from {request.user.profile.name if hasattr(request.user, 'profile') else request.user.email}",
-                data={"type": "chat", "chat_id": chat.id}
-            )
-
-        
-        
         return MessageResponseSchema(message="Message sent successfully.", message_id=message.id)
     
     def get_new_messages(self, request, chat_id: int, last_message_id: Optional[int] = None) -> List[MessageSchema]:

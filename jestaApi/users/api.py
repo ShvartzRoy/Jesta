@@ -214,19 +214,6 @@ def validate_referral_code(request, referral_code: str):
     return {"valid": valid}
 
 
-@router.get("/get_user_city", response={200: dict, 401: Error})
-def get_user_city(request):
-    if not request.user.is_authenticated:
-        raise HttpError(401, "Unauthorized")
-    
-    try:
-        profile = Profile.objects.get(user=request.user)
-        return {"city": profile.city}
-    except Profile.DoesNotExist:
-        return {"city": None}
-
-
-
 
 
 '''
