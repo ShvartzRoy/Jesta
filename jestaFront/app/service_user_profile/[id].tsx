@@ -398,7 +398,7 @@ useEffect(() => {
 
 
       {/* Chat Icons */}
-      {(accepted || isCreatorOfAcceptedApplicant) && (
+      {(accepted || isCreatorOfAcceptedApplicant || specialists.length > 0) && (
         <View style={{ flexDirection: 'row', alignItems: 'center' }}>
          
          

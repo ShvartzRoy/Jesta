@@ -33,7 +33,7 @@ const SpecialistShowCard = ({ specialist }) => {
   const handlePress = () => {
     console.log('Navigating to viewProfile screen...', specialist.user);
     if (specialist.id) {
-      router.push(`/viewProfile/${specialist.user}`);
+      router.push(`/service_user_profile/${specialist.user}`);
     } else {
       console.warn('No user ID found for this specialist.');
     }
