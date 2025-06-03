@@ -66,6 +66,7 @@ class profileController:
             except json.JSONDecodeError:
                 raise HttpError(400, "Invalid JSON in payload")
 
+        print(f"Received data: {data}")
         if data.get("name"):
             check_name(data["name"])
             profile.name = data["name"]
@@ -74,7 +75,7 @@ class profileController:
             profile.bio = data["bio"]
 
         if data.get("age") is not None:
-            check_age(data["age"])
+            check_age(int(data["age"]))
             profile.age = data["age"]
 
         profile.facebook = data.get("facebook") or ""

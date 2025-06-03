@@ -15,18 +15,29 @@ rc = RankController()
 def create_rank(request, payload):
     return rc.create_rank(request, payload)
 
-@router.get("/get_rank/{user_id}/", response={200: dict})
+# @router.get("/get_rank/{user_id}/", response={200: dict})
+# def get_rank(request, user_id: int):
+#     return rc.get_rank(request, user_id)
+
+@router.get("/get_rank/{user_id}/", response={200: RankSchema})
 def get_rank(request, user_id: int):
     return rc.get_rank(request, user_id)
 
-@router.post("/add_xp/{user_id}/", response={200: dict})
+# @router.post("/add_xp/{user_id}/", response={200: dict})
+# def add_xp(request, user_id: int, xp: int):
+#     return rc.add_xp(user_id, xp)
+
+# @router.get("/update_level/{user_id}/", response={200: dict})
+# def update_level(request, user_id: int):
+#     return rc.update_level(user_id)
+
+@router.post("/add_xp/{user_id}/", response={200: bool})
 def add_xp(request, user_id: int, xp: int):
     return rc.add_xp(user_id, xp)
 
-@router.get("/update_level/{user_id}/", response={200: dict})
+@router.get("/update_level/{user_id}/", response={200: bool})
 def update_level(request, user_id: int):
     return rc.update_level(user_id)
-
 
 @router.get("/get_badges/{user_id}/", response=List[BadgeSchema])
 def get_badges(request, user_id: int):

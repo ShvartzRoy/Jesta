@@ -81,14 +81,29 @@ def get_profile(request, user_id: int):
     user = pc.get_profile(request, user_id)
     return user
 
-@router.put("/change-email/", response={200: dict, 400: dict})
-def update_email(request, email: str, password: str):
-    return uc.change_email(request, email, password)
+class ChangeEmailSchema(Schema):
+    email: str
+    password: str
 
-@router.put("/change-password/", response={200: dict, 400: dict})
-def update_password(request, old_password: str, new_password: str):
-    return uc.change_password(request, old_password, new_password)
+@router.put("/change_email/", response={200: dict, 400: dict})
+def change_email(request, data: ChangeEmailSchema):
+    """
+    Allows an authenticated user to change their email.
+    Requires new email and password in the JSON body.
+    """
+    return uc.change_email(request, data.email, data.password)
 
+class ChangePasswordSchema(Schema):
+    old_password: str
+    new_password: str
+
+@router.put("/change_password/", response={200: dict, 400: dict})
+def change_password(request, data: ChangePasswordSchema):
+    """
+    Allows an authenticated user to change their password.
+    Requires old_password and new_password in the request body.
+    """
+    return uc.change_password(request, data.old_password, data.new_password)
 
 
 @router.get("/get_saved_services/{user_id}", response=list)

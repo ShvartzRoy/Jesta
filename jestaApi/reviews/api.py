@@ -11,9 +11,16 @@ router = Router(tags=["Reviews"])
 
 rc = ReviewController()
 
+# @router.post("/add_review", response={201: ReviewSchema})
+# def add_review(request, payload: ReviewCreateSchema):
+#     return rc.add_review(request, payload)
+
+
 @router.post("/add_review", response={201: ReviewSchema})
 def add_review(request, payload: ReviewCreateSchema):
     return rc.add_review(request, payload)
+
+
 
 @router.get("/get_reviews/{user_id}/", response={200: list[dict]})
 def get_reviews(request, user_id: int):
