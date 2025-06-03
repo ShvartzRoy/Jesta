@@ -34,7 +34,7 @@ class TestServiceRoutes:
         return res.json()["id"]
     
     # --------------------------------------
-    # Use Case 3: Service Management
+    # Test case 4: Service Management - verify service publishing
     # --------------------------------------
 
     def test_create_and_get_service(self, client):
@@ -51,6 +51,11 @@ class TestServiceRoutes:
         res = client.get(f"/api/services/get_service/{service_id}")
         assert res.status_code == 200
         assert res.json()["title"] == "Test Service"
+        
+        
+    # --------------------------------------
+    # invalid test case 4: Service Management - Invalid Service Creation
+    # --------------------------------------
 
     def test_create_service_with_missing_fields(self, client):
         """
@@ -71,6 +76,10 @@ class TestServiceRoutes:
         }
         res = client.post("/api/services/create_service", data=json.dumps(payload), content_type="application/json")
         assert res.status_code == 422
+        
+    # --------------------------------------
+    # invalid test case 4: Service Management - Conflicting Fields
+    # --------------------------------------
 
     def test_create_service_with_conflicting_fields(self, client):
         """
@@ -96,6 +105,10 @@ class TestServiceRoutes:
         }
         res = client.post("/api/services/create_service", data=json.dumps(payload), content_type="application/json")
         assert res.status_code == 400
+        
+    # --------------------------------------
+    # test case 5: Service Management - Verify Service Editing (2 fields)
+    # --------------------------------------
 
     def test_update_service_fields(self, client):
         """
@@ -124,7 +137,7 @@ class TestServiceRoutes:
         
         
     # --------------------------------------
-    # Use Case 3: Service Management - update fields seperately
+    # test case 5: Service Management - update fields (seperately)
     # --------------------------------------
         
         
@@ -254,7 +267,7 @@ class TestServiceRoutes:
         
         
     # --------------------------------------
-    # Use Case 3: Service Management - Invalid Updates
+    # invalid test case 5: Service Management - invalid Service Editing
     # --------------------------------------
         
         
@@ -380,7 +393,7 @@ class TestServiceRoutes:
         
         
     # --------------------------------------
-    # Use Case 4: Service Search & Application
+    # test case 8 : Service Search & Application - verify service application submission
     # --------------------------------------
     
     
@@ -401,6 +414,9 @@ class TestServiceRoutes:
         res = client.post(f"/api/services/apply_to_service/{service_id}")
         assert res.status_code == 200
         
+    # --------------------------------------
+    # test case 8 : Service Search & Application - verify service application removal
+    # --------------------------------------
         
     def test_remove_from_service(self, client):
         """
@@ -420,7 +436,10 @@ class TestServiceRoutes:
         res = client.post(f"/api/services/remove_from_service/{service_id}")
         assert res.status_code == 200
         
-        
+    
+    # --------------------------------------
+    # test case 8 : Service Search & Application - verify service application submission and removal
+    # --------------------------------------
 
     def test_apply_and_remove_from_service(self, client):
         """
@@ -440,6 +459,9 @@ class TestServiceRoutes:
         assert res.status_code == 200
         res = client.post(f"/api/services/remove_from_service/{service_id}")
         assert res.status_code == 200
+        
+    # --------------------------------------
+    # invalid test case 8 : Service Search & Application - verify service application submission to own service is not allowed
 
     def test_apply_to_own_service_fails(self, client):
         """
@@ -474,6 +496,8 @@ class TestServiceRoutes:
         res = client.post(f"/api/services/mark_service_completed/{service_id}")
         assert res.status_code == 200
         
+    
+        
     def test_search_completed_services(self, client):
         """
         Use Case 4: Service Search & Application
@@ -496,24 +520,35 @@ class TestServiceRoutes:
         assert any(s["id"] == service_id for s in res.json())
         
 
-    def test_mark_service_completed_and_search(self, client):
+    # --------------------------------------
+    # test case 7: Service Search & Application - verify service search functionality
+    # --------------------------------------
+    def test_search_services(self, client):
         """
         Use Case 4: Service Search & Application
         Test Case 7: Verify Service Search Functionality
 
-        This test checks that a user can mark a service as completed and then search for it.
+        This test checks that a user can search for services based on location and tags.
         """
         
         user = self._make_user("searcher", "searcher@example.com", "Password123")
         self._login(client, "searcher@example.com", "Password123")
-        service_id = self._create_service(client, tag_name="searchtag", title="Search Service")
-        res = client.post(f"/api/services/mark_service_completed/{service_id}")
-        assert res.status_code == 200
+        service_id = self._create_service(client, tag_name="searchtag", title="Search Service")  
+        
         search_payload = {"location": "TLV", "tags": ["searchtag"]}
-        res = client.post("/api/services/search_completed_services", data=json.dumps(search_payload), content_type="application/json")
+        res = client.post(
+            "/api/services/search_needed_services",
+            data=json.dumps(search_payload),
+            content_type="application/json"
+        )
         assert res.status_code == 200
         assert any(s["id"] == service_id for s in res.json())
         
+
+        
+        
+        
+              
     # --------------------------------------
     # Use Case 3: Service Management - Save and Unsave
     # --------------------------------------
@@ -533,7 +568,7 @@ class TestServiceRoutes:
         
         
     # --------------------------------------
-    # Use Case 3: Service Management - Delete Service
+    # test case 6: Service Management - verify service deletion
     # --------------------------------------
 
     def test_delete_service(self, client):
@@ -550,6 +585,10 @@ class TestServiceRoutes:
         res = client.delete(f"/api/services/delete_service/{service_id}")
         assert res.status_code == 200
         assert not Service.objects.filter(id=service_id).exists()
+        
+    # --------------------------------------
+    # test case 6: Service Management - verify service deletion by non-owner
+    # --------------------------------------
 
     def test_delete_service_as_non_owner_fails(self, client):
         """
@@ -569,10 +608,8 @@ class TestServiceRoutes:
         
         
     # --------------------------------------
-    # Use Case 4: Service Search & Application - Accept and Reject Applicants
+    # test case 9: Service Search & Application - Accept Applicants
     # --------------------------------------
-    
-    
     
     def test_accept_applicant(self, client):
         """
@@ -592,6 +629,10 @@ class TestServiceRoutes:
         self._login(client, "cuser@example.com", "Password123")
         res = client.post(f"/api/services/accept_applicant/{service_id}/{applicant.id}")
         assert res.status_code == 200
+        
+    # --------------------------------------
+    # test case 9: Service Search & Application - Reject Applicants
+    # --------------------------------------
         
     def test_reject_applicant(self, client):
         """

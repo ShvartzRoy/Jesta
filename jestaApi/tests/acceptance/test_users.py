@@ -6,8 +6,10 @@ from new_badges.models import Badge
 @pytest.mark.django_db
 class TestUserRoutes:
     
+    
+    
     # ------------------------------------------------------------------
-    # USE CASE 1: register, login - valid user flow
+    # Test cases 1+2: register, login - valid user flow
     # ------------------------------------------------------------------
     
     def test_register_and_login(self, client):
@@ -138,7 +140,7 @@ class TestUserRoutes:
         
     
     # ------------------------------------------------------------------
-    # USE CASE 2: verification as a student - valid user flow
+    # Test cases 3: verification as a student - valid user flow
     # ------------------------------------------------------------------    
         
 
@@ -183,6 +185,49 @@ class TestUserRoutes:
         assert res.status_code == 200
         badge_names = [b["name"] for b in res.json()["badges"]]
         assert "Student" in badge_names, f"Expected 'Student' badge, found {badge_names}"
+        
+        
+    def test_register_with_non_student_email_does_not_get_badge(self, client):
+        """
+        UC2 - Register with non-academic email will not grant 'Student' badge.
+        """
+
+        Badge.objects.get_or_create(name="Student")
+
+        email = "user@gmail.com"
+        password = "UserPass123"
+        payload = {
+            "email": email,
+            "password": password,
+            "referral_code": None,
+        }
+
+        # 1. Register
+        res = client.post("/api/users/register", data=json.dumps(payload), content_type="application/json")
+        assert res.status_code == 200
+        user_id = res.json()["id"]
+
+        # 2. Login
+        client.post("/api/users/login", data=json.dumps({
+            "email": email,
+            "password": password
+        }), content_type="application/json")
+
+        # 3. Complete profile to trigger badge logic
+        res = client.post("/api/users/edit_profile", data={
+            "name": "Non Student",
+            "phone": "0500000000",
+            "gender": "F",
+            "birth_date": "1990-01-01"
+        })
+        assert res.status_code == 200
+
+        # 4. Check that no 'Student' badge was assigned
+        res = client.get(f"/api/users/get_profile/{user_id}")
+        assert res.status_code == 200
+        badge_names = [b["name"] for b in res.json()["badges"]]
+        assert "Student" not in badge_names, f"Unexpected 'Student' badge for non-academic email: {badge_names}"
+
 
 
     # ------------------------------------------------------------------

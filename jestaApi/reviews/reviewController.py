@@ -31,13 +31,22 @@ class ReviewController():
         if payload.info and len(payload.info) > 200:
             raise HttpError(400, "Review is too long")
 
-        sc = ServiceController()  
+        sc = ServiceController()
+        
+        
+        service = sc.get_service(payload.service)
+        if not service:
+            raise HttpError(404, "Service not found")
+    
+        if service.state != "completed":
+            raise HttpError(400, "Service must be completed to leave a review")           
 
         if existing_review:
             existing_review.ranking = payload.ranking
             existing_review.info = payload.info
             existing_review.save()
-
+   
+            
             sc.send_notification(
                 reviewed_user,
                 "Review Updated",

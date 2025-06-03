@@ -36,12 +36,22 @@ class TestReviewRoutes:
             ],
             estimated_duration=timedelta(hours=2),
         )
-
+        
+    # --------------------------------------
+    # test case 11: verify service review submission
+    # --------------------------------------
+      
+        
     def test_add_review_success(self, client):
         """
-        Authenticated user can successfully submit a review.
+        Test Case 11: Verify Service Review Submission
+
+        This test checks that after completing a service, a user can submit a review.
         """
-        
+        client.force_login(self.user2)
+        res = client.post(f"/api/services/mark_service_completed/{self.service.id}")
+        assert res.status_code == 200
+
         client.force_login(self.user1)
         payload = {
             "reviewed_user": self.user2.id,
@@ -55,6 +65,28 @@ class TestReviewRoutes:
         assert data["reviewer"] == self.user1.id
         assert data["reviewed_user"] == self.user2.id
         assert data["ranking"] == 5
+        
+    # --------------------------------------
+    # invalid test case 11: verify service review submission before completion
+    # --------------------------------------
+        
+        
+    def test_add_review_before_completion_fails(self, client):
+        """
+        This test ensures that a user cannot submit a review before the service is marked as completed.
+        """
+        client.force_login(self.user1)
+        payload = {
+            "reviewed_user": self.user2.id,
+            "service": self.service.id,
+            "ranking": 4,
+            "info": "Premature review"
+        }
+        res = client.post("/api/reviews/add_review", data=json.dumps(payload), content_type="application/json")
+        assert res.status_code == 400
+        assert "service must be completed to leave a review" in get_error_detail(res).lower()
+
+
 
     def test_add_review_unauthenticated(self, client):
         """
